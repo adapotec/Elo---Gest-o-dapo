@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+:root {
+  /* Paleta Bruta Institucional */
+  --raw-laranja: #F2632D;
+  --raw-laranja-claro: #F7955F;
+  --raw-amarelo: #F9C859;
+  --raw-roxo: #93368F;
+  --raw-roxo-escuro: #4A1B57;
+  --raw-marrom: #8B4A2E;
+  --raw-verde: #1C9C82;
+
+  /* Light Mode Tokens */
+  --bg-primary: #FDFBF8;
+  --bg-secondary: #F5F1EA;
+  --bg-elevated: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+
+  --text-primary: #2B2118;
+  --text-secondary: #6B6055;
+  --text-muted: #9C9187;
+  --text-on-primary: #FFFFFF;
+
+  --border-default: #E8E1D6;
+  --border-strong: #D4CABA;
+
+  --color-primary: var(--raw-laranja);
+  --color-primary-hover: #DE5623;
+  --color-primary-soft: #FCE6DB;
+
+  --color-accent-purple: var(--raw-roxo);
+  --color-accent-yellow: var(--raw-amarelo);
+  --color-accent-brown: var(--raw-marrom);
+
+  --color-success: var(--raw-verde);
+  --color-success-soft: #DCF3EC;
+  --color-warning: var(--raw-amarelo);
+  --color-warning-soft: #FDF3DA;
+  --color-danger: #D64545;
+  --color-danger-soft: #FBE2E2;
+
+  --shadow-card: 0 1px 2px rgba(43, 33, 24, 0.06), 0 1px 8px rgba(43, 33, 24, 0.04);
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1C1712;
+  --bg-secondary: #24201A;
+  --bg-elevated: #2A251E;
+  --bg-sidebar: #211C16;
+
+  --text-primary: #F3EDE4;
+  --text-secondary: #B8AC9C;
+  --text-muted: #7D7466;
+  --text-on-primary: #FFFFFF;
+
+  --border-default: #383126;
+  --border-strong: #4A4235;
+
+  --color-primary: var(--raw-laranja);
+  --color-primary-hover: #F7955F;
+  --color-primary-soft: #3D2A1E;
+
+  --color-accent-purple: #B85BB3;
+  --color-accent-yellow: var(--raw-amarelo);
+  --color-accent-brown: #B87A54;
+
+  --color-success: #3FC1A2;
+  --color-success-soft: #1B3B33;
+  --color-warning: var(--raw-amarelo);
+  --color-warning-soft: #3D3620;
+  --color-danger: #E57575;
+  --color-danger-soft: #3D2323;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 8px rgba(0, 0, 0, 0.2);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans), sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+}
+
+.font-mono-data {
+  font-family: var(--font-mono), monospace;
+}
