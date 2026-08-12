@@ -42,16 +42,16 @@ export interface PecaComunicacao {
 
 interface ProjetoComunicacaoProps {
   projetoId: string;
-  acoes: any[];
-  inscricoes: any[]; // Beneficiários inscritos
-  voluntarios: any[];
+  acoes?: any[];
+  inscricoes?: any[]; // Beneficiários inscritos
+  voluntarios?: any[];
 }
 
 export function ProjetoComunicacao({
   projetoId,
-  acoes,
-  inscricoes,
-  voluntarios,
+  acoes = [],
+  inscricoes = [],
+  voluntarios = [],
 }: ProjetoComunicacaoProps) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);

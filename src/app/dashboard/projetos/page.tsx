@@ -195,7 +195,7 @@ export default function ProjetosPage() {
         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
           <Link href={`/dashboard/projetos/${item.id}`}>
             <Button size="sm" variant="ghost" icon={<Edit className="w-3.5 h-3.5" />}>
-              Gerenciar Ciclo de Vida
+              Gerenciar Projeto
             </Button>
           </Link>
         </div>
@@ -284,7 +284,7 @@ export default function ProjetosPage() {
               <div className="flex items-center gap-2">
                 <Link href={`/dashboard/projetos/${selectedProjeto.id}`}>
                   <Button size="sm" variant="secondary" icon={<Edit className="w-3.5 h-3.5" />}>
-                    Gerenciar Ciclo de Vida
+                    Gerenciar Projeto
                   </Button>
                 </Link>
                 <Button

@@ -137,7 +137,7 @@ export default function NovoProjetoPage() {
       const supabase = createClient();
 
       // Carregar dados institucionais
-      const { data: instData } = await supabase.from('dados_instituto').select('*').limit(1).single();
+      const { data: instData } = await supabase.from('dados_instituto').select('*').limit(1).maybeSingle();
       if (instData) {
         setDadosInstituto({
           id: instData.id,
@@ -187,7 +187,7 @@ export default function NovoProjetoPage() {
       await supabase.from('dados_instituto').insert([dadosInstituto]);
     }
     setSavingInstituto(false);
-    alert('Dados institucionais da ONG atualizados com sucesso!');
+    alert('Dados atualizados com sucesso!');
   };
 
   const handleResponsavelSelect = (voluntarioId: string) => {
@@ -257,7 +257,7 @@ export default function NovoProjetoPage() {
                 </div>
                 <div>
                   <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    Dados Institucionais do Instituto Ádapo (Editável)
+                    Dados Institucionais do Instituto Ádapo
                   </h3>
                   <p className="text-xs text-[var(--text-muted)]">
                     Informações oficiais da ONG para emissão de relatórios e Planos de Trabalho (Clique para {showDadosInstituto ? 'ocultar' : 'editar'})
@@ -301,13 +301,13 @@ export default function NovoProjetoPage() {
                 name="nome"
                 value={formData.nome}
                 onChange={handleChange}
-                placeholder="Ex: Clube das Pipas - Arte e Cidadania"
+                placeholder="Ex: Clube das Pipas - Arte de Cria"
                 required
               />
 
               <div>
                 <label className="text-sm font-medium text-[var(--text-secondary)] block mb-1.5">
-                  Descrição e Objetivos (Resumo Executivo)
+                  Descrição e Objetivos (Resumo)
                 </label>
                 <textarea
                   name="descricao"
@@ -363,11 +363,10 @@ export default function NovoProjetoPage() {
                           type="button"
                           onClick={() => setFormData({ ...formData, icone: item.key })}
                           title={item.label}
-                          className={`p-2.5 rounded-xl border flex flex-col items-center justify-center transition-all ${
-                            isSelected
-                              ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/20 font-bold scale-105'
-                              : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'
-                          }`}
+                          className={`p-2.5 rounded-xl border flex flex-col items-center justify-center transition-all ${isSelected
+                            ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/20 font-bold scale-105'
+                            : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'
+                            }`}
                         >
                           <IconComp className="w-5 h-5" />
                         </button>
@@ -403,11 +402,10 @@ export default function NovoProjetoPage() {
                         type="button"
                         onClick={() => setFormData({ ...formData, cor_identificacao: c.hex })}
                         title={c.name}
-                        className={`w-7 h-7 rounded-full border-2 transition-all ${
-                          formData.cor_identificacao.toLowerCase() === c.hex.toLowerCase()
-                            ? 'border-[var(--text-primary)] scale-110 shadow-md ring-2 ring-offset-2 ring-[var(--color-primary)]'
-                            : 'border-transparent opacity-90 hover:opacity-100'
-                        }`}
+                        className={`w-7 h-7 rounded-full border-2 transition-all ${formData.cor_identificacao.toLowerCase() === c.hex.toLowerCase()
+                          ? 'border-[var(--text-primary)] scale-110 shadow-md ring-2 ring-offset-2 ring-[var(--color-primary)]'
+                          : 'border-transparent opacity-90 hover:opacity-100'
+                          }`}
                         style={{ backgroundColor: c.hex }}
                       />
                     ))}

@@ -54,6 +54,10 @@ import {
   Camera,
   Cpu,
   Megaphone,
+  BarChart3,
+  TrendingUp,
+  ExternalLink,
+  Edit3,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -165,111 +169,17 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState(false);
 
-  // Estados dos Accordions (Seções Recolhidas por padrão)
-  const [openAccordions, setOpenAccordions] = useState<{ [key: string]: boolean }>({
-    dados_instituto: false,
-    dados_projeto: false,
-    diagnostico: false,
-    planejamento_1: false,
-    planejamento_2: false,
-    planejamento_3: false,
-    planejamento_4: false,
-    planejamento_5: false,
-    execucao_1: false,
-    pedagogia: false,
-    socioemocional: false,
-    comunicacao: false,
-    parceiros: false,
-    execucao_2: false,
-    encerramento: false,
-    participantes: false,
-  });
+  // Modal/Header retrátil de dados básicos e dados institucionais (Inicia fechado por padrão)
+  const [showHeaderModal, setShowHeaderModal] = useState(false);
 
-  const toggleAccordion = (key: string) => {
-    setOpenAccordions((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  // Navegação por Áreas Principais
+  const [activeArea, setActiveArea] = useState<'gestao' | 'pedagogia' | 'comunicacao' | 'indicadores' | 'parceiros' | 'pessoas'>('gestao');
 
-  const handleExpandAll = () => {
-    const expanded: any = {};
-    Object.keys(openAccordions).forEach((key) => (expanded[key] = true));
-    setOpenAccordions(expanded);
-  };
+  // Sub-navegação da Área de Gestão
+  const [gestaoSubTab, setGestaoSubTab] = useState<'diagnostico' | 'planejamento' | 'execucao' | 'encerramento'>('diagnostico');
 
-  const handleCollapseAll = () => {
-    const collapsed: any = {};
-    Object.keys(openAccordions).forEach((key) => (collapsed[key] = false));
-    setOpenAccordions(collapsed);
-  };
-
-  const getEtapaProgresso = (key: string) => {
-    let filled = 0;
-    let total = 1;
-
-    switch (key) {
-      case 'dados_projeto':
-        total = 5;
-        if (formData.nome) filled++;
-        if (formData.descricao) filled++;
-        if (formData.data_inicio) filled++;
-        if (formData.objetivo_geral) filled++;
-        if (formData.num_beneficiarios_diretos > 0) filled++;
-        break;
-      case 'diagnostico':
-        total = 4;
-        if (diagnosticoData.bairro || diagnosticoData.municipio) filled++;
-        if (diagnosticoData.introducao) filled++;
-        if (diagnosticoData.principais_potencialidades) filled++;
-        if (diagnosticoData.principais_vulnerabilidades) filled++;
-        break;
-      case 'planejamento_1':
-        total = 2;
-        if (formData.apresentacao) filled++;
-        if (formData.justificativa) filled++;
-        break;
-      case 'planejamento_2':
-        total = 2;
-        if (formData.publico_alvo) filled++;
-        if (formData.localidade) filled++;
-        break;
-      case 'planejamento_3':
-        total = 1;
-        if (objetivosEspecificos.length > 0) filled++;
-        break;
-      case 'planejamento_4':
-        total = 3;
-        if (formData.metodologia) filled++;
-        if (formData.acessibilidade) filled++;
-        if (formData.resultados_esperados) filled++;
-        break;
-      case 'planejamento_5':
-        total = 1;
-        if (despesas.length > 0) filled++;
-        break;
-      case 'execucao_1':
-        total = 1;
-        if (acoes.length > 0) filled++;
-        break;
-      case 'execucao_2':
-        total = 1;
-        if (relatorios.length > 0) filled++;
-        break;
-      case 'encerramento':
-        total = 1;
-        if (formData.avaliacao_encerramento) filled++;
-        break;
-      case 'participantes':
-        total = 2;
-        if (inscricoes.length > 0) filled++;
-        if (alocacoes.length > 0) filled++;
-        break;
-      default:
-        total = 1;
-        filled = 1;
-    }
-
-    const percentage = Math.round((filled / total) * 100);
-    return { filled, total, percentage, isComplete: percentage === 100 };
-  };
+  // Sub-navegação interna de Planejamento
+  const [planejamentoSection, setPlanejamentoSection] = useState<'apresentacao' | 'objetivos' | 'ods' | 'metodologia' | 'orcamento'>('apresentacao');
 
   // Dados do Instituto (Editável)
   const [dadosInstituto, setDadosInstituto] = useState<any>({
@@ -298,14 +208,14 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     responsavel_escrita_id: '',
     objetivo_geral: '',
 
-    // Apresentação & Justificativa (Texto longo)
+    // Apresentação & Justificativa
     apresentacao: '',
     justificativa: '',
     publico_alvo: '',
     ingresso_permanencia: '',
     localidade: '',
 
-    // Metodologia, Acessibilidade & Resultados (Empilhados)
+    // Metodologia, Acessibilidade & Resultados
     metodologia: '',
     acessibilidade: '',
     resultados_esperados: '',
@@ -422,7 +332,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       avaliacao_encerramento: projData.avaliacao_encerramento || '',
     });
 
-    // Restaurar Diagnóstico Detalhado
+    // Diagnóstico Detalhado
     if (projData.diagnostico_detalhado && typeof projData.diagnostico_detalhado === 'object') {
       setDiagnosticoData({
         bairro: projData.diagnostico_detalhado.bairro || '',
@@ -442,12 +352,12 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       });
     }
 
-    // Restaurar Objetivos Específicos & Metas
+    // Objetivos Específicos & Metas
     if (Array.isArray(projData.estrutura_objetivos)) {
       setObjetivosEspecificos(projData.estrutura_objetivos);
     }
 
-    // Restaurar ODS
+    // ODS
     if (Array.isArray(projData.ods_selecionadas)) {
       const initialOds: any = {
         'ODS 4': { selected: false, descricao: '' },
@@ -463,7 +373,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       setOdsState(initialOds);
     }
 
-    // Restaurar Despesas com sanitização contra campos nulos
+    // Despesas
     if (Array.isArray(projData.despesas_financeiras)) {
       const sanitizedDespesas = projData.despesas_financeiras.map((item: any) => {
         const qtd = item.quantidade || 1;
@@ -483,7 +393,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     }
 
     // 2. Dados do Instituto
-    const { data: instData } = await supabase.from('dados_instituto').select('*').limit(1).single();
+    const { data: instData } = await supabase.from('dados_instituto').select('*').maybeSingle();
     if (instData) {
       setDadosInstituto(instData);
     }
@@ -534,10 +444,9 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       await supabase.from('dados_instituto').insert([dadosInstituto]);
     }
     setSavingInstituto(false);
-    alert('Dados institucionais da ONG atualizados com sucesso!');
   };
 
-  // Salvar Progresso Geral
+  // Salvar Progresso Geral do Projeto & Institucional
   const handleSaveProgress = async () => {
     setSaving(true);
     setError(null);
@@ -547,6 +456,8 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       .map(([key, val]) => ({ ods: key, descricao: val.descricao }));
 
     const supabase = createClient();
+
+    // Salvar Dados do Projeto
     const { error: updateError } = await supabase
       .from('projetos_sociais')
       .update({
@@ -559,11 +470,13 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       })
       .eq('id', id);
 
+    // Salvar Dados Institucionais
+    await handleSaveDadosInstituto();
+
     if (updateError) {
       setError(updateError.message);
       setSaving(false);
     } else {
-      // Sincronizar requisições de material com a área de Estoque
       try {
         if (Array.isArray(despesas) && despesas.length > 0) {
           for (const item of despesas) {
@@ -607,7 +520,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  // Gerenciamento Dinâmico de Objetivos Específicos & Metas
+  // Objetivos Específicos & Metas
   const handleAddObjetivoEspecifico = () => {
     const newObj: ObjetivoEspecificoItem = {
       id: Date.now().toString(),
@@ -652,7 +565,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     setObjetivosEspecificos(updated);
   };
 
-  // Gerenciamento da Tabela de Despesas Financeiras
+  // Despesas
   const handleAddDespesa = () => {
     const newItem: DespesaItem = {
       id: Date.now().toString(),
@@ -684,7 +597,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     setDespesas(despesas.filter((_, i) => i !== index));
   };
 
-  // Execução & Monitoramento
+  // Execução
   const handleAddAcao = async () => {
     if (!newAcao.nome_acao || !newAcao.data_hora) return;
     const supabase = createClient();
@@ -777,7 +690,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   };
 
   const handleDeleteProjeto = async () => {
-    if (confirm('Tem certeza que deseja excluir permanentemente este projeto social?')) {
+    if (confirm('Tem certeza que deseja excluir permanentemente este projeto?')) {
       const supabase = createClient();
       await supabase.from('projetos_sociais').delete().eq('id', id);
       router.push('/dashboard/projetos');
@@ -785,17 +698,26 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   };
 
   if (loading) {
-    return <div className="p-12 text-center text-sm text-[var(--text-muted)]">Carregando Plano de Trabalho do projeto...</div>;
+    return <div className="p-12 text-center text-sm text-[var(--text-muted)]">Carregando informações do projeto...</div>;
   }
 
   const IconeComponent = ICONES_MAP[formData.icone] || FolderKanban;
   const totalOrcamento = despesas.reduce((acc, item) => acc + (item.subtotal || ((item.quantidade || 0) * (item.valor_unitario || 0)) || 0), 0);
 
+  const areasList = [
+    { key: 'gestao', name: 'Gestão', icon: Briefcase, color: '#F2632D' },
+    { key: 'pedagogia', name: 'Pedagogia', icon: GraduationCap, color: '#93368F' },
+    { key: 'comunicacao', name: 'Comunicação', icon: Megaphone, color: '#EF4444' },
+    { key: 'indicadores', name: 'Indicadores', icon: BarChart3, color: '#3B82F6' },
+    { key: 'parceiros', name: 'Parceiros', icon: Building2, color: '#1C9C82' },
+    { key: 'pessoas', name: 'Pessoas', icon: Users, color: '#F9C859' },
+  ] as const;
+
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <Topbar
         title={formData.nome || 'Projeto Social'}
-        subtitle="Ciclo de Vida do Projeto & Plano de Trabalho Institucional"
+        subtitle="Painel de Gerenciamento do Projeto"
         action={
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" icon={<Printer className="w-4 h-4" />} onClick={() => window.print()}>
@@ -810,801 +732,958 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
         }
       />
 
-      <div className="p-8 max-w-5xl space-y-6 flex-1 overflow-y-auto">
+      <div className="p-8 max-w-6xl space-y-6 flex-1 overflow-y-auto">
         {successMsg && (
           <div className="p-4 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)] text-sm font-medium border border-[var(--color-success)]/20 flex items-center gap-2">
             <CheckCircle className="w-4 h-4" />
-            Progresso do Plano de Trabalho salvo com sucesso!
+            Alterações do projeto e dados institucionais salvas com sucesso!
           </div>
         )}
 
-        {/* CABEÇALHO DO PROJETO COM ÍCONE E COR PERSONALIZADA */}
-        <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-md shrink-0 transition-transform hover:scale-105"
-              style={{ backgroundColor: formData.cor_identificacao }}
-            >
-              <IconeComponent className="w-7 h-7" />
+        {/* CABEÇALHO DO PROJETO COM MODAL RETRÁTIL DE DADOS BÁSICOS & DADOS INSTITUCIONAIS */}
+        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] overflow-hidden transition-all">
+          <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-md shrink-0 transition-transform hover:scale-105"
+                style={{ backgroundColor: formData.cor_identificacao }}
+              >
+                <IconeComponent className="w-7 h-7" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-display font-bold text-xl text-[var(--text-primary)]">{formData.nome}</h2>
+                  <Badge variant={formData.status === 'ativo' ? 'success' : 'warning'}>
+                    {formData.status.toUpperCase()}
+                  </Badge>
+                </div>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  Período: {new Date(formData.data_inicio).toLocaleDateString('pt-BR')} {formData.data_fim ? `até ${new Date(formData.data_fim).toLocaleDateString('pt-BR')}` : ''} • Beneficiários Diretos: {formData.num_beneficiarios_diretos}
+                </p>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="font-display font-bold text-xl text-[var(--text-primary)]">{formData.nome}</h2>
-                <Badge variant={formData.status === 'ativo' ? 'success' : 'warning'}>
-                  {formData.status.toUpperCase()}
-                </Badge>
-              </div>
-              <p className="text-xs text-[var(--text-muted)] mt-1">
-                Período: {new Date(formData.data_inicio).toLocaleDateString('pt-BR')} {formData.data_fim ? `até ${new Date(formData.data_fim).toLocaleDateString('pt-BR')}` : ''} • Impacto Direto: {formData.num_beneficiarios_diretos} beneficiários
-              </p>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant={showHeaderModal ? 'primary' : 'secondary'}
+                size="sm"
+                icon={<Edit3 className="w-4 h-4" />}
+                onClick={() => setShowHeaderModal(!showHeaderModal)}
+              >
+                {showHeaderModal ? 'Recolher Edição' : 'Editar Dados Básicos & Institucionais'}
+                {showHeaderModal ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
+              </Button>
+
+              <Button variant="secondary" size="sm" icon={<Save className="w-4 h-4" />} onClick={handleSaveProgress} disabled={saving}>
+                {saving ? 'Salvando...' : 'Salvar'}
+              </Button>
+              <Button variant="danger" size="sm" icon={<Trash2 className="w-4 h-4" />} onClick={handleDeleteProjeto}>
+                Excluir
+              </Button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" icon={<Save className="w-4 h-4" />} onClick={handleSaveProgress} disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar Progresso'}
-            </Button>
-            <Button variant="danger" size="sm" icon={<Trash2 className="w-4 h-4" />} onClick={handleDeleteProjeto}>
-              Excluir
-            </Button>
-          </div>
-        </div>
+          {/* PAINEL EXPANSÍVEL: DADOS BÁSICOS DO PROJETO + DADOS INSTITUCIONAIS */}
+          {showHeaderModal && (
+            <div className="p-6 border-t border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-6 animate-in fade-in slide-in-from-top-2 duration-200">
+              {/* SEÇÃO A: DADOS BÁSICOS DO PROJETO */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                  <FolderKanban className="w-4 h-4 text-[var(--color-primary)]" />
+                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
+                    Dados Básicos do Projeto
+                  </h3>
+                </div>
 
-        {/* CONTROLES DE EXPANSÃO DAS ETAPAS E BADGES DE PROGRESSO */}
-        <div className="flex items-center justify-between pt-2">
-          <p className="text-xs text-[var(--text-muted)] font-semibold">
-            Clique na etapa para expandir seus campos ou utilize os botões rápidos:
-          </p>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" onClick={handleExpandAll}>
-              Expandir Todas
-            </Button>
-            <Button size="sm" variant="ghost" onClick={handleCollapseAll}>
-              Recolher Todas
-            </Button>
-          </div>
-        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input label="Nome do Projeto *" name="nome" value={formData.nome} onChange={handleChange} required />
+                  <Select
+                    label="Status *"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    options={[
+                      { value: 'planejado', label: 'Planejado' },
+                      { value: 'ativo', label: 'Ativo' },
+                      { value: 'concluido', label: 'Concluído' },
+                      { value: 'cancelado', label: 'Cancelado' },
+                    ]}
+                  />
+                  <Input label="Data de Início *" type="date" name="data_inicio" value={formData.data_inicio} onChange={handleChange} required />
+                  <Input label="Data de Término (Previsão)" type="date" name="data_fim" value={formData.data_fim} onChange={handleChange} />
 
-        {/* LISTA DE SEÇÕES RECOLHIDAS / EXPANSÍVEIS (ACCORDIONS) */}
-        <div className="space-y-4">
-          {/* ======================================================== */}
-          {/* ACCORDION 0: DADOS INSTITUCIONAIS DA ONG (EDITÁVEL) */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden shadow-[var(--shadow-card)]">
-            <button
-              type="button"
-              onClick={() => toggleAccordion('dados_instituto')}
-              className="w-full p-4 flex items-center justify-between bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Building2 className="w-5 h-5 text-[var(--color-primary)]" />
-                <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                  Dados Institucionais do Instituto Ádapo (Editável)
-                </h3>
+                  <Input label="Nº de Beneficiários Diretos" type="number" name="num_beneficiarios_diretos" value={formData.num_beneficiarios_diretos} onChange={handleChange} />
+                  <Input label="Nº de Beneficiários Indiretos" type="number" name="num_beneficiarios_indiretos" value={formData.num_beneficiarios_indiretos} onChange={handleChange} />
+
+                  <Select
+                    label="Responsável pela Escrita / Elaboração"
+                    name="responsavel_escrita_id"
+                    value={formData.responsavel_escrita_id}
+                    onChange={handleChange}
+                    options={[
+                      { value: '', label: 'Selecione o voluntário...' },
+                      ...todosVoluntarios.map((v) => ({ value: v.id, label: v.nome_completo })),
+                    ]}
+                  />
+
+                  <div>
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Cor do Ícone</label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {CORES_ARCO_IRIS.map((cor) => (
+                        <button
+                          key={cor.hex}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, cor_identificacao: cor.hex })}
+                          className={`w-6 h-6 rounded-full border transition-transform ${formData.cor_identificacao === cor.hex ? 'scale-125 border-white shadow-md ring-2 ring-[var(--color-primary)]' : 'border-transparent opacity-80 hover:opacity-100'}`}
+                          style={{ backgroundColor: cor.hex }}
+                          title={cor.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Resumo / Descrição do Projeto</label>
+                  <textarea
+                    name="descricao"
+                    value={formData.descricao}
+                    onChange={handleChange}
+                    rows={2}
+                    className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                    placeholder="Breve resumo sobre a atuação e metas deste projeto..."
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="purple">Institucional</Badge>
-                {openAccordions['dados_instituto'] ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-              </div>
-            </button>
 
-            {openAccordions['dados_instituto'] && (
-              <div className="p-6 border-t border-[var(--border-default)] space-y-4">
+              {/* SEÇÃO B: DADOS INSTITUCIONAIS DO INSTITUTO ÁDAPO */}
+              <div className="space-y-4 pt-4 border-t border-[var(--border-default)]">
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                  <Building2 className="w-4 h-4 text-[var(--color-accent-purple)]" />
+                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
+                    Dados Institucionais da Organização (Instituto Ádapo)
+                  </h3>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input label="Razão Social" value={dadosInstituto.razao_social} onChange={(e) => setDadosInstituto({ ...dadosInstituto, razao_social: e.target.value })} />
                   <Input label="CNPJ" value={dadosInstituto.cnpj} onChange={(e) => setDadosInstituto({ ...dadosInstituto, cnpj: e.target.value })} />
                   <Input label="Endereço Institucional" value={dadosInstituto.endereco} onChange={(e) => setDadosInstituto({ ...dadosInstituto, endereco: e.target.value })} />
                   <Input label="Telefone" value={dadosInstituto.telefone} onChange={(e) => setDadosInstituto({ ...dadosInstituto, telefone: e.target.value })} />
-                  <Input label="E-mail" value={dadosInstituto.email} onChange={(e) => setDadosInstituto({ ...dadosInstituto, email: e.target.value })} />
-                  <Input label="Presidente / Representante" value={dadosInstituto.presidente} onChange={(e) => setDadosInstituto({ ...dadosInstituto, presidente: e.target.value })} />
-                </div>
-                <div className="flex justify-end">
-                  <Button size="sm" variant="secondary" onClick={handleSaveDadosInstituto} disabled={savingInstituto}>
-                    {savingInstituto ? 'Salvando...' : 'Atualizar Dados da ONG'}
-                  </Button>
+                  <Input label="E-mail Institucional" value={dadosInstituto.email} onChange={(e) => setDadosInstituto({ ...dadosInstituto, email: e.target.value })} />
+                  <Input label="Presidente / Representante Legal" value={dadosInstituto.presidente} onChange={(e) => setDadosInstituto({ ...dadosInstituto, presidente: e.target.value })} />
                 </div>
               </div>
-            )}
+
+              <div className="flex justify-end pt-2">
+                <Button size="sm" variant="primary" icon={<Save className="w-4 h-4" />} onClick={handleSaveProgress} disabled={saving}>
+                  {saving ? 'Salvando...' : 'Salvar Dados Básicos & Institucionais'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* PAINEL DE NAVEGAÇÃO SUPERIOR POR ÁREAS DO PROJETO */}
+        <div className="p-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+            {areasList.map((area) => {
+              const IconComp = area.icon;
+              const isActive = activeArea === area.key;
+              return (
+                <button
+                  key={area.key}
+                  type="button"
+                  onClick={() => setActiveArea(area.key)}
+                  className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-xs font-bold ${isActive
+                    ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-sm scale-[1.02]'
+                    : 'border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                >
+                  <IconComp className="w-5 h-5" style={{ color: isActive ? 'var(--color-primary)' : area.color }} />
+                  <span>{area.name}</span>
+                </button>
+              );
+            })}
           </div>
+        </div>
 
-          {/* ======================================================== */}
-          {/* ACCORDION 1: ETAPA 1 - DIAGNÓSTICO */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden shadow-[var(--shadow-card)]">
-            <button
-              type="button"
-              onClick={() => toggleAccordion('diagnostico')}
-              className="w-full p-4 flex items-center justify-between bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <ClipboardList className="w-5 h-5 text-[var(--color-primary)]" />
-                <div>
-                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    Etapa 1: Diagnóstico da Comunidade & Contexto Social
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)]">Levantamento territorial, escuta comunitária e análise socioeconômica</p>
+        {/* CONTEÚDO CORRESPONDENTE À ÁREA SELECIONADA */}
+        <div className="space-y-6">
+
+          {/* ========================================================================= */}
+          {/* ÁREA 1: GESTÃO (COM SUB-NAVEGAÇÃO: DIAGNÓSTICO, PLANEJAMENTO, EXECUÇÃO, ENCERRAMENTO) */}
+          {/* ========================================================================= */}
+          {activeArea === 'gestao' && (
+            <div className="space-y-6">
+              {/* SUB-BARRA DA GESTÃO */}
+              <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-3 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setGestaoSubTab('diagnostico')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${gestaoSubTab === 'diagnostico'
+                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                    : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                >
+                  <ClipboardList className="w-4 h-4" />
+                  Diagnóstico
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGestaoSubTab('planejamento')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${gestaoSubTab === 'planejamento'
+                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                    : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  Planejamento
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGestaoSubTab('execucao')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${gestaoSubTab === 'execucao'
+                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                    : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                >
+                  <Clock className="w-4 h-4" />
+                  Execução e Monitoramento
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGestaoSubTab('encerramento')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${gestaoSubTab === 'encerramento'
+                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                    : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                >
+                  <CheckSquare className="w-4 h-4" />
+                  Encerramento
+                </button>
+              </div>
+
+              {/* SUB-TELA GESTÃO: DIAGNÓSTICO */}
+              {gestaoSubTab === 'diagnostico' && (
+                <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                  <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                    <div>
+                      <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                        Diagnóstico da Comunidade & Contexto Social
+                      </h3>
+                      <p className="text-xs text-[var(--text-muted)]">Mapeamento de potencialidades, vulnerabilidades territoriais e demandas comunitárias</p>
+                    </div>
+                    <Badge variant="warning">Diagnóstico</Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Input label="Bairro" name="bairro" value={diagnosticoData.bairro} onChange={handleDiagnosticoChange} placeholder="Ex: Comunidade Sol Nascente" />
+                    <Input label="Município" name="municipio" value={diagnosticoData.municipio} onChange={handleDiagnosticoChange} placeholder="Ex: São Paulo" />
+                    <Input label="Estado (UF)" name="estado" value={diagnosticoData.estado} onChange={handleDiagnosticoChange} placeholder="SP" />
+                    <Input label="Data do Diagnóstico" type="date" name="data_diagnostico" value={diagnosticoData.data_diagnostico} onChange={handleDiagnosticoChange} />
+                    <div className="md:col-span-2">
+                      <Select
+                        label="Responsável pelo Diagnóstico"
+                        options={[
+                          { value: '', label: 'Selecione o voluntário responsável...' },
+                          ...todosVoluntarios.map((v) => ({ value: v.id, label: `${v.nome_completo} (${v.area_atuacao || 'Operacional'})` })),
+                        ]}
+                        value={diagnosticoData.responsavel_diagnostico_id}
+                        onChange={(e) => setDiagnosticoData({ ...diagnosticoData, responsavel_diagnostico_id: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Introdução & Histórico Territorial</label>
+                      <textarea
+                        name="introducao"
+                        value={diagnosticoData.introducao}
+                        onChange={handleDiagnosticoChange}
+                        rows={3}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]"
+                        placeholder="Contexto do bairro/comunidade atenda..."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Objetivo Geral do Diagnóstico</label>
+                      <textarea
+                        name="objetivo"
+                        value={diagnosticoData.objetivo}
+                        onChange={handleDiagnosticoChange}
+                        rows={3}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]"
+                        placeholder="O que se busca identificar..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Principais Potencialidades Identificadas</label>
+                      <textarea
+                        name="principais_potencialidades"
+                        value={diagnosticoData.principais_potencialidades}
+                        onChange={handleDiagnosticoChange}
+                        rows={3}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--color-success)]"
+                        placeholder="Redes de apoio, lideranças locais, equipamentos públicos ativos..."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Principais Vulnerabilidades & Desafios</label>
+                      <textarea
+                        name="principais_vulnerabilidades"
+                        value={diagnosticoData.principais_vulnerabilidades}
+                        onChange={handleDiagnosticoChange}
+                        rows={3}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--color-danger)]"
+                        placeholder="Insegurança alimentar, desemprego, violência urbana..."
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge variant={getEtapaProgresso('diagnostico').isComplete ? 'success' : 'warning'}>
-                  {getEtapaProgresso('diagnostico').percentage}% Preenchido
-                </Badge>
-                {openAccordions['diagnostico'] ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-              </div>
-            </button>
+              )}
 
-            {openAccordions['diagnostico'] && (
-              <div className="p-6 border-t border-[var(--border-default)] space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Input label="Bairro" name="bairro" value={diagnosticoData.bairro} onChange={handleDiagnosticoChange} placeholder="Ex: Comunidade Sol Nascente" />
-                  <Input label="Município" name="municipio" value={diagnosticoData.municipio} onChange={handleDiagnosticoChange} placeholder="Ex: São Paulo" />
-                  <Input label="Estado (UF)" name="estado" value={diagnosticoData.estado} onChange={handleDiagnosticoChange} placeholder="SP" />
-                  <Input label="Data do Diagnóstico" type="date" name="data_diagnostico" value={diagnosticoData.data_diagnostico} onChange={handleDiagnosticoChange} />
-                  <div className="md:col-span-2">
-                    <Select
-                      label="Responsável pelo Preenchimento do Diagnóstico"
-                      options={[
-                        { value: '', label: 'Selecione o voluntário responsável...' },
-                        ...todosVoluntarios.map((v) => ({ value: v.id, label: `${v.nome_completo} (${v.area_atuacao || 'Operacional'})` })),
-                      ]}
-                      value={diagnosticoData.responsavel_diagnostico_id}
-                      onChange={handleDiagnosticoChange}
-                      name="responsavel_diagnostico_id"
+              {/* SUB-TELA GESTÃO: PLANEJAMENTO */}
+              {gestaoSubTab === 'planejamento' && (
+                <div className="space-y-6">
+                  {/* SELETOR DE SEÇÕES DO PLANEJAMENTO */}
+                  <div className="flex items-center gap-2 bg-[var(--bg-elevated)] p-1.5 rounded-xl border border-[var(--border-default)] overflow-x-auto">
+                    <button
+                      type="button"
+                      onClick={() => setPlanejamentoSection('apresentacao')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${planejamentoSection === 'apresentacao' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                    >
+                      Apresentação & Justificativa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlanejamentoSection('objetivos')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${planejamentoSection === 'objetivos' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                    >
+                      Objetivos & Metas ({objetivosEspecificos.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlanejamentoSection('ods')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${planejamentoSection === 'ods' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                    >
+                      Alinhamento ODS
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlanejamentoSection('metodologia')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${planejamentoSection === 'metodologia' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                    >
+                      Metodologia & Resultados
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlanejamentoSection('orcamento')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${planejamentoSection === 'orcamento' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                    >
+                      Orçamento & Despesas ({despesas.length})
+                    </button>
+                  </div>
+
+                  {/* SEÇÃO PLANEJAMENTO: APRESENTAÇÃO */}
+                  {planejamentoSection === 'apresentacao' && (
+                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                      <h3 className="font-display font-bold text-base text-[var(--text-primary)] border-b border-[var(--border-default)] pb-2">
+                        Apresentação, Justificativa & Público-Alvo
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Apresentação do Projeto</label>
+                          <textarea name="apresentacao" value={formData.apresentacao} onChange={handleChange} rows={4} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Apresentação detalhada da proposta..." />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Justificativa Social</label>
+                          <textarea name="justificativa" value={formData.justificativa} onChange={handleChange} rows={4} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Relevância da ação e impacto socioambiental..." />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Input label="Público-Alvo" name="publico_alvo" value={formData.publico_alvo} onChange={handleChange} placeholder="Ex: Crianças de 6 a 12 anos" />
+                        <Input label="Critérios de Ingresso / Permanência" name="ingresso_permanencia" value={formData.ingresso_permanencia} onChange={handleChange} placeholder="Ex: Frequência escolar mínima" />
+                        <Input label="Localidade da Execução" name="localidade" value={formData.localidade} onChange={handleChange} placeholder="Ex: Sede Ádapo / Escola Comunitária" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SEÇÃO PLANEJAMENTO: OBJETIVOS & METAS */}
+                  {planejamentoSection === 'objetivos' && (
+                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-6">
+                      <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                        <div>
+                          <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Objetivo Geral & Objetivos Específicos com Metas</h3>
+                          <p className="text-xs text-[var(--text-muted)]">Estruturação de metas quantitativas e qualitativas</p>
+                        </div>
+                        <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={handleAddObjetivoEspecifico}>
+                          Adicionar Objetivo
+                        </Button>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Objetivo Geral do Projeto</label>
+                        <textarea name="objetivo_geral" value={formData.objetivo_geral} onChange={handleChange} rows={2} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] font-medium" placeholder="Ex: Promover a inclusão social e o desenvolvimento cognitivo de 100 crianças..." />
+                      </div>
+
+                      {objetivosEspecificos.length === 0 ? (
+                        <p className="text-xs text-[var(--text-muted)] italic text-center py-6">Nenhum objetivo específico cadastrado. Clique no botão acima para adicionar.</p>
+                      ) : (
+                        <div className="space-y-4">
+                          {objetivosEspecificos.map((obj, objIdx) => (
+                            <div key={obj.id} className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2 flex-1">
+                                  <span className="w-6 h-6 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center text-xs font-bold shrink-0">{objIdx + 1}</span>
+                                  <Input placeholder="Título do Objetivo Específico..." value={obj.titulo_objetivo} onChange={(e) => handleUpdateObjetivoTitulo(objIdx, e.target.value)} />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button size="sm" variant="ghost" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => handleAddMetaToObjetivo(objIdx)}>
+                                    Adicionar Meta
+                                  </Button>
+                                  <button type="button" onClick={() => handleRemoveObjetivoEspecifico(objIdx)} className="text-[var(--color-danger)] p-1 hover:opacity-80">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Lista de Metas */}
+                              {obj.metas.length > 0 && (
+                                <div className="pl-6 space-y-2 border-l-2 border-[var(--color-primary)]/30">
+                                  {obj.metas.map((meta, metaIdx) => (
+                                    <div key={meta.id} className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] grid grid-cols-1 md:grid-cols-4 gap-2 text-xs">
+                                      <div className="md:col-span-2">
+                                        <Input label="Descrição da Meta" value={meta.descricao_meta} onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'descricao_meta', e.target.value)} placeholder="Ex: Atingir 95% de frequência nas oficinas" />
+                                      </div>
+                                      <Input label="Procedimento de Coleta" value={meta.procedimento_coleta} onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'procedimento_coleta', e.target.value)} placeholder="Lista de presença / Formulário" />
+                                      <div className="flex items-end gap-2">
+                                        <Input label="Responsável" value={meta.responsavel_coleta} onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'responsavel_coleta', e.target.value)} placeholder="Educador / Coordenador" />
+                                        <button type="button" onClick={() => handleRemoveMeta(objIdx, metaIdx)} className="text-[var(--color-danger)] p-2 hover:opacity-80">
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* SEÇÃO PLANEJAMENTO: ODS */}
+                  {planejamentoSection === 'ods' && (
+                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                      <h3 className="font-display font-bold text-base text-[var(--text-primary)] border-b border-[var(--border-default)] pb-2">
+                        Alinhamento aos Objetivos de Desenvolvimento Sustentável (ODS)
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {ODS_INSTITUCIONAIS.map((ods) => (
+                          <div key={ods.key} className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-2">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={odsState[ods.key]?.selected || false}
+                                onChange={(e) => setOdsState({ ...odsState, [ods.key]: { ...odsState[ods.key], selected: e.target.checked } })}
+                                className="w-4 h-4 rounded text-[var(--color-primary)]"
+                              />
+                              <span className="font-bold text-xs text-[var(--text-primary)]">{ods.label}</span>
+                            </label>
+                            {odsState[ods.key]?.selected && (
+                              <textarea
+                                value={odsState[ods.key]?.descricao || ''}
+                                onChange={(e) => setOdsState({ ...odsState, [ods.key]: { ...odsState[ods.key], descricao: e.target.value } })}
+                                rows={2}
+                                className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                                placeholder={`Como este projeto contribui para o ${ods.key}...`}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SEÇÃO PLANEJAMENTO: METODOLOGIA & RESULTADOS */}
+                  {planejamentoSection === 'metodologia' && (
+                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                      <h3 className="font-display font-bold text-base text-[var(--text-primary)] border-b border-[var(--border-default)] pb-2">
+                        Metodologia, Acessibilidade & Resultados Esperados
+                      </h3>
+                      <div>
+                        <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Metodologia de Execução</label>
+                        <textarea name="metodologia" value={formData.metodologia} onChange={handleChange} rows={3} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Abordagem pedagógica e operacional..." />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Medidas de Acessibilidade & Inclusão</label>
+                        <textarea name="acessibilidade" value={formData.acessibilidade} onChange={handleChange} rows={2} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Garantia de acesso físico, sensorial e social..." />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Resultados Esperados</label>
+                        <textarea name="resultados_esperados" value={formData.resultados_esperados} onChange={handleChange} rows={3} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Impactos esperados ao final do ciclo..." />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SEÇÃO PLANEJAMENTO: ORÇAMENTO & DESPESAS */}
+                  {planejamentoSection === 'orcamento' && (
+                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                      <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                        <div>
+                          <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Plano Orçamentário / Recursos Financeiros</h3>
+                          <p className="text-xs text-[var(--text-muted)]">Previsão total: <strong className="text-[var(--color-primary)]">R$ {totalOrcamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></p>
+                        </div>
+                        <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={handleAddDespesa}>
+                          Adicionar Item de Despesa
+                        </Button>
+                      </div>
+
+                      {despesas.length === 0 ? (
+                        <p className="text-xs text-[var(--text-muted)] italic text-center py-6">Nenhum item orçado. Clique no botão acima para cadastrar despesas.</p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-[var(--bg-secondary)] text-[var(--text-secondary)] font-bold">
+                              <tr>
+                                <th className="p-2.5 rounded-l-lg">Categoria</th>
+                                <th className="p-2.5">Item / Insumo</th>
+                                <th className="p-2.5 w-20 text-center">Qtd</th>
+                                <th className="p-2.5 w-28 text-right">Valor Unit. (R$)</th>
+                                <th className="p-2.5 w-28 text-right">Subtotal (R$)</th>
+                                <th className="p-2.5 w-12 text-center rounded-r-lg">Ação</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[var(--border-default)]">
+                              {despesas.map((item, idx) => (
+                                <tr key={item.id}>
+                                  <td className="p-2">
+                                    <Select options={CATEGORIAS_DESPESA.map((c) => ({ value: c, label: c }))} value={item.categoria} onChange={(e) => handleUpdateDespesa(idx, 'categoria', e.target.value)} />
+                                  </td>
+                                  <td className="p-2">
+                                    <Input value={item.item_nome} onChange={(e) => handleUpdateDespesa(idx, 'item_nome', e.target.value)} placeholder="Nome do item..." />
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <Input type="number" value={item.quantidade} onChange={(e) => handleUpdateDespesa(idx, 'quantidade', e.target.value)} />
+                                  </td>
+                                  <td className="p-2 text-right">
+                                    <Input type="number" step="0.01" value={item.valor_unitario} onChange={(e) => handleUpdateDespesa(idx, 'valor_unitario', e.target.value)} />
+                                  </td>
+                                  <td className="p-2 text-right font-bold text-[var(--text-primary)]">
+                                    R$ {(item.subtotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <button type="button" onClick={() => handleRemoveDespesa(idx)} className="text-[var(--color-danger)] p-1 hover:opacity-80">
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SUB-TELA GESTÃO: EXECUÇÃO E MONITORAMENTO */}
+              {gestaoSubTab === 'execucao' && (
+                <div className="space-y-6">
+                  {/* Cronograma de Ações */}
+                  <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                    <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                      <div>
+                        <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Registros de Ações do Projeto</h3>
+                        <p className="text-xs text-[var(--text-muted)]">Oficinas, atividades comunitárias e encontros executados</p>
+                      </div>
+                      <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddAcaoModal(true)}>
+                        Cadastrar Ação
+                      </Button>
+                    </div>
+
+                    {acoes.length === 0 ? (
+                      <p className="text-xs text-[var(--text-muted)] italic text-center py-6">Nenhuma ação cadastrada no cronograma.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {acoes.map((acao) => (
+                          <div key={acao.id} className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-[var(--text-primary)]">{acao.nome_acao}</span>
+                              <Badge variant="purple">{acao.documento_estruturador}</Badge>
+                            </div>
+                            <p className="text-[11px] text-[var(--text-muted)]">Data/Hora: {new Date(acao.data_hora).toLocaleString('pt-BR')}</p>
+                            {acao.descricao && <p className="text-xs text-[var(--text-secondary)]">{acao.descricao}</p>}
+                            <div className="flex justify-end pt-1">
+                              <button type="button" onClick={() => handleRemoveAcao(acao.id)} className="text-xs text-[var(--color-danger)] font-semibold hover:underline">Excluir Ação</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Relatórios Mensais de Monitoramento */}
+                  <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                    <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                      <div>
+                        <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Relatórios Mensais de Monitoramento</h3>
+                        <p className="text-xs text-[var(--text-muted)]">Acompanhamento contínuo de resultados e metas</p>
+                      </div>
+                      <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddRelatorioModal(true)}>
+                        Novo Relatório
+                      </Button>
+                    </div>
+
+                    {relatorios.length === 0 ? (
+                      <p className="text-xs text-[var(--text-muted)] italic text-center py-6">Nenhum relatório de monitoramento emitido.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {relatorios.map((rel) => (
+                          <div key={rel.id} className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-[var(--text-primary)]">Mês de Referência: {rel.mes_referencia}</span>
+                              <button type="button" onClick={() => handleRemoveRelatorio(rel.id)} className="text-[var(--color-danger)] text-xs font-semibold hover:underline">Excluir</button>
+                            </div>
+                            {rel.resumo_avanco && <p className="text-xs text-[var(--text-secondary)]"><strong>Avanços:</strong> {rel.resumo_avanco}</p>}
+                            {rel.metas_atingidas && <p className="text-xs text-[var(--color-success)]"><strong>Metas:</strong> {rel.metas_atingidas}</p>}
+                            {rel.dificuldades_encontradas && <p className="text-xs text-[var(--color-danger)]"><strong>Desafios:</strong> {rel.dificuldades_encontradas}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TELA GESTÃO: ENCERRAMENTO */}
+              {gestaoSubTab === 'encerramento' && (
+                <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                  <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                    <div>
+                      <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Avaliação de Encerramento & Prestação de Contas</h3>
+                      <p className="text-xs text-[var(--text-muted)]">Relatório final de impacto e conclusão do ciclo de vida</p>
+                    </div>
+                    <Badge variant="neutral">Encerramento</Badge>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Relatório & Parecer de Encerramento</label>
+                    <textarea
+                      name="avaliacao_encerramento"
+                      value={formData.avaliacao_encerramento}
+                      onChange={handleChange}
+                      rows={6}
+                      className="w-full p-4 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                      placeholder="Avaliação de alcance de metas, sustentabilidade da ação comunitária, lições aprendidas e encaminhamentos..."
                     />
                   </div>
                 </div>
+              )}
+            </div>
+          )}
 
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Introdução</label>
-                    <textarea name="introducao" value={diagnosticoData.introducao} onChange={handleDiagnosticoChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Apresentação inicial da região..." />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Objetivo do Diagnóstico</label>
-                    <textarea name="objetivo" value={diagnosticoData.objetivo} onChange={handleDiagnosticoChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Metodologia Utilizada</label>
-                    <textarea name="metodologia" value={diagnosticoData.metodologia} onChange={handleDiagnosticoChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Público Possível para Trabalho</label>
-                    <textarea name="publico_possivel" value={diagnosticoData.publico_possivel} onChange={handleDiagnosticoChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Situação Habitacional da Comunidade</label>
-                    <textarea name="situacao_habitacional" value={diagnosticoData.situacao_habitacional} onChange={handleDiagnosticoChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Situação Socioeconômica da Comunidade</label>
-                    <textarea name="situacao_socioeconomica" value={diagnosticoData.situacao_socioeconomica} onChange={handleDiagnosticoChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Principais Potencialidades</label>
-                    <textarea name="principais_potencialidades" value={diagnosticoData.principais_potencialidades} onChange={handleDiagnosticoChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Principais Vulnerabilidades</label>
-                    <textarea name="principais_vulnerabilidades" value={diagnosticoData.principais_vulnerabilidades} onChange={handleDiagnosticoChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Outras Informações</label>
-                    <textarea name="outras_informacoes" value={diagnosticoData.outras_informacoes} onChange={handleDiagnosticoChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ======================================================== */}
-          {/* ACCORDION 2: ETAPA 2 - PLANEJAMENTO (PLANO DE TRABALHO) */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden shadow-[var(--shadow-card)]">
-            <button
-              type="button"
-              onClick={() => toggleAccordion('planejamento_1')}
-              className="w-full p-4 flex items-center justify-between bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Target className="w-5 h-5 text-[var(--color-primary)]" />
-                <div>
-                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    Etapa 2: Planejamento & Plano de Trabalho
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)]">Apresentação, justificativa, público-alvo, metas, ODS e orçamento financeiro</p>
-                </div>
-              </div>
-              {openAccordions['planejamento_1'] ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-            </button>
-
-            {openAccordions['planejamento_1'] && (
-              <div className="p-6 border-t border-[var(--border-default)] space-y-6">
-                {/* 1. Apresentação & Justificativa */}
-                <div className="space-y-4">
-                  <h4 className="font-display font-bold text-sm text-[var(--text-primary)] border-b border-[var(--border-default)] pb-2">
-                    1. Apresentação & Justificativa do Projeto
-                  </h4>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Apresentação</label>
-                    <textarea name="apresentacao" value={formData.apresentacao} onChange={handleChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Justificativa</label>
-                    <textarea name="justificativa" value={formData.justificativa} onChange={handleChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Público-Alvo (Texto Longo)</label>
-                    <textarea name="publico_alvo" value={formData.publico_alvo} onChange={handleChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Ingresso e Permanência (Texto Longo)</label>
-                    <textarea name="ingresso_permanencia" value={formData.ingresso_permanencia} onChange={handleChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Localidade / Sede (Texto Longo)</label>
-                    <textarea name="localidade" value={formData.localidade} onChange={handleChange} rows={3} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                </div>
-
-                {/* 2. Hierarquia de Objetivos Específicos & Metas */}
-                <div className="pt-4 border-t border-[var(--border-default)] space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                      2. Objetivos Específicos & Metas de Avaliação
-                    </h4>
-                    <Button size="sm" icon={<Plus className="w-3.5 h-3.5" />} onClick={handleAddObjetivoEspecifico}>
-                      Adicionar Objetivo Específico
-                    </Button>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--color-primary)] block mb-1">Objetivo Geral do Projeto</label>
-                    <textarea name="objetivo_geral" value={formData.objetivo_geral} onChange={handleChange} rows={2} placeholder="Descreva o Objetivo Geral do Projeto..." className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] font-medium" />
-                  </div>
-
-                  {objetivosEspecificos.map((obj, objIdx) => (
-                    <div key={obj.id} className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)]">
-                          Objetivo Específico #{objIdx + 1}
+          {/* ========================================================================= */}
+          {/* ÁREA 2: PEDAGOGIA (VISUALIZAÇÃO + BANNER EM CONSTRUÇÃO + PREVIEW) */}
+          {/* ========================================================================= */}
+          {activeArea === 'pedagogia' && (
+            <div className="space-y-6">
+              <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-[#93368F]/10 text-[#93368F]">
+                      <GraduationCap className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">Área de Pedagogia do Projeto</h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                          ## Em Construção ##
                         </span>
-                        <button onClick={() => handleRemoveObjetivoEspecifico(objIdx)} className="text-xs text-[var(--color-danger)] hover:underline flex items-center gap-1">
-                          <Trash2 className="w-3.5 h-3.5" /> Remover Objetivo
-                        </button>
                       </div>
-
-                      <Input
-                        placeholder="Ex: Promover oficinas semanais de informática e letramento digital"
-                        value={obj.titulo_objetivo}
-                        onChange={(e) => handleUpdateObjetivoTitulo(objIdx, e.target.value)}
-                      />
-
-                      {/* Lista de Metas do Objetivo Específico */}
-                      <div className="pl-4 border-l-2 border-[var(--color-primary)]/30 space-y-3 pt-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-[var(--text-primary)]">Metas deste Objetivo:</span>
-                          <button onClick={() => handleAddMetaToObjetivo(objIdx)} className="text-xs text-[var(--color-primary)] font-bold hover:underline flex items-center gap-1">
-                            <Plus className="w-3 h-3" /> Adicionar Meta
-                          </button>
-                        </div>
-
-                        {obj.metas.length === 0 ? (
-                          <p className="text-[11px] text-[var(--text-muted)] italic">Nenhuma meta adicionada para este objetivo ainda.</p>
-                        ) : (
-                          obj.metas.map((m, mIdx) => (
-                            <div key={m.id} className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold text-[var(--text-primary)]">Meta #{mIdx + 1}</span>
-                                <button onClick={() => handleRemoveMeta(objIdx, mIdx)} className="text-[10px] text-[var(--color-danger)] hover:underline">Remover Meta</button>
-                              </div>
-                              <Input placeholder="Descrição da Meta (ex: Atender 50 jovens por semestre)" value={m.descricao_meta} onChange={(e) => handleUpdateMeta(objIdx, mIdx, 'descricao_meta', e.target.value)} />
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-                                <Input label="Procedimento de Coleta (Atividade)" value={m.procedimento_coleta} onChange={(e) => handleUpdateMeta(objIdx, mIdx, 'procedimento_coleta', e.target.value)} placeholder="Ex: Chamada presencial" />
-                                <Input label="Forma de Coleta" value={m.forma_coleta} onChange={(e) => handleUpdateMeta(objIdx, mIdx, 'forma_coleta', e.target.value)} placeholder="Ex: Mensal / Semanal" />
-                                <Input label="Responsável pela Coleta (Área)" value={m.responsavel_coleta} onChange={(e) => handleUpdateMeta(objIdx, mIdx, 'responsavel_coleta', e.target.value)} placeholder="Ex: Equipe Pedagógica" />
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
+                      <p className="text-xs text-[var(--text-muted)]">Planos de aula, diretrizes metodológicas e acompanhamento socioemocional</p>
                     </div>
-                  ))}
-                </div>
-
-                {/* 3. Metodologia, Acessibilidade & Resultados (Empilhados Um Abaixo do Outro) */}
-                <div className="pt-4 border-t border-[var(--border-default)] space-y-4">
-                  <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    3. Metodologia, Acessibilidade & Resultados Esperados
-                  </h4>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Metodologia</label>
-                    <textarea name="metodologia" value={formData.metodologia} onChange={handleChange} rows={4} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Acessibilidade</label>
-                    <textarea name="acessibilidade" value={formData.acessibilidade} onChange={handleChange} rows={4} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">Resultados Esperados</label>
-                    <textarea name="resultados_esperados" value={formData.resultados_esperados} onChange={handleChange} rows={4} className="w-full p-3 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" />
-                  </div>
-                </div>
 
-                {/* 4. Sustentabilidade & ODS (Sem emoji) */}
-                <div className="pt-4 border-t border-[var(--border-default)] space-y-3">
-                  <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    4. Sustentabilidade & ODS Trabalhadas pelo Instituto Ádapo
-                  </h4>
-                  <div className="space-y-3">
-                    {ODS_INSTITUCIONAIS.map((odsItem) => {
-                      const state = odsState[odsItem.key] || { selected: false, descricao: '' };
-                      return (
-                        <div key={odsItem.key} className="p-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] space-y-2">
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={state.selected}
-                              onChange={(e) => setOdsState({ ...odsState, [odsItem.key]: { ...state, selected: e.target.checked } })}
-                              className="w-4 h-4 rounded text-[var(--color-primary)]"
-                            />
-                            <span className="font-bold text-xs text-[var(--text-primary)]">{odsItem.label}</span>
-                          </label>
-
-                          {state.selected && (
-                            <div className="pl-7 pt-1">
-                              <textarea
-                                placeholder={`Descreva a contribuição do projeto para o ${odsItem.label}...`}
-                                value={state.descricao}
-                                onChange={(e) => setOdsState({ ...odsState, [odsItem.key]: { ...state, descricao: e.target.value } })}
-                                rows={2}
-                                className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 5. Recursos de Despesa / Orçamento Financeiro (Sem emoji) */}
-                <div className="pt-4 border-t border-[var(--border-default)] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                      5. Recursos de Despesa / Orçamento Financeiro
-                    </h4>
-                    <Button size="sm" icon={<Plus className="w-3.5 h-3.5" />} onClick={handleAddDespesa}>
-                      Adicionar Item de Despesa
+                  <Link href="/dashboard/pedagogia">
+                    <Button size="sm" variant="secondary" icon={<ExternalLink className="w-4 h-4" />}>
+                      Abrir Módulo de Pedagogia
                     </Button>
-                  </div>
-
-                  {despesas.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-[var(--text-muted)] border border-dashed border-[var(--border-default)] rounded-xl">
-                      Nenhuma despesa orçada ainda.
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="border-b border-[var(--border-default)] text-[var(--text-muted)] font-semibold">
-                            <th className="py-2 px-2 w-48">Categoria</th>
-                            <th className="py-2 px-2">Item</th>
-                            <th className="py-2 px-2">Descrição</th>
-                            <th className="py-2 px-2 w-20">Qtd.</th>
-                            <th className="py-2 px-2 w-28">Valor Unit. (R$)</th>
-                            <th className="py-2 px-2 w-28">Subtotal (R$)</th>
-                            <th className="py-2 px-1 text-right">Ação</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--border-default)]">
-                          {despesas.map((item, idx) => (
-                            <tr key={item.id || idx}>
-                              <td className="py-2 px-2">
-                                <Select
-                                  options={CATEGORIAS_DESPESA.map((c) => ({ value: c, label: c }))}
-                                  value={item.categoria}
-                                  onChange={(e) => handleUpdateDespesa(idx, 'categoria', e.target.value)}
-                                />
-                              </td>
-                              <td className="py-2 px-2">
-                                <input
-                                  type="text"
-                                  placeholder="Ex: Papel Sulfite A4"
-                                  value={item.item_nome || ''}
-                                  onChange={(e) => handleUpdateDespesa(idx, 'item_nome', e.target.value)}
-                                  className="w-full p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs"
-                                />
-                              </td>
-                              <td className="py-2 px-2">
-                                <input
-                                  type="text"
-                                  placeholder="Detalhes..."
-                                  value={item.descricao || ''}
-                                  onChange={(e) => handleUpdateDespesa(idx, 'descricao', e.target.value)}
-                                  className="w-full p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs"
-                                />
-                              </td>
-                              <td className="py-2 px-2">
-                                <input
-                                  type="number"
-                                  min={1}
-                                  value={item.quantidade}
-                                  onChange={(e) => handleUpdateDespesa(idx, 'quantidade', e.target.value)}
-                                  className="w-full p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs font-mono-data"
-                                />
-                              </td>
-                              <td className="py-2 px-2">
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={item.valor_unitario}
-                                  onChange={(e) => handleUpdateDespesa(idx, 'valor_unitario', e.target.value)}
-                                  className="w-full p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs font-mono-data"
-                                />
-                              </td>
-                              <td className="py-2 px-2 font-mono-data font-bold text-[var(--color-success)]">
-                                R$ {(item.subtotal ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </td>
-                              <td className="py-2 px-1 text-right">
-                                <button onClick={() => handleRemoveDespesa(idx)} className="p-1 text-[var(--color-danger)]">
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr className="border-t-2 border-[var(--border-default)] font-bold text-xs">
-                            <td colSpan={5} className="py-3 px-2 text-right">SOMA TOTAL DAS DESPESAS DO PROJETO:</td>
-                            <td className="py-3 px-2 font-mono-data text-[var(--color-success)] text-sm">
-                              R$ {totalOrcamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </td>
-                            <td></td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ======================================================== */}
-          {/* ACCORDION 3: ETAPA 3 - EXECUÇÃO & MONITORAMENTO */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden shadow-[var(--shadow-card)]">
-            <button
-              type="button"
-              onClick={() => toggleAccordion('execucao_1')}
-              className="w-full p-4 flex items-center justify-between bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-[var(--color-primary)]" />
-                <div>
-                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    Etapa 3: Execução & Monitoramento
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)]">Calendário de encontros/ações com documento estruturador + relatórios mensais</p>
-                </div>
-              </div>
-              {openAccordions['execucao_1'] ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-            </button>
-
-            {openAccordions['execucao_1'] && (
-              <div className="p-6 border-t border-[var(--border-default)] space-y-6">
-                {/* Calendário de Ações */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                      1. Calendário de Execução das Ações do Projeto
-                    </h4>
-                    <Button size="sm" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => setShowAddAcaoModal(true)}>
-                      Cadastrar Ação
-                    </Button>
-                  </div>
-
-                  {acoes.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-[var(--text-muted)] border border-dashed border-[var(--border-default)] rounded-xl">
-                      Nenhuma ação cadastrada no cronograma.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {acoes.map((acao) => (
-                        <div key={acao.id} className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold text-center shrink-0">
-                              <p className="text-xs uppercase">{new Date(acao.data_hora).toLocaleDateString('pt-BR', { month: 'short' })}</p>
-                              <p className="text-base font-mono-data leading-none">{new Date(acao.data_hora).getDate()}</p>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-bold text-sm text-[var(--text-primary)]">{acao.nome_acao}</p>
-                                <Badge variant="purple">{acao.documento_estruturador || 'Plano de Aula'}</Badge>
-                              </div>
-                              <p className="text-xs text-[var(--text-muted)]">
-                                Horário: {new Date(acao.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • {acao.descricao || 'Sem descrição'}
-                              </p>
-                            </div>
-                          </div>
-                          <button onClick={() => handleRemoveAcao(acao.id)} className="p-1.5 text-[var(--text-muted)] hover:text-[var(--color-danger)]">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  </Link>
                 </div>
 
-                {/* Relatórios Mensais de Monitoramento */}
-                <div className="pt-4 border-t border-[var(--border-default)] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                      2. Relatórios Mensais de Monitoramento
-                    </h4>
-                    <Button size="sm" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => setShowAddRelatorioModal(true)}>
-                      Novo Relatório Mensal
-                    </Button>
-                  </div>
-
-                  {relatorios.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-[var(--text-muted)] border border-dashed border-[var(--border-default)] rounded-xl">
-                      Nenhum relatório mensal registrado.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {relatorios.map((rel) => (
-                        <div key={rel.id} className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
-                          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-1.5">
-                            <span className="font-bold text-xs text-[var(--color-primary)]">
-                              Mês de Referência: {rel.mes_referencia}
-                            </span>
-                            <button onClick={() => handleRemoveRelatorio(rel.id)} className="text-[10px] text-[var(--color-danger)] hover:underline flex items-center gap-1">
-                              <Trash2 className="w-3 h-3" /> Excluir
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                            <div>
-                              <strong className="text-[var(--text-muted)] block">Avanço:</strong>
-                              <p className="text-[var(--text-primary)]">{rel.resumo_avanco || '-'}</p>
-                            </div>
-                            <div>
-                              <strong className="text-[var(--color-success)] block">Metas Atingidas:</strong>
-                              <p className="text-[var(--text-primary)]">{rel.metas_atingidas || '-'}</p>
-                            </div>
-                            <div>
-                              <strong className="text-[var(--color-danger)] block">Dificuldades:</strong>
-                              <p className="text-[var(--text-primary)]">{rel.dificuldades_encontradas || '-'}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
+                  💡 A gestão pedagógica completa do Instituto Ádapo possui sua própria página no menu lateral (<strong>/pedagogia</strong>). Quando os planos de aula, roteiros de oficinas e relatórios socioemocionais forem vinculados a este projeto, eles serão exibidos automaticamente nesta área.
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* ======================================================== */}
-          {/* ACCORDION 3.5: ÁREA DE PEDAGOGIA & PLANOS DE AULA */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden shadow-[var(--shadow-card)]">
-            <button
-              type="button"
-              onClick={() => toggleAccordion('pedagogia')}
-              className="w-full p-4 flex items-center justify-between bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-5 h-5 text-[#F2632D]" />
-                <div>
-                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    Área da Equipe Pedagógica & Documentos Estruturadores
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)]">
-                    Planos de Aula, Roteiro/Ritmo/Rotina e Diários de Ocorrências Pedagógicas por Ação
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="purple">Pedagogia & Projetos</Badge>
-                {openAccordions['pedagogia'] ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-              </div>
-            </button>
-
-            {openAccordions['pedagogia'] && (
-              <div className="p-6 border-t border-[var(--border-default)]">
+              {/* PREVIEW COMPONENTES PEDAGÓGICOS E SOCIOEMOCIONAIS */}
+              <div className="space-y-6">
                 <ProjetoPedagogia projetoId={id} acoes={acoes} voluntarios={todosVoluntarios} />
-              </div>
-            )}
-          </div>
-
-          {/* ======================================================== */}
-          {/* ACCORDION 3.6: ÁREA DE ACOMPANHAMENTO SOCIOEMOCIONAL */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden shadow-[var(--shadow-card)]">
-            <button
-              type="button"
-              onClick={() => toggleAccordion('socioemocional')}
-              className="w-full p-4 flex items-center justify-between bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Heart className="w-5 h-5 text-rose-500" />
-                <div>
-                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    Área de Acompanhamento Socioemocional & Psicossocial
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)]">
-                    Fichas de Monitoramento Mensal (Dimensões Psíquica & Social) e Rodas de Conversa
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="purple">Psicossocial</Badge>
-                {openAccordions['socioemocional'] ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-              </div>
-            </button>
-
-            {openAccordions['socioemocional'] && (
-              <div className="p-6 border-t border-[var(--border-default)]">
                 <ProjetoSocioemocional projetoId={id} inscricoes={inscricoes} voluntarios={todosVoluntarios} />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* ======================================================== */}
-          {/* ACCORDION 3.7: ÁREA DE COMUNICAÇÃO & MÍDIA */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden shadow-[var(--shadow-card)]">
-            <button
-              type="button"
-              onClick={() => toggleAccordion('comunicacao')}
-              className="w-full p-4 flex items-center justify-between bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Megaphone className="w-5 h-5 text-amber-500" />
-                <div>
-                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    Área da Equipe de Comunicação & Mídia
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)]">
-                    Gestão de Peças/Artes de Divulgação, Status de Produção e Uso de Imagem dos Atendidos
-                  </p>
+          {/* ========================================================================= */}
+          {/* ÁREA 3: COMUNICAÇÃO (VISUALIZAÇÃO + BANNER EM CONSTRUÇÃO + PREVIEW) */}
+          {/* ========================================================================= */}
+          {activeArea === 'comunicacao' && (
+            <div className="space-y-6">
+              <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-[#EF4444]/10 text-[#EF4444]">
+                      <Megaphone className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">Área de Comunicação & Mídia</h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                          ## Em Construção ##
+                        </span>
+                      </div>
+                      <p className="text-xs text-[var(--text-muted)]">Peças publicitárias, postagens de mídias sociais e termos de direito de imagem</p>
+                    </div>
+                  </div>
+
+                  <Link href="/dashboard/comunicacao">
+                    <Button size="sm" variant="secondary" icon={<ExternalLink className="w-4 h-4" />}>
+                      Abrir Módulo de Comunicação
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
+                  💡 O módulo de Comunicação (<strong>/comunicacao</strong>) gerencia o acervo gráfico do projeto e o consentimento de imagem dos participantes.
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="purple">Comunicação</Badge>
-                {openAccordions['comunicacao'] ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-              </div>
-            </button>
 
-            {openAccordions['comunicacao'] && (
-              <div className="p-6 border-t border-[var(--border-default)]">
-                <ProjetoComunicacao projetoId={id} acoes={acoes} inscricoes={inscricoes} voluntarios={todosVoluntarios} />
-              </div>
-            )}
-          </div>
+              {/* PREVIEW COMPONENTE COMUNICAÇÃO */}
+              <ProjetoComunicacao projetoId={id} acoes={acoes} inscricoes={inscricoes} voluntarios={todosVoluntarios} />
+            </div>
+          )}
 
-          {/* ======================================================== */}
-          {/* ACCORDION 3.8: ÁREA DE PARCEIROS & FINANCIADORES */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden shadow-[var(--shadow-card)]">
-            <button
-              type="button"
-              onClick={() => toggleAccordion('parceiros')}
-              className="w-full p-4 flex items-center justify-between bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Building2 className="w-5 h-5 text-emerald-500" />
-                <div>
-                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    Área de Controle de Parceiros & Financiadores
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)]">
-                    Gestão de Convênios, Patrocinadores, Aportes Financeiros, Contrapartidas e Prestação de Contas
-                  </p>
+          {/* ========================================================================= */}
+          {/* ÁREA 4: INDICADORES (PANORAMA EXCLUSIVO DO PROJETO) */}
+          {/* ========================================================================= */}
+          {activeArea === 'indicadores' && (
+            <div className="space-y-6">
+              <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-[#3B82F6]/10 text-[#3B82F6]">
+                      <BarChart3 className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">Panorama de Indicadores Sociais</h3>
+                      <p className="text-xs text-[var(--text-muted)]">Métricas em tempo real exclusivas para o projeto "{formData.nome}"</p>
+                    </div>
+                  </div>
+                  <Badge variant="purple">Dashboard Analítico</Badge>
+                </div>
+
+                {/* KPI METRICS GRID */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[var(--text-muted)] font-semibold">Beneficiários Ativos</span>
+                      <Users className="w-4 h-4 text-[#93368F]" />
+                    </div>
+                    <p className="font-display font-bold text-2xl text-[var(--text-primary)]">{inscricoes.length}</p>
+                    <p className="text-[11px] text-[var(--text-muted)]">Meta informada: {formData.num_beneficiarios_diretos} diretos</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[var(--text-muted)] font-semibold">Voluntários Alocados</span>
+                      <HeartHandshake className="w-4 h-4 text-[#F2632D]" />
+                    </div>
+                    <p className="font-display font-bold text-2xl text-[var(--text-primary)]">{alocacoes.length}</p>
+                    <p className="text-[11px] text-[var(--text-muted)]">Em {acoes.length} ações cadastradas</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[var(--text-muted)] font-semibold">Orçamento Alocado</span>
+                      <DollarSign className="w-4 h-4 text-[#10B981]" />
+                    </div>
+                    <p className="font-display font-bold text-2xl text-[var(--text-primary)]">R$ {totalOrcamento.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</p>
+                    <p className="text-[11px] text-[var(--text-muted)]">Total de {despesas.length} itens orçados</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[var(--text-muted)] font-semibold">Relatórios Emitidos</span>
+                      <FileText className="w-4 h-4 text-[#3B82F6]" />
+                    </div>
+                    <p className="font-display font-bold text-2xl text-[var(--text-primary)]">{relatorios.length}</p>
+                    <p className="text-[11px] text-[var(--text-muted)]">Monitoramento contínuo</p>
+                  </div>
+                </div>
+
+                {/* PROGRESS BARS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-[var(--border-default)]">
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-2">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-[var(--text-primary)]">Taxa de Preenchimento da Meta de Beneficiários</span>
+                      <span className="text-[var(--color-primary)] font-bold">
+                        {formData.num_beneficiarios_diretos > 0
+                          ? Math.min(Math.round((inscricoes.length / formData.num_beneficiarios_diretos) * 100), 100)
+                          : 0}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--color-primary)] transition-all duration-500 rounded-full"
+                        style={{
+                          width: `${formData.num_beneficiarios_diretos > 0 ? Math.min(Math.round((inscricoes.length / formData.num_beneficiarios_diretos) * 100), 100) : 0}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-2">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-[var(--text-primary)]">Execução de Ações Planejadas</span>
+                      <span className="text-[var(--color-success)] font-bold">
+                        {acoes.length > 0 ? '100%' : '0%'}
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[var(--color-success)] transition-all duration-500 rounded-full"
+                        style={{ width: acoes.length > 0 ? '100%' : '0%' }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="purple">Parcerias & Financiadores</Badge>
-                {openAccordions['parceiros'] ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-              </div>
-            </button>
+            </div>
+          )}
 
-            {openAccordions['parceiros'] && (
-              <div className="p-6 border-t border-[var(--border-default)]">
-                <ProjetoParceiros projetoId={id} />
-              </div>
-            )}
-          </div>
+          {/* ========================================================================= */}
+          {/* ÁREA 5: PARCEIROS (VISUALIZAÇÃO + BANNER EM CONSTRUÇÃO + PREVIEW) */}
+          {/* ========================================================================= */}
+          {activeArea === 'parceiros' && (
+            <div className="space-y-6">
+              <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-[#1C9C82]/10 text-[#1C9C82]">
+                      <Building2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">Controle de Parceiros do Projeto</h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                          ## Em Construção ##
+                        </span>
+                      </div>
+                      <p className="text-xs text-[var(--text-muted)]">Empresas apoiadoras, convênios públicos e parcerias técnicas</p>
+                    </div>
+                  </div>
 
-          {/* ======================================================== */}
-          {/* ACCORDION 4: ETAPA 4 - ENCERRAMENTO & AVALIAÇÃO */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden shadow-[var(--shadow-card)]">
-            <button
-              type="button"
-              onClick={() => toggleAccordion('encerramento')}
-              className="w-full p-4 flex items-center justify-between bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <CheckSquare className="w-5 h-5 text-[var(--color-success)]" />
-                <div>
-                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    Etapa 4: Encerramento & Avaliação Final
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)]">Parecer conclusivo dos objetivos previstos vs. cumpridos ao fim do ciclo</p>
+                  <Link href="/dashboard/parceiros">
+                    <Button size="sm" variant="secondary" icon={<ExternalLink className="w-4 h-4" />}>
+                      Abrir Controle de Parceiros
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
+                  💡 O módulo de Parceiros (<strong>/parceiros</strong>) registra acordos institucionais e repasses de verbas vinculados a este projeto.
                 </div>
               </div>
-              {openAccordions['encerramento'] ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-            </button>
 
-            {openAccordions['encerramento'] && (
-              <div className="p-6 border-t border-[var(--border-default)] space-y-4">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] block mb-1">
-                  Parecer Conclusivo & Avaliação Final do Projeto
-                </label>
-                <textarea
-                  name="avaliacao_encerramento"
-                  value={formData.avaliacao_encerramento}
-                  onChange={handleChange}
-                  rows={6}
-                  placeholder="Avalie o cumprimento dos objetivos, lições aprendidas e resultados alcançados..."
-                  className="w-full p-4 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]"
-                />
-              </div>
-            )}
-          </div>
+              {/* PREVIEW COMPONENTE PARCEIROS */}
+              <ProjetoParceiros projetoId={id} />
+            </div>
+          )}
 
-          {/* ======================================================== */}
-          {/* ACCORDION 5: VÍNCULOS & EQUIPE (BENEFICIÁRIOS E VOLUNTÁRIOS POR AÇÃO) */}
-          {/* ======================================================== */}
-          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] overflow-hidden shadow-[var(--shadow-card)]">
-            <button
-              type="button"
-              onClick={() => toggleAccordion('participantes')}
-              className="w-full p-4 flex items-center justify-between bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-[var(--color-primary)]" />
-                <div>
-                  <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-                    Vínculos & Equipe ({inscricoes.length} Beneficiários / {alocacoes.length} Voluntários)
-                  </h3>
-                  <p className="text-[11px] text-[var(--text-muted)]">Beneficiários inscritos e voluntários alocados por ação específica</p>
+          {/* ========================================================================= */}
+          {/* ÁREA 6: PESSOAS (INDICADORES VISUAIS & GERENCIAMENTO DE VOLUNTÁRIOS/BENEFICIÁRIOS) */}
+          {/* ========================================================================= */}
+          {activeArea === 'pessoas' && (
+            <div className="space-y-6">
+              <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-6">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-[#F9C859]/10 text-[#F9C859]">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">Gestão de Pessoas no Projeto</h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                          ## Em Construção ##
+                        </span>
+                      </div>
+                      <p className="text-xs text-[var(--text-muted)]">Indicadores visuais e alocação de Beneficiários e Voluntários</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              {openAccordions['participantes'] ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-            </button>
 
-            {openAccordions['participantes'] && (
-              <div className="p-6 border-t border-[var(--border-default)] space-y-6">
-                {/* Beneficiários */}
-                <div className="space-y-3">
+                {/* INDICADORES VISUAIS DE PESSOAS */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-1">
+                    <span className="text-xs text-[var(--text-muted)] font-semibold">Beneficiários Inscritos</span>
+                    <p className="font-display font-bold text-2xl text-[var(--text-primary)]">{inscricoes.length}</p>
+                    <p className="text-[11px] text-[var(--color-success)] font-medium">Cadastrados e Vinculados</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-1">
+                    <span className="text-xs text-[var(--text-muted)] font-semibold">Voluntários Ativos</span>
+                    <p className="font-display font-bold text-2xl text-[var(--text-primary)]">{alocacoes.length}</p>
+                    <p className="text-[11px] text-[var(--color-primary)] font-medium">Equipe Operacional</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-1">
+                    <span className="text-xs text-[var(--text-muted)] font-semibold">Capacidade Total</span>
+                    <p className="font-display font-bold text-2xl text-[var(--text-primary)]">{formData.num_beneficiarios_diretos || 'Indefinida'}</p>
+                    <p className="text-[11px] text-[var(--text-muted)]">Meta de vagas diretas</p>
+                  </div>
+                </div>
+
+                {/* TABELA DE BENEFICIÁRIOS VINCULADOS */}
+                <div className="space-y-3 pt-4 border-t border-[var(--border-default)]">
                   <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
                     <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--text-primary)]">Beneficiários Inscritos</h4>
                     <Button size="sm" icon={<UserPlus className="w-3.5 h-3.5" />} onClick={() => setShowAddBeneficiarioModal(true)}>
                       Inscrever Beneficiário
                     </Button>
                   </div>
+
                   {inscricoes.length === 0 ? (
-                    <p className="text-xs text-[var(--text-muted)] italic">Nenhum beneficiário inscrito.</p>
+                    <p className="text-xs text-[var(--text-muted)] italic py-2">Nenhum beneficiário inscrito neste projeto ainda.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {inscricoes.map((insc) => (
                         <div key={insc.id} className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] flex items-center justify-between text-xs">
                           <div>
                             <p className="font-bold text-[var(--text-primary)]">{insc.beneficiarios?.nome_completo}</p>
-                            <p className="text-[10px] font-mono-data text-[var(--text-muted)]">CPF: {insc.beneficiarios?.cpf}</p>
+                            <p className="text-[11px] text-[var(--text-muted)]">CPF: {insc.beneficiarios?.cpf || 'Não informado'}</p>
                           </div>
-                          <button onClick={() => handleRemoverInscricao(insc.id)} className="text-[var(--color-danger)] p-1"><UserMinus className="w-4 h-4" /></button>
+                          <button onClick={() => handleRemoverInscricao(insc.id)} className="text-[var(--color-danger)] p-1 hover:opacity-80">
+                            <UserMinus className="w-4 h-4" />
+                          </button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* Voluntários por Ação */}
+                {/* TABELA DE VOLUNTÁRIOS ALOCADOS */}
                 <div className="space-y-3 pt-4 border-t border-[var(--border-default)]">
                   <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
                     <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--text-primary)]">Voluntários Alocados</h4>
@@ -1612,8 +1691,9 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                       Alocar Voluntário
                     </Button>
                   </div>
+
                   {alocacoes.length === 0 ? (
-                    <p className="text-xs text-[var(--text-muted)] italic">Nenhum voluntário alocado.</p>
+                    <p className="text-xs text-[var(--text-muted)] italic py-2">Nenhum voluntário alocado no projeto ainda.</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {alocacoes.map((aloc) => (
@@ -1621,21 +1701,24 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                           <div>
                             <p className="font-bold text-[var(--text-primary)]">{aloc.voluntarios?.nome_completo}</p>
                             <p className="text-[11px] text-[var(--color-primary)] font-semibold">
-                              {aloc.funcao_no_projeto || 'Monitor'}
+                              Função: {aloc.funcao_no_projeto || 'Monitor'}
                             </p>
                             {aloc.acoes_projeto && (
                               <Badge variant="purple">Ação: {aloc.acoes_projeto.nome_acao}</Badge>
                             )}
                           </div>
-                          <button onClick={() => handleRemoverAlocacao(aloc.id)} className="text-[var(--color-danger)] p-1"><UserMinus className="w-4 h-4" /></button>
+                          <button onClick={() => handleRemoverAlocacao(aloc.id)} className="text-[var(--color-danger)] p-1 hover:opacity-80">
+                            <UserMinus className="w-4 h-4" />
+                          </button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -1756,12 +1839,12 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* BARRA FLUTUANTE FIXA DE SALVAR E NOTIFICAÇÃO TOAST FLUTUANTE */}
+      {/* BARRA FLUTUANTE FIXA DE SALVAR E TOAST */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
         {successMsg && (
           <div className="pointer-events-auto p-4 rounded-2xl bg-[var(--color-success)] text-white text-sm font-semibold shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-5 border border-white/20">
             <CheckCircle className="w-5 h-5 shrink-0" />
-            <span>Progresso do Plano de Trabalho salvo com sucesso!</span>
+            <span>Plano de Trabalho e dados institucionais salvos com sucesso!</span>
             <button type="button" onClick={() => setSuccessMsg(false)} className="ml-2 hover:opacity-80">
               <X className="w-4 h-4" />
             </button>
@@ -1770,7 +1853,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
         <div className="pointer-events-auto bg-[var(--bg-elevated)]/90 backdrop-blur-md border border-[var(--border-strong)] p-2.5 rounded-2xl shadow-2xl flex items-center gap-3">
           <span className="text-xs font-semibold text-[var(--text-secondary)] px-2">
-            Plano de Trabalho
+            Projeto Social
           </span>
           <Button
             variant="primary"
@@ -1779,7 +1862,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
             onClick={handleSaveProgress}
             disabled={saving}
           >
-            {saving ? 'Salvando...' : 'Salvar Progresso'}
+            {saving ? 'Salvando...' : 'Salvar Alterações'}
           </Button>
         </div>
       </div>

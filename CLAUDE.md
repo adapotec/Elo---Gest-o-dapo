@@ -25,8 +25,10 @@
 ### R2 — Banco de Dados
 - Supabase Project ID: `jkpmioffpsdcoitgghyo`
 - Região: `sa-east-1` (São Paulo)
-- Postgres: v17.6
-- RLS obrigatório em todas as tabelas
+- Postgres: v17.6 (27 tabelas ativas no schema `public`)
+- RLS obrigatório em todas as tabelas (padronizado para `public` `FOR ALL USING (true)` em tabelas operacionais)
+- **Índices de Foreign Key**: Todas as colunas de FK (`projeto_id`, `beneficiario_id`, `voluntario_id`, etc.) possuem índices B-Tree para evitar Full Table Scans
+- **Consultas Defensivas**: Utilizar sempre `.maybeSingle()` em buscas de registro único no client Supabase para evitar erros HTTP 406 (PGRST116) quando houver 0 registros
 - Lote de estoque: gerado via `BIGSERIAL` (automático)
 - `created_at` e `updated_at` em todas as tabelas com dados operacionais
 
@@ -51,6 +53,39 @@
 ---
 
 ## Changelog
+
+### 2026-08-12 — `[RECURSO] & [SEGURANÇA]` 🔴 CRÍTICO
+
+**Fluxo de Acesso Individual de Voluntários, Seção Configurações e Temas Dinâmicos**
+
+1. **Acesso Seguro de Voluntários (Primeiro Acesso)**:
+   - Criada a função RPC `check_voluntario_email()` e atualizada a trigger `handle_new_user()` no PostgreSQL.
+   - Adicionada a aba **Primeiro Acesso** na tela de Login (`/login`), permitindo que voluntários com e-mail pré-cadastrado na ONG ativem sua conta definindo sua própria senha. Tentativas de e-mails não autorizados são bloqueadas antes do cadastro.
+2. **Reorganização do Sidebar**:
+   - Criada a seção agrupadora **Configurações** no `Sidebar.tsx`.
+   - Agrupados os sub-itens **Usuários & Acesso** (`/dashboard/usuarios`) e **Perfil & Personalização** (`/dashboard/perfil`).
+3. **Página de Perfil & Temas Dinâmicos (`/dashboard/perfil`)**:
+   - Criada a página de perfil individual com edição de dados, alteração de senha e seletor de **7 paletas de cores dinâmicas** (Laranja Institucional, Roxo Ádapo, Verde Sustentável, Azul Oceano, Vermelho Vibrante, Amarelo Sol e Rosa Solidário), mais alternância de Modo Claro/Escuro.
+   - Suporte e persistência de paletas integrados ao `ThemeProvider.tsx` e `globals.css`.
+
+---
+
+### 2026-08-11 — `[MIGRAÇÃO] & [OTIMIZAÇÃO]` 🔴 CRÍTICO
+
+**Auditoria de Arquitetura de Banco de Dados via MCP e Otimização em Tempo Real**
+
+1. **Varredura de Banco com Database Architect**:
+   - Analisadas 27 tabelas ativas e confirmada integridade de 100% dos UUIDs (`gen_random_uuid()`), tipos `timestamptz`, `jsonb` e `numeric`.
+2. **Criação de 28 Índices B-Tree de Alta Performance**:
+   - Criados índices em todas as chaves estrangeiras (`projeto_id`, `beneficiario_id`, `voluntario_id`, `acao_id`, `item_id`, `fornecedor_id`, etc.) em tabelas filhas e de relacionamento (`acoes_projeto`, `alocacoes_voluntarios`, `inscricoes`, `doacoes`, `estoque_movimentacoes`, `planos_aula`, `programacoes_acao`, `parceiros_projeto`, `pecas_comunicacao_projeto`, `relatorios_monitoramento`, `rodas_conversa_psicossocial`, `requisicoes_material`, `subscribers`, `subscriptions`), eliminando *Full Table Scans*.
+3. **Padronização de Políticas RLS**:
+   - Drenadas e removidas políticas permissivas duplicadas.
+   - Padronizadas as políticas RLS para o escopo `public` (`FOR ALL USING (true) WITH CHECK (true)`), eliminando erros HTTP 406 (PGRST116) e garantindo acesso suave cliente (anon/auth).
+4. **Otimização da Barra Lateral (Sidebar)**:
+   - Agrupadas as seções "Controle de Parceiros", "Doações" e "Controle de Estoque" na nova aba retrátil **Recursos**.
+   - Adicionada scrollbar fina customizada (5px), `overflow-x-hidden` e cabeçalho/rodapé fixos para prevenir sobreposição no avatar do usuário.
+
+---
 
 ### 2026-08-11 — `[ATUALIZAÇÃO]` 🔴 CRÍTICO
 

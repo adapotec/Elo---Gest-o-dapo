@@ -54,14 +54,14 @@ export interface RodaConversaItem {
 
 interface ProjetoSocioemocionalProps {
   projetoId: string;
-  inscricoes: any[]; // Beneficiários inscritos
-  voluntarios: any[];
+  inscricoes?: any[]; // Beneficiários inscritos
+  voluntarios?: any[];
 }
 
 export function ProjetoSocioemocional({
   projetoId,
-  inscricoes,
-  voluntarios,
+  inscricoes = [],
+  voluntarios = [],
 }: ProjetoSocioemocionalProps) {
   const [activeSubTab, setActiveSubTab] = useState<'individual' | 'rodas'>('individual');
   const [loading, setLoading] = useState(false);

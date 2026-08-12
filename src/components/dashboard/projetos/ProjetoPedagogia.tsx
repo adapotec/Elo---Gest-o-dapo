@@ -54,8 +54,8 @@ export interface ProgramacaoAcao {
 
 interface ProjetoPedagogiaProps {
   projetoId: string;
-  acoes: any[];
-  voluntarios: any[];
+  acoes?: any[];
+  voluntarios?: any[];
 }
 
 const ESTRUTURA_PADRAO_SUGERIDA: RoteiroItem[] = [
@@ -70,7 +70,7 @@ const ESTRUTURA_PADRAO_SUGERIDA: RoteiroItem[] = [
   { id: '9', horario: '11:15 - 11:30', titulo_descricao: 'Saída dos Atendidos e Limpeza', pessoas_funcoes: 'Equipe de Serviços Gerais' },
 ];
 
-export function ProjetoPedagogia({ projetoId, acoes, voluntarios }: ProjetoPedagogiaProps) {
+export function ProjetoPedagogia({ projetoId, acoes = [], voluntarios = [] }: ProjetoPedagogiaProps) {
   const [selectedAcaoId, setSelectedAcaoId] = useState<string>(acoes[0]?.id || '');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
