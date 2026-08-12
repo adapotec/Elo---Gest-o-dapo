@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Users,
   HeartHandshake,
+  Heart,
   FolderKanban,
   Gift,
   Package,
@@ -51,7 +52,15 @@ interface MenuItem {
 const navigationItems: MenuItem[] = [
   { name: 'Painel Inicial', href: '/dashboard', icon: LayoutDashboard, color: '#F9C859' },
   { name: 'Beneficiários', href: '/dashboard/beneficiarios', icon: Users, color: '#93368F' },
-  { name: 'Voluntários', href: '/dashboard/voluntarios', icon: HeartHandshake, color: '#F2632D' },
+  {
+    name: 'Voluntários',
+    icon: HeartHandshake,
+    color: '#F2632D',
+    children: [
+      { name: 'Cadastro & Equipe', href: '/dashboard/voluntarios', icon: Users, color: '#F2632D' },
+      { name: 'Saúde & Recesso', href: '/dashboard/voluntarios/recesso', icon: Heart, color: '#1C9C82' },
+    ],
+  },
   { name: 'Projetos Sociais', href: '/dashboard/projetos', icon: FolderKanban, color: '#F7955F' },
   { name: 'Pedagogia', href: '/dashboard/pedagogia', icon: GraduationCap, color: '#93368F' },
   { name: 'Comunicação & Mídia', href: '/dashboard/comunicacao', icon: Megaphone, color: '#EF4444' },

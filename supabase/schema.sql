@@ -424,6 +424,37 @@ CREATE TABLE IF NOT EXISTS public.requisicoes_material (
 );
 
 -- --------------------------------------------------------
+-- 21. RECESSOS DE VOLUNTÁRIOS (Ádapo Cuidar)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.recessos_voluntarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    voluntario_id UUID NOT NULL REFERENCES public.voluntarios(id) ON DELETE CASCADE,
+    data_folga DATE NOT NULL,
+    tipo TEXT NOT NULL DEFAULT 'individual' CHECK (tipo IN ('coletiva', 'individual')),
+    motivo TEXT,
+    status TEXT NOT NULL DEFAULT 'aprovada' CHECK (status IN ('pendente', 'aprovada', 'recusada')),
+    aprovado_por UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    mes_referencia INTEGER NOT NULL,
+    ano_referencia INTEGER NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_voluntario_folga UNIQUE (voluntario_id, data_folga)
+);
+
+-- --------------------------------------------------------
+-- 22. CONFIGURAÇÕES DE RECESSO (Toggle Dia da Família)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.configuracoes_recesso (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    mes INTEGER NOT NULL,
+    ano INTEGER NOT NULL,
+    dia_familia_ativo BOOLEAN DEFAULT TRUE,
+    motivo_desativacao TEXT,
+    alterado_por UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_config_mes_ano UNIQUE (mes, ano)
+);
+
+-- --------------------------------------------------------
 -- ROW LEVEL SECURITY (RLS) & POLÍTICAS DE ACESSO
 -- --------------------------------------------------------
 
@@ -447,6 +478,8 @@ ALTER TABLE public.webhook_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.relatorios_monitoramento ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.dados_instituto ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.requisicoes_material ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.recessos_voluntarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.configuracoes_recesso ENABLE ROW LEVEL SECURITY;
 
 -- Permissões de Usuários/Perfis
 CREATE POLICY "Leitura total profiles para autenticados" ON public.profiles FOR SELECT TO authenticated USING (true);
@@ -467,6 +500,8 @@ CREATE POLICY "Acesso total doacoes" ON public.doacoes FOR ALL TO authenticated 
 CREATE POLICY "Acesso total relatorios_monitoramento" ON public.relatorios_monitoramento FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso total dados_instituto" ON public.dados_instituto FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso total requisicoes_material" ON public.requisicoes_material FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total recessos" ON public.recessos_voluntarios FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total config_recesso" ON public.configuracoes_recesso FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Permissões para captação recorrente e assinantes
 CREATE POLICY "Planos visiveis para todos" ON public.plans FOR SELECT USING (true);

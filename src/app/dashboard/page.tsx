@@ -272,7 +272,7 @@ export default function DashboardPage() {
           <img
             src={logoSrc}
             alt="Logo Instituto Ádapo"
-            className="w-9 h-9 object-contain drop-shadow-sm transition-opacity duration-200"
+            className="w-16 h-16 object-contain drop-shadow-sm transition-opacity duration-200"
           />
         }
         action={
