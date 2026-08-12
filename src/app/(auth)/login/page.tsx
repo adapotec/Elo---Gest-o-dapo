@@ -127,10 +127,22 @@ export default function LoginPage() {
         return;
       }
 
-      setSuccessMsg('Conta criada com sucesso! Redirecionando para o sistema...');
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1500);
+      // Tenta fazer o login automático imediatamente após criar a senha
+      const { error: autoLoginErr } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (!autoLoginErr) {
+        setSuccessMsg('Conta criada e ativada com sucesso! Entrando no sistema...');
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1000);
+      } else {
+        setSuccessMsg('Senha cadastrada com sucesso! Faça login na aba "Já possuo conta".');
+        setMode('login');
+        setLoading(false);
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao cadastrar senha.');
       setLoading(false);
@@ -147,9 +159,11 @@ export default function LoginPage() {
         <div className="w-full max-w-md bg-[var(--bg-elevated)] p-8 rounded-2xl border border-[var(--border-default)] shadow-[var(--shadow-card)] space-y-6">
           {/* Logo & Header */}
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary)] text-white font-bold font-display text-2xl mx-auto flex items-center justify-center shadow-lg">
-              É
-            </div>
+            <img
+              src="/logo/ELO Social - Gestão Ádapo.svg"
+              alt="Logo ELO Social - Instituto Ádapo"
+              className="w-16 h-16 mx-auto object-contain drop-shadow-md"
+            />
             <h1 className="font-display font-bold text-2xl text-[var(--text-primary)]">Sistema ELO</h1>
             <p className="text-xs text-[var(--text-secondary)]">Gestão Institucional — Instituto Ádapo</p>
           </div>
