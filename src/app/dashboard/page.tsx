@@ -308,14 +308,12 @@ export default function DashboardPage() {
       </div>
 
       {/* Tabs de Navegação Operacional */}
-      <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-1">
+      <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-1 overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab('geral')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-            activeTab === 'geral'
-              ? 'bg-[var(--color-primary)] text-white shadow-sm'
-              : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]'
+          className={`px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 ${
+            activeTab === 'geral' ? 'tab-btn-active' : 'tab-btn-unselected'
           }`}
         >
           <Activity className="w-4 h-4" />
@@ -325,10 +323,8 @@ export default function DashboardPage() {
         <button
           type="button"
           onClick={() => setActiveTab('modulos')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-            activeTab === 'modulos'
-              ? 'bg-[var(--color-primary)] text-white shadow-sm'
-              : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]'
+          className={`px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 ${
+            activeTab === 'modulos' ? 'tab-btn-active' : 'tab-btn-unselected'
           }`}
         >
           <Layers className="w-4 h-4" />
@@ -338,10 +334,8 @@ export default function DashboardPage() {
         <button
           type="button"
           onClick={() => setActiveTab('historico')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-            activeTab === 'historico'
-              ? 'bg-[var(--color-primary)] text-white shadow-sm'
-              : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]'
+          className={`px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 ${
+            activeTab === 'historico' ? 'tab-btn-active' : 'tab-btn-unselected'
           }`}
         >
           <Clock className="w-4 h-4" />

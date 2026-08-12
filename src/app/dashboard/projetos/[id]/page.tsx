@@ -921,10 +921,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                 <button
                   type="button"
                   onClick={() => setGestaoSubTab('diagnostico')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${gestaoSubTab === 'diagnostico'
-                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                    : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
+                  className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${gestaoSubTab === 'diagnostico' ? 'tab-btn-active' : 'tab-btn-unselected'}`}
                 >
                   <ClipboardList className="w-4 h-4" />
                   Diagnóstico
@@ -933,10 +930,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                 <button
                   type="button"
                   onClick={() => setGestaoSubTab('planejamento')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${gestaoSubTab === 'planejamento'
-                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                    : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
+                  className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${gestaoSubTab === 'planejamento' ? 'tab-btn-active' : 'tab-btn-unselected'}`}
                 >
                   <FileText className="w-4 h-4" />
                   Planejamento
@@ -945,10 +939,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                 <button
                   type="button"
                   onClick={() => setGestaoSubTab('execucao')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${gestaoSubTab === 'execucao'
-                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                    : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
+                  className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${gestaoSubTab === 'execucao' ? 'tab-btn-active' : 'tab-btn-unselected'}`}
                 >
                   <Clock className="w-4 h-4" />
                   Execução e Monitoramento
@@ -957,10 +948,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                 <button
                   type="button"
                   onClick={() => setGestaoSubTab('encerramento')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${gestaoSubTab === 'encerramento'
-                    ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                    : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
+                  className={`px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${gestaoSubTab === 'encerramento' ? 'tab-btn-active' : 'tab-btn-unselected'}`}
                 >
                   <CheckSquare className="w-4 h-4" />
                   Encerramento

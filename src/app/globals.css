@@ -362,6 +362,54 @@ select option {
   color: #F3EDE4 !important;
 }
 
+/* ==========================================================================
+   REGRAS DE CONTRASTE PERFEITO PARA ABAS E NAVEGAÇÃO INTERNA (WCAG AAA)
+   ========================================================================== */
+
+/* Padrão (Modo Suave) */
+.tab-btn-active {
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.tab-btn-unselected {
+  background-color: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  font-weight: 600;
+}
+
+.tab-btn-unselected:hover {
+  color: var(--text-primary);
+  border-color: var(--color-primary);
+  background-color: var(--bg-secondary);
+}
+
+/* Override no Modo Fundo Imersivo (Estilo Trello) */
+[data-bg-style="imersivo"] .tab-btn-active {
+  background-color: #FFFFFF !important;
+  color: var(--color-primary) !important;
+  border: 1px solid #FFFFFF !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-bg-style="imersivo"] .tab-btn-unselected {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  font-weight: 700 !important;
+  backdrop-filter: blur(4px);
+}
+
+[data-bg-style="imersivo"] .tab-btn-unselected:hover {
+  background-color: rgba(255, 255, 255, 0.30) !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.60) !important;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
