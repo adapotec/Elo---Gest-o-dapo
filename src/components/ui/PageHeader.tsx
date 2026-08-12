@@ -8,6 +8,7 @@ interface PageHeaderProps {
   title: string;
   description?: string;
   icon?: React.ReactNode;
+  iconTransparent?: boolean;
   badge?: React.ReactNode;
   action?: React.ReactNode;
   className?: string;
@@ -17,6 +18,7 @@ export function PageHeader({
   title,
   description,
   icon,
+  iconTransparent = false,
   badge,
   action,
   className,
@@ -32,7 +34,12 @@ export function PageHeader({
     >
       <div className="flex items-start gap-3.5 min-w-0">
         {icon && (
-          <div className="p-2.5 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] shrink-0 shadow-2xs">
+          <div className={clsx(
+            'shrink-0 flex items-center justify-center',
+            iconTransparent
+              ? 'p-0'
+              : 'p-2.5 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-2xs'
+          )}>
             {icon}
           </div>
         )}

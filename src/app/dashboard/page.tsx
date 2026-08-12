@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { useTheme } from '@/components/layout/ThemeProvider';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -44,6 +45,15 @@ interface MetricDetail {
 
 export default function DashboardPage() {
   const supabase = createClient();
+  const { theme, bgStyle } = useTheme();
+
+  // Seleciona a logo ideal do Ádapo com base no estilo de fundo e no tema:
+  // - Fundo Suave (sutil + light mode): logo preta
+  // - Fundo Cor Viva estilo Trello (imersivo) ou Dark Mode: logo branca
+  const isVibrantOrDark = bgStyle === 'imersivo' || theme === 'dark';
+  const logoSrc = isVibrantOrDark
+    ? '/logo/logo branca sem fundo ádapo.png'
+    : '/logo/log preta sem fundo.png';
 
   const [activeTab, setActiveTab] = useState<'geral' | 'modulos' | 'historico'>('geral');
   const [loading, setLoading] = useState(true);
@@ -255,9 +265,16 @@ export default function DashboardPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto select-none">
       {/* Header Padronizado */}
       <PageHeader
-        title="Painel Inicial"
+        title="INSTITUTO ÁDAPO - Painel Inicial"
         description="Visão geral da operação, estatísticas e indicadores de impacto do Instituto Ádapo."
-        icon={<Activity className="w-6 h-6" />}
+        iconTransparent
+        icon={
+          <img
+            src={logoSrc}
+            alt="Logo Instituto Ádapo"
+            className="w-9 h-9 object-contain drop-shadow-sm transition-opacity duration-200"
+          />
+        }
         action={
           <div className="flex items-center gap-2.5 flex-wrap">
             <Link href="/dashboard/beneficiarios/novo">
@@ -312,9 +329,8 @@ export default function DashboardPage() {
         <button
           type="button"
           onClick={() => setActiveTab('geral')}
-          className={`px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 ${
-            activeTab === 'geral' ? 'tab-btn-active' : 'tab-btn-unselected'
-          }`}
+          className={`px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 ${activeTab === 'geral' ? 'tab-btn-active' : 'tab-btn-unselected'
+            }`}
         >
           <Activity className="w-4 h-4" />
           Visão Geral Operacional
@@ -323,9 +339,8 @@ export default function DashboardPage() {
         <button
           type="button"
           onClick={() => setActiveTab('modulos')}
-          className={`px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 ${
-            activeTab === 'modulos' ? 'tab-btn-active' : 'tab-btn-unselected'
-          }`}
+          className={`px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 ${activeTab === 'modulos' ? 'tab-btn-active' : 'tab-btn-unselected'
+            }`}
         >
           <Layers className="w-4 h-4" />
           Módulos da Plataforma ({modulesList.length})
@@ -334,9 +349,8 @@ export default function DashboardPage() {
         <button
           type="button"
           onClick={() => setActiveTab('historico')}
-          className={`px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 ${
-            activeTab === 'historico' ? 'tab-btn-active' : 'tab-btn-unselected'
-          }`}
+          className={`px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 ${activeTab === 'historico' ? 'tab-btn-active' : 'tab-btn-unselected'
+            }`}
         >
           <Clock className="w-4 h-4" />
           Agenda & Avisos
