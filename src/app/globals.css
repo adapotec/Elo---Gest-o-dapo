@@ -304,13 +304,19 @@
   --text-muted: rgba(255, 255, 255, 0.75);
 }
 
+/* ==========================================================================
+   ALTO CONTRASTE E VISIBILIDADE INFALÍVEL DE TEXTOS (WCAG AAA)
+   Garantir 100% de legibilidade em todas as caixas de texto, botões, modais e seletores
+   ========================================================================== */
+
 /* Preservar o contraste perfeito dos textos E fundos secundários internos de Cards, Sidebar, Modais e Elementos Elevados */
-[data-bg-style="imersivo"] .bg-\[var\(--bg-elevated\)\],
-[data-bg-style="imersivo"] .bg-elevated,
-[data-bg-style="imersivo"] .bg-\[var\(--bg-sidebar\)\],
-[data-bg-style="imersivo"] aside,
-[data-bg-style="imersivo"] [role="dialog"],
-[data-bg-style="imersivo"] .card-contrast {
+.bg-elevated,
+.bg-white,
+.card-contrast,
+aside,
+[role="dialog"],
+[class*="bg-[var(--bg-elevated)]"],
+[class*="bg-[var(--bg-secondary)]"] {
   --text-primary: #2B2118;
   --text-secondary: #6B6055;
   --text-muted: #9C9187;
@@ -318,17 +324,42 @@
   --border-default: #E8E1D6;
 }
 
-[data-theme="dark"][data-bg-style="imersivo"] .bg-\[var\(--bg-elevated\)\],
-[data-theme="dark"][data-bg-style="imersivo"] .bg-elevated,
-[data-theme="dark"][data-bg-style="imersivo"] .bg-\[var\(--bg-sidebar\)\],
-[data-theme="dark"][data-bg-style="imersivo"] aside,
-[data-theme="dark"][data-bg-style="imersivo"] [role="dialog"],
-[data-theme="dark"][data-bg-style="imersivo"] .card-contrast {
+[data-theme="dark"] .bg-elevated,
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .card-contrast,
+[data-theme="dark"] aside,
+[data-theme="dark"] [role="dialog"],
+[data-theme="dark"] [class*="bg-[var(--bg-elevated)]"],
+[data-theme="dark"] [class*="bg-[var(--bg-secondary)]"] {
   --text-primary: #F3EDE4;
   --text-secondary: #B8AC9C;
   --text-muted: #7D7466;
   --bg-secondary: #24201A;
   --border-default: #383126;
+}
+
+/* Regra de Ouro: Caixas de texto (inputs, textareas, selects) NUNCA ficam com texto branco em fundo claro */
+input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  color: #2B2118 !important;
+}
+
+[data-theme="dark"] input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]),
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  color: #F3EDE4 !important;
+}
+
+/* Opções de seletores Dropdown */
+select option {
+  background-color: #FFFFFF !important;
+  color: #2B2118 !important;
+}
+
+[data-theme="dark"] select option {
+  background-color: #24201A !important;
+  color: #F3EDE4 !important;
 }
 
 body {

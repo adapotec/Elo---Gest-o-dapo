@@ -1851,8 +1851,8 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
           </div>
         )}
 
-        <div className="pointer-events-auto bg-[var(--bg-elevated)]/90 backdrop-blur-md border border-[var(--border-strong)] p-2.5 rounded-2xl shadow-2xl flex items-center gap-3">
-          <span className="text-xs font-semibold text-[var(--text-secondary)] px-2">
+        <div className="pointer-events-auto bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-2.5 rounded-2xl shadow-2xl flex items-center gap-3 card-contrast">
+          <span className="text-xs font-bold text-[var(--text-primary)] px-2">
             Projeto Social
           </span>
           <Button
