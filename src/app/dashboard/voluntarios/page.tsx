@@ -62,6 +62,9 @@ export default function VoluntariosPage() {
     }
 
     const { data, error } = await query;
+    if (error) {
+      console.error('Erro ao buscar voluntários do Supabase:', error);
+    }
     if (!error && data) {
       setVoluntarios(data as Voluntario[]);
     }
@@ -74,8 +77,8 @@ export default function VoluntariosPage() {
 
   const filteredVoluntarios = voluntarios.filter(
     (v) =>
-      v.nome_completo.toLowerCase().includes(search.toLowerCase()) ||
-      v.cpf.includes(search) ||
+      (v.nome_completo || '').toLowerCase().includes(search.toLowerCase()) ||
+      (v.cpf || '').includes(search) ||
       (v.area_atuacao && v.area_atuacao.toLowerCase().includes(search.toLowerCase()))
   );
 
