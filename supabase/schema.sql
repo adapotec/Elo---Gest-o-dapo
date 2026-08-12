@@ -486,8 +486,8 @@ CREATE POLICY "Leitura total profiles para autenticados" ON public.profiles FOR 
 CREATE POLICY "Atualização própria de profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
 
 -- Permissões operacionais internas
-CREATE POLICY "Acesso total beneficiarios" ON public.beneficiarios FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total voluntarios" ON public.voluntarios FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total beneficiarios" ON public.beneficiarios FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total voluntarios" ON public.voluntarios FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso total projetos" ON public.projetos_sociais FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso total acoes_projeto" ON public.acoes_projeto FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso total inscricoes" ON public.inscricoes FOR ALL TO authenticated USING (true) WITH CHECK (true);
@@ -500,8 +500,8 @@ CREATE POLICY "Acesso total doacoes" ON public.doacoes FOR ALL TO authenticated 
 CREATE POLICY "Acesso total relatorios_monitoramento" ON public.relatorios_monitoramento FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso total dados_instituto" ON public.dados_instituto FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso total requisicoes_material" ON public.requisicoes_material FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total recessos" ON public.recessos_voluntarios FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total config_recesso" ON public.configuracoes_recesso FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total recessos" ON public.recessos_voluntarios FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total config_recesso" ON public.configuracoes_recesso FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 
 -- Permissões para captação recorrente e assinantes
 CREATE POLICY "Planos visiveis para todos" ON public.plans FOR SELECT USING (true);
