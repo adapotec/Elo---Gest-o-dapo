@@ -121,7 +121,7 @@ export default function DashboardPage() {
           supabase.from('voluntarios').select('*', { count: 'exact', head: true }),
           supabase.from('projetos_sociais').select('*', { count: 'exact', head: true }),
           supabase.from('estoque_itens').select('*', { count: 'exact', head: true }),
-          supabase.from('estoque_itens').select('*').lte('quantidade_atual', 10).limit(5),
+          supabase.from('estoque_itens').select('*').lte('quantidade', 10).limit(5),
           supabase.from('doacoes').select('*', { count: 'exact', head: true }),
         ]);
 
