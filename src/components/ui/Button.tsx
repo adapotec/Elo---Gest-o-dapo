@@ -23,10 +23,10 @@ export function Button({
   const baseStyles = 'inline-flex flex-row items-center justify-center font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0';
 
   const variants = {
-    primary: 'bg-[var(--color-primary)] text-[var(--text-on-primary)] hover:bg-[var(--color-primary-hover)] focus:ring-[var(--color-primary)] shadow-sm',
-    secondary: 'bg-transparent text-[var(--text-primary)] border border-[var(--border-strong)] hover:bg-[var(--bg-secondary)] focus:ring-[var(--color-primary)]',
+    primary: 'bg-[var(--color-primary)] text-[var(--text-on-primary)] hover:bg-[var(--color-primary-hover)] focus:ring-[var(--color-primary)] shadow-sm border border-transparent',
+    secondary: 'bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-secondary)] focus:ring-[var(--color-primary)] shadow-2xs',
     ghost: 'bg-transparent text-[var(--color-primary)] hover:bg-[var(--color-primary-soft)] focus:ring-[var(--color-primary)]',
-    danger: 'bg-[var(--color-danger)] text-white hover:opacity-90 focus:ring-[var(--color-danger)] shadow-sm',
+    danger: 'bg-[var(--color-danger)] text-white hover:opacity-90 focus:ring-[var(--color-danger)] shadow-sm border border-transparent',
   };
 
   const sizes = {

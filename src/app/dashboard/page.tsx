@@ -315,7 +315,7 @@ export default function DashboardPage() {
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'geral'
               ? 'bg-[var(--color-primary)] text-white shadow-sm'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+              : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]'
           }`}
         >
           <Activity className="w-4 h-4" />
@@ -328,7 +328,7 @@ export default function DashboardPage() {
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'modulos'
               ? 'bg-[var(--color-primary)] text-white shadow-sm'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+              : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]'
           }`}
         >
           <Layers className="w-4 h-4" />
@@ -341,7 +341,7 @@ export default function DashboardPage() {
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'historico'
               ? 'bg-[var(--color-primary)] text-white shadow-sm'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+              : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]'
           }`}
         >
           <Clock className="w-4 h-4" />
