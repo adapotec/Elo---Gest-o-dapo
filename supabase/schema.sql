@@ -171,6 +171,7 @@ CREATE TABLE IF NOT EXISTS public.acoes_projeto (
     nome_acao TEXT NOT NULL,
     descricao TEXT,
     documento_estruturador TEXT DEFAULT 'Plano de Aula',
+    programacao_itens JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
