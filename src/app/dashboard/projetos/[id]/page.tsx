@@ -13,6 +13,7 @@ import { ProjetoPedagogia } from '@/components/dashboard/projetos/ProjetoPedagog
 import { ProjetoSocioemocional } from '@/components/dashboard/projetos/ProjetoSocioemocional';
 import { ProjetoComunicacao } from '@/components/dashboard/projetos/ProjetoComunicacao';
 import { ProjetoParceiros } from '@/components/dashboard/projetos/ProjetoParceiros';
+import { PapelTimbradoModal } from '@/components/ui/PapelTimbradoModal';
 import {
   ArrowLeft,
   Save,
@@ -58,6 +59,8 @@ import {
   TrendingUp,
   ExternalLink,
   Edit3,
+  Download,
+  MapPin,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -168,6 +171,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState(false);
+  const [showDiagnosticoPrint, setShowDiagnosticoPrint] = useState(false);
 
   // Modal/Header retrátil de dados básicos e dados institucionais (Inicia fechado por padrão)
   const [showHeaderModal, setShowHeaderModal] = useState(false);
@@ -957,7 +961,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
               {/* SUB-TELA GESTÃO: DIAGNÓSTICO */}
               {gestaoSubTab === 'diagnostico' && (
-                <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
                   <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
                     <div>
                       <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
@@ -965,78 +969,260 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                       </h3>
                       <p className="text-xs text-[var(--text-muted)]">Mapeamento de potencialidades, vulnerabilidades territoriais e demandas comunitárias</p>
                     </div>
-                    <Badge variant="warning">Diagnóstico</Badge>
+                    <div className="flex items-center gap-2">
+                      <Button variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} onClick={() => setShowDiagnosticoPrint(true)}>
+                        Exportar PDF
+                      </Button>
+                      <Badge variant="warning">Diagnóstico</Badge>
+                    </div>
                   </div>
 
+                  {/* Bloco A: Metadados Territoriais */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Input label="Bairro" name="bairro" value={diagnosticoData.bairro} onChange={handleDiagnosticoChange} placeholder="Ex: Comunidade Sol Nascente" />
                     <Input label="Município" name="municipio" value={diagnosticoData.municipio} onChange={handleDiagnosticoChange} placeholder="Ex: São Paulo" />
                     <Input label="Estado (UF)" name="estado" value={diagnosticoData.estado} onChange={handleDiagnosticoChange} placeholder="SP" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input label="Data do Diagnóstico" type="date" name="data_diagnostico" value={diagnosticoData.data_diagnostico} onChange={handleDiagnosticoChange} />
-                    <div className="md:col-span-2">
-                      <Select
-                        label="Responsável pelo Diagnóstico"
-                        options={[
-                          { value: '', label: 'Selecione o voluntário responsável...' },
-                          ...todosVoluntarios.map((v) => ({ value: v.id, label: `${v.nome_completo} (${v.area_atuacao || 'Operacional'})` })),
-                        ]}
-                        value={diagnosticoData.responsavel_diagnostico_id}
-                        onChange={(e) => setDiagnosticoData({ ...diagnosticoData, responsavel_diagnostico_id: e.target.value })}
-                      />
-                    </div>
+                    <Select
+                      label="Responsável pelo Diagnóstico"
+                      options={[
+                        { value: '', label: 'Selecione o voluntário responsável...' },
+                        ...todosVoluntarios.map((v) => ({ value: v.id, label: `${v.nome_completo} (${v.area_atuacao || 'Operacional'})` })),
+                      ]}
+                      value={diagnosticoData.responsavel_diagnostico_id}
+                      onChange={(e) => setDiagnosticoData({ ...diagnosticoData, responsavel_diagnostico_id: e.target.value })}
+                    />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Separador */}
+                  <div className="border-t border-[var(--border-default)] pt-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-4">Conteúdo do Diagnóstico Social</p>
+                  </div>
+
+                  {/* Bloco B: 9 Campos Verticais (1 por linha, largura total) */}
+                  <div className="space-y-4">
+                    {/* 1. Introdução */}
                     <div>
-                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Introdução & Histórico Territorial</label>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">1. Introdução & Histórico Territorial</label>
                       <textarea
                         name="introducao"
                         value={diagnosticoData.introducao}
                         onChange={handleDiagnosticoChange}
-                        rows={3}
-                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]"
-                        placeholder="Contexto do bairro/comunidade atenda..."
+                        rows={5}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                        placeholder="Contexto do bairro/comunidade atendida, histórico de ocupação territorial, dinâmica comunitária..."
                       />
                     </div>
+
+                    {/* 2. Objetivo */}
                     <div>
-                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Objetivo Geral do Diagnóstico</label>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">2. Objetivo do Diagnóstico</label>
                       <textarea
                         name="objetivo"
                         value={diagnosticoData.objetivo}
                         onChange={handleDiagnosticoChange}
-                        rows={3}
-                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]"
-                        placeholder="O que se busca identificar..."
+                        rows={4}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                        placeholder="O que se busca identificar e compreender com este diagnóstico..."
                       />
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* 3. Metodologia */}
                     <div>
-                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Principais Potencialidades Identificadas</label>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">3. Metodologia</label>
+                      <textarea
+                        name="metodologia"
+                        value={diagnosticoData.metodologia}
+                        onChange={handleDiagnosticoChange}
+                        rows={4}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                        placeholder="Métodos de coleta utilizados: visitas domiciliares, rodas de conversa, entrevistas, observação participante..."
+                      />
+                    </div>
+
+                    {/* 4. Público possível */}
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">4. Público Possível para Trabalho</label>
+                      <textarea
+                        name="publico_possivel"
+                        value={diagnosticoData.publico_possivel}
+                        onChange={handleDiagnosticoChange}
+                        rows={4}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                        placeholder="Faixa etária, grupos prioritários: crianças, jovens, mulheres chefes de família, idosos..."
+                      />
+                    </div>
+
+                    {/* 5. Situação habitacional */}
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">5. Situação Habitacional da Comunidade</label>
+                      <textarea
+                        name="situacao_habitacional"
+                        value={diagnosticoData.situacao_habitacional}
+                        onChange={handleDiagnosticoChange}
+                        rows={4}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                        placeholder="Tipo de moradia, regularização fundiária, saneamento básico, energia elétrica, infraestrutura urbana..."
+                      />
+                    </div>
+
+                    {/* 6. Situação socioeconômica */}
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">6. Situação Socioeconômica da Comunidade</label>
+                      <textarea
+                        name="situacao_socioeconomica"
+                        value={diagnosticoData.situacao_socioeconomica}
+                        onChange={handleDiagnosticoChange}
+                        rows={4}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                        placeholder="Renda média familiar, nível de emprego/informalidade, acesso a programas sociais, vulnerabilidade alimentar..."
+                      />
+                    </div>
+
+                    {/* 7. Potencialidades */}
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">7. Principais Potencialidades</label>
                       <textarea
                         name="principais_potencialidades"
                         value={diagnosticoData.principais_potencialidades}
                         onChange={handleDiagnosticoChange}
-                        rows={3}
-                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--color-success)]"
-                        placeholder="Redes de apoio, lideranças locais, equipamentos públicos ativos..."
+                        rows={4}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--color-success)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-success)]"
+                        placeholder="Redes de apoio, lideranças comunitárias, comércio local, coletivos, equipamentos públicos existentes..."
                       />
                     </div>
+
+                    {/* 8. Vulnerabilidades */}
                     <div>
-                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Principais Vulnerabilidades & Desafios</label>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">8. Principais Vulnerabilidades</label>
                       <textarea
                         name="principais_vulnerabilidades"
                         value={diagnosticoData.principais_vulnerabilidades}
                         onChange={handleDiagnosticoChange}
-                        rows={3}
-                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--color-danger)]"
-                        placeholder="Insegurança alimentar, desemprego, violência urbana..."
+                        rows={4}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--color-danger)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-danger)]"
+                        placeholder="Insegurança alimentar, desemprego, violência urbana, evasão escolar, falta de serviços de saúde..."
+                      />
+                    </div>
+
+                    {/* 9. Outras informações */}
+                    <div>
+                      <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">9. Outras Informações</label>
+                      <textarea
+                        name="outras_informacoes"
+                        value={diagnosticoData.outras_informacoes}
+                        onChange={handleDiagnosticoChange}
+                        rows={4}
+                        className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                        placeholder="Recomendações da equipe, parcerias potenciais, observações complementares..."
                       />
                     </div>
                   </div>
+
+                  {/* Barra de Ações do Diagnóstico */}
+                  <div className="flex items-center justify-between pt-4 border-t border-[var(--border-default)]">
+                    <p className="text-[11px] text-[var(--text-muted)]">
+                      Os dados do diagnóstico são salvos junto ao projeto via botão flutuante "Salvar Alterações".
+                    </p>
+                    <Button variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} onClick={() => setShowDiagnosticoPrint(true)}>
+                      Exportar Diagnóstico (PDF)
+                    </Button>
+                  </div>
                 </div>
               )}
+
+              {/* MODAL: Exportar Diagnóstico em Papel Timbrado */}
+              <PapelTimbradoModal
+                isOpen={showDiagnosticoPrint}
+                onClose={() => setShowDiagnosticoPrint(false)}
+                tituloDocumento="Diagnóstico da Comunidade"
+                subtituloDocumento={`Projeto Social: ${formData.nome}`}
+              >
+                <div className="space-y-5 text-sm text-slate-800 leading-relaxed">
+                  {/* Metadados */}
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs border-b border-slate-200 pb-3">
+                    <p><strong>Bairro/Comunidade:</strong> {diagnosticoData.bairro || '—'}</p>
+                    <p><strong>Município:</strong> {diagnosticoData.municipio || '—'}</p>
+                    <p><strong>Estado:</strong> {diagnosticoData.estado || '—'}</p>
+                    <p><strong>Data do Diagnóstico:</strong> {diagnosticoData.data_diagnostico ? new Date(diagnosticoData.data_diagnostico + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</p>
+                    <p className="col-span-2"><strong>Responsável:</strong> {todosVoluntarios.find(v => v.id === diagnosticoData.responsavel_diagnostico_id)?.nome_completo || '—'}</p>
+                  </div>
+
+                  {/* 1. Introdução */}
+                  {diagnosticoData.introducao && (
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">1. Introdução & Histórico Territorial</h4>
+                      <p className="whitespace-pre-wrap">{diagnosticoData.introducao}</p>
+                    </div>
+                  )}
+
+                  {/* 2. Objetivo */}
+                  {diagnosticoData.objetivo && (
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">2. Objetivo do Diagnóstico</h4>
+                      <p className="whitespace-pre-wrap">{diagnosticoData.objetivo}</p>
+                    </div>
+                  )}
+
+                  {/* 3. Metodologia */}
+                  {diagnosticoData.metodologia && (
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">3. Metodologia</h4>
+                      <p className="whitespace-pre-wrap">{diagnosticoData.metodologia}</p>
+                    </div>
+                  )}
+
+                  {/* 4. Público possível */}
+                  {diagnosticoData.publico_possivel && (
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">4. Público Possível para Trabalho</h4>
+                      <p className="whitespace-pre-wrap">{diagnosticoData.publico_possivel}</p>
+                    </div>
+                  )}
+
+                  {/* 5. Situação habitacional */}
+                  {diagnosticoData.situacao_habitacional && (
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">5. Situação Habitacional da Comunidade</h4>
+                      <p className="whitespace-pre-wrap">{diagnosticoData.situacao_habitacional}</p>
+                    </div>
+                  )}
+
+                  {/* 6. Situação socioeconômica */}
+                  {diagnosticoData.situacao_socioeconomica && (
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">6. Situação Socioeconômica da Comunidade</h4>
+                      <p className="whitespace-pre-wrap">{diagnosticoData.situacao_socioeconomica}</p>
+                    </div>
+                  )}
+
+                  {/* 7. Potencialidades */}
+                  {diagnosticoData.principais_potencialidades && (
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#10B981] mb-1">7. Principais Potencialidades</h4>
+                      <p className="whitespace-pre-wrap">{diagnosticoData.principais_potencialidades}</p>
+                    </div>
+                  )}
+
+                  {/* 8. Vulnerabilidades */}
+                  {diagnosticoData.principais_vulnerabilidades && (
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#EF4444] mb-1">8. Principais Vulnerabilidades</h4>
+                      <p className="whitespace-pre-wrap">{diagnosticoData.principais_vulnerabilidades}</p>
+                    </div>
+                  )}
+
+                  {/* 9. Outras informações */}
+                  {diagnosticoData.outras_informacoes && (
+                    <div>
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">9. Outras Informações</h4>
+                      <p className="whitespace-pre-wrap">{diagnosticoData.outras_informacoes}</p>
+                    </div>
+                  )}
+                </div>
+              </PapelTimbradoModal>
 
               {/* SUB-TELA GESTÃO: PLANEJAMENTO */}
               {gestaoSubTab === 'planejamento' && (
