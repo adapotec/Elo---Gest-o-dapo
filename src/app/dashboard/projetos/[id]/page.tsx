@@ -1266,26 +1266,81 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                     </button>
                   </div>
 
-                  {/* SEÇÃO PLANEJAMENTO: APRESENTAÇÃO */}
+                  {/* SEÇÃO PLANEJAMENTO: APRESENTAÇÃO & JUSTIFICATIVA */}
                   {planejamentoSection === 'apresentacao' && (
-                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-                      <h3 className="font-display font-bold text-base text-[var(--text-primary)] border-b border-[var(--border-default)] pb-2">
-                        Apresentação, Justificativa & Público-Alvo
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
+                      <div className="border-b border-[var(--border-default)] pb-3">
+                        <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                          Apresentação, Justificativa & Público-Alvo
+                        </h3>
+                        <p className="text-xs text-[var(--text-muted)]">Fundamentação conceitual, relevância social, público participante e território de atuação</p>
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* 1. Apresentação */}
                         <div>
                           <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Apresentação do Projeto</label>
-                          <textarea name="apresentacao" value={formData.apresentacao} onChange={handleChange} rows={4} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Apresentação detalhada da proposta..." />
+                          <textarea
+                            name="apresentacao"
+                            value={formData.apresentacao}
+                            onChange={handleChange}
+                            rows={5}
+                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                            placeholder="Apresentação detalhada da proposta, histórico da iniciativa e escopo geral das atividades..."
+                          />
                         </div>
+
+                        {/* 2. Justificativa Social */}
                         <div>
                           <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Justificativa Social</label>
-                          <textarea name="justificativa" value={formData.justificativa} onChange={handleChange} rows={4} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Relevância da ação e impacto socioambiental..." />
+                          <textarea
+                            name="justificativa"
+                            value={formData.justificativa}
+                            onChange={handleChange}
+                            rows={5}
+                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                            placeholder="Relevância da ação, problema social a ser enfrentado, direitos a serem garantidos e impacto comunitário esperado..."
+                          />
                         </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Input label="Público-Alvo" name="publico_alvo" value={formData.publico_alvo} onChange={handleChange} placeholder="Ex: Crianças de 6 a 12 anos" />
-                        <Input label="Critérios de Ingresso / Permanência" name="ingresso_permanencia" value={formData.ingresso_permanencia} onChange={handleChange} placeholder="Ex: Frequência escolar mínima" />
-                        <Input label="Localidade da Execução" name="localidade" value={formData.localidade} onChange={handleChange} placeholder="Ex: Sede Ádapo / Escola Comunitária" />
+
+                        {/* 3. Público-Alvo */}
+                        <div>
+                          <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Público-Alvo</label>
+                          <textarea
+                            name="publico_alvo"
+                            value={formData.publico_alvo}
+                            onChange={handleChange}
+                            rows={4}
+                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                            placeholder="Perfil detalhado do público: faixa etária, gênero, recorte racial, condições de vulnerabilidade social e quantitativo estimado..."
+                          />
+                        </div>
+
+                        {/* 4. Critérios de Ingresso / Permanência */}
+                        <div>
+                          <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Critérios de Ingresso e Permanência</label>
+                          <textarea
+                            name="ingresso_permanencia"
+                            value={formData.ingresso_permanencia}
+                            onChange={handleChange}
+                            rows={4}
+                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                            placeholder="Requisitos de acesso, processo seletivo ou inscrição, frequência mínima exigida, compromissos familiares e critérios de continuidade..."
+                          />
+                        </div>
+
+                        {/* 5. Localidade da Execução */}
+                        <div>
+                          <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Localidade da Execução & Território</label>
+                          <textarea
+                            name="localidade"
+                            value={formData.localidade}
+                            onChange={handleChange}
+                            rows={4}
+                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                            placeholder="Endereço ou polos de atendimento, equipamentos comunitários parceiros, abrangência geográfica e acessibilidade do local..."
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
