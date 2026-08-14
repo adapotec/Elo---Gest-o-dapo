@@ -1142,7 +1142,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
               >
                 <div className="space-y-5 text-sm text-slate-800 leading-relaxed">
                   {/* Metadados */}
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs border-b border-slate-200 pb-3">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs border-b border-slate-200 pb-3 timbrado-avoid-break">
                     <p><strong>Bairro/Comunidade:</strong> {diagnosticoData.bairro || '—'}</p>
                     <p><strong>Município:</strong> {diagnosticoData.municipio || '—'}</p>
                     <p><strong>Estado:</strong> {diagnosticoData.estado || '—'}</p>
@@ -1152,7 +1152,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
                   {/* 1. Introdução */}
                   {diagnosticoData.introducao && (
-                    <div>
+                    <div className="timbrado-avoid-break">
                       <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">1. Introdução & Histórico Territorial</h4>
                       <p className="whitespace-pre-wrap">{diagnosticoData.introducao}</p>
                     </div>
@@ -1160,7 +1160,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
                   {/* 2. Objetivo */}
                   {diagnosticoData.objetivo && (
-                    <div>
+                    <div className="timbrado-avoid-break">
                       <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">2. Objetivo do Diagnóstico</h4>
                       <p className="whitespace-pre-wrap">{diagnosticoData.objetivo}</p>
                     </div>
@@ -1168,7 +1168,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
                   {/* 3. Metodologia */}
                   {diagnosticoData.metodologia && (
-                    <div>
+                    <div className="timbrado-avoid-break">
                       <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">3. Metodologia</h4>
                       <p className="whitespace-pre-wrap">{diagnosticoData.metodologia}</p>
                     </div>
@@ -1176,7 +1176,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
                   {/* 4. Público possível */}
                   {diagnosticoData.publico_possivel && (
-                    <div>
+                    <div className="timbrado-avoid-break">
                       <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">4. Público Possível para Trabalho</h4>
                       <p className="whitespace-pre-wrap">{diagnosticoData.publico_possivel}</p>
                     </div>
@@ -1184,7 +1184,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
                   {/* 5. Situação habitacional */}
                   {diagnosticoData.situacao_habitacional && (
-                    <div>
+                    <div className="timbrado-avoid-break">
                       <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">5. Situação Habitacional da Comunidade</h4>
                       <p className="whitespace-pre-wrap">{diagnosticoData.situacao_habitacional}</p>
                     </div>
@@ -1192,7 +1192,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
                   {/* 6. Situação socioeconômica */}
                   {diagnosticoData.situacao_socioeconomica && (
-                    <div>
+                    <div className="timbrado-avoid-break">
                       <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">6. Situação Socioeconômica da Comunidade</h4>
                       <p className="whitespace-pre-wrap">{diagnosticoData.situacao_socioeconomica}</p>
                     </div>
@@ -1200,7 +1200,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
                   {/* 7. Potencialidades */}
                   {diagnosticoData.principais_potencialidades && (
-                    <div>
+                    <div className="timbrado-avoid-break">
                       <h4 className="font-bold text-xs uppercase tracking-wide text-[#10B981] mb-1">7. Principais Potencialidades</h4>
                       <p className="whitespace-pre-wrap">{diagnosticoData.principais_potencialidades}</p>
                     </div>
@@ -1208,7 +1208,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
                   {/* 8. Vulnerabilidades */}
                   {diagnosticoData.principais_vulnerabilidades && (
-                    <div>
+                    <div className="timbrado-avoid-break">
                       <h4 className="font-bold text-xs uppercase tracking-wide text-[#EF4444] mb-1">8. Principais Vulnerabilidades</h4>
                       <p className="whitespace-pre-wrap">{diagnosticoData.principais_vulnerabilidades}</p>
                     </div>
@@ -1216,7 +1216,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
                   {/* 9. Outras informações */}
                   {diagnosticoData.outras_informacoes && (
-                    <div>
+                    <div className="timbrado-avoid-break">
                       <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">9. Outras Informações</h4>
                       <p className="whitespace-pre-wrap">{diagnosticoData.outras_informacoes}</p>
                     </div>
