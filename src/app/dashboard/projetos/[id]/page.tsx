@@ -153,6 +153,7 @@ interface ItemProgramacaoAcao {
   atividade: string;
   materiais: string;
   equipe: string;
+  is_custom_equipe?: boolean;
   local: string;
   meta_ids: string[];
 }
@@ -669,12 +670,18 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
           atividade: '',
           materiais: '',
           equipe: '',
+          is_custom_equipe: false,
           local: '',
           meta_ids: [],
         },
       ]);
     } else {
-      setProgramacaoRows(JSON.parse(JSON.stringify(existing)));
+      setProgramacaoRows(
+        existing.map((row) => ({
+          ...row,
+          is_custom_equipe: row.equipe ? !todosVoluntarios.some((v) => v.nome_completo === row.equipe) : false,
+        }))
+      );
     }
   };
 
@@ -687,6 +694,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
         atividade: '',
         materiais: '',
         equipe: '',
+        is_custom_equipe: false,
         local: '',
         meta_ids: [],
       },
@@ -2386,15 +2394,54 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                             />
                           </div>
 
-                          <div className="lg:col-span-2">
+                          <div className="lg:col-span-3">
                             <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Equipe / Responsáveis</label>
-                            <input
-                              type="text"
-                              value={row.equipe}
-                              onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'equipe', e.target.value)}
-                              placeholder="Ex: Monitor João, Apoio..."
-                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
-                            />
+                            {row.is_custom_equipe ? (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={row.equipe}
+                                  onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'equipe', e.target.value)}
+                                  placeholder="Digite o nome..."
+                                  className="w-full px-2.5 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--color-primary)] text-[var(--text-primary)] focus:outline-none"
+                                  autoFocus
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleUpdateProgramacaoRow(rIdx, 'is_custom_equipe', false);
+                                    handleUpdateProgramacaoRow(rIdx, 'equipe', '');
+                                  }}
+                                  className="text-[10px] px-2 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-muted)] hover:text-[var(--text-primary)] whitespace-nowrap font-medium"
+                                  title="Selecionar da lista de voluntários"
+                                >
+                                  Lista
+                                </button>
+                              </div>
+                            ) : (
+                              <select
+                                value={todosVoluntarios.some((v) => v.nome_completo === row.equipe) ? row.equipe : (row.equipe ? '__OUTRO__' : '')}
+                                onChange={(e) => {
+                                  if (e.target.value === '__OUTRO__') {
+                                    handleUpdateProgramacaoRow(rIdx, 'is_custom_equipe', true);
+                                    handleUpdateProgramacaoRow(rIdx, 'equipe', '');
+                                  } else {
+                                    handleUpdateProgramacaoRow(rIdx, 'equipe', e.target.value);
+                                  }
+                                }}
+                                className="w-full px-2.5 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                              >
+                                <option value="">Selecione um voluntário...</option>
+                                <optgroup label="Voluntários Cadastrados">
+                                  {todosVoluntarios.map((v) => (
+                                    <option key={v.id} value={v.nome_completo}>
+                                      {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                                <option value="__OUTRO__">➕ Outro (Digitar nome manual)</option>
+                              </select>
+                            )}
                           </div>
 
                           <div className="lg:col-span-1 flex items-end justify-end">
