@@ -731,9 +731,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
             : a
         )
       );
-      setSelectedAcaoForProgramacao((prev) =>
-        prev ? { ...prev, programacao_itens: programacaoRows } : null
-      );
+      setSelectedAcaoForProgramacao(null);
     }
     setSavingProgramacao(false);
   };
