@@ -151,8 +151,8 @@ interface ItemProgramacaoAcao {
   id: string;
   horario: string;
   atividade: string;
-  materiais: string;
-  equipe: string;
+  materiais: string[] | string;
+  equipe: string[] | string;
   is_custom_equipe?: boolean;
   local: string;
   meta_ids: string[];
@@ -658,6 +658,15 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     loadData();
   };
 
+  // Helper para normalizar arrays de materiais/equipe
+  const ensureStringArray = (val: any): string[] => {
+    if (Array.isArray(val)) return val.map((v) => String(v).trim()).filter(Boolean);
+    if (typeof val === 'string' && val.trim()) {
+      return [val.trim()];
+    }
+    return [];
+  };
+
   // Programação de Ação Handlers
   const handleOpenProgramacaoEditor = (acao: AcaoExecucao) => {
     setSelectedAcaoForProgramacao(acao);
@@ -668,9 +677,8 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
           id: crypto.randomUUID(),
           horario: '08:30 - 09:00',
           atividade: '',
-          materiais: '',
-          equipe: '',
-          is_custom_equipe: false,
+          materiais: [],
+          equipe: [],
           local: '',
           meta_ids: [],
         },
@@ -679,7 +687,9 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       setProgramacaoRows(
         existing.map((row) => ({
           ...row,
-          is_custom_equipe: row.equipe ? !todosVoluntarios.some((v) => v.nome_completo === row.equipe) : false,
+          materiais: ensureStringArray(row.materiais),
+          equipe: ensureStringArray(row.equipe),
+          meta_ids: Array.isArray(row.meta_ids) ? row.meta_ids : [],
         }))
       );
     }
@@ -692,9 +702,8 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
         id: crypto.randomUUID(),
         horario: '',
         atividade: '',
-        materiais: '',
-        equipe: '',
-        is_custom_equipe: false,
+        materiais: [],
+        equipe: [],
         local: '',
         meta_ids: [],
       },
@@ -705,6 +714,46 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     const updated = [...programacaoRows];
     updated[idx] = { ...updated[idx], [field]: value };
     setProgramacaoRows(updated);
+  };
+
+  const handleAddMaterialToRow = (rowIdx: number, materialName: string) => {
+    const trimmed = materialName.trim();
+    if (!trimmed) return;
+    const row = programacaoRows[rowIdx];
+    const current = ensureStringArray(row.materiais);
+    if (!current.includes(trimmed)) {
+      handleUpdateProgramacaoRow(rowIdx, 'materiais', [...current, trimmed]);
+    }
+  };
+
+  const handleRemoveMaterialFromRow = (rowIdx: number, matIdx: number) => {
+    const row = programacaoRows[rowIdx];
+    const current = ensureStringArray(row.materiais);
+    handleUpdateProgramacaoRow(
+      rowIdx,
+      'materiais',
+      current.filter((_, i) => i !== matIdx)
+    );
+  };
+
+  const handleAddEquipeToRow = (rowIdx: number, equipeName: string) => {
+    const trimmed = equipeName.trim();
+    if (!trimmed) return;
+    const row = programacaoRows[rowIdx];
+    const current = ensureStringArray(row.equipe);
+    if (!current.includes(trimmed)) {
+      handleUpdateProgramacaoRow(rowIdx, 'equipe', [...current, trimmed]);
+    }
+  };
+
+  const handleRemoveEquipeFromRow = (rowIdx: number, eqIdx: number) => {
+    const row = programacaoRows[rowIdx];
+    const current = ensureStringArray(row.equipe);
+    handleUpdateProgramacaoRow(
+      rowIdx,
+      'equipe',
+      current.filter((_, i) => i !== eqIdx)
+    );
   };
 
   const handleToggleMetaInRow = (rowIdx: number, metaId: string) => {
@@ -2374,74 +2423,127 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
                           <div className="lg:col-span-4">
                             <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Atividade / Dinâmica</label>
-                            <input
-                              type="text"
+                            <textarea
                               value={row.atividade}
                               onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'atividade', e.target.value)}
                               placeholder="Ex: Acolhimento, oficina prática, lanche..."
-                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+                              rows={2}
+                              className="w-full px-3 py-1.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium resize-none"
                             />
                           </div>
 
-                          <div className="lg:col-span-3">
-                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Materiais / Insumos</label>
-                            <input
-                              type="text"
-                              value={row.materiais}
-                              onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'materiais', e.target.value)}
-                              placeholder="Ex: Cartolinas, tesouras, cola..."
-                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
-                            />
-                          </div>
+                          {/* Materiais / Insumos (Múltiplos) */}
+                          <div className="lg:col-span-3 space-y-1.5">
+                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                              Materiais / Insumos {ensureStringArray(row.materiais).length > 0 && `(${ensureStringArray(row.materiais).length})`}
+                            </label>
 
-                          <div className="lg:col-span-3">
-                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Equipe / Responsáveis</label>
-                            {row.is_custom_equipe ? (
-                              <div className="flex items-center gap-1.5">
-                                <input
-                                  type="text"
-                                  value={row.equipe}
-                                  onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'equipe', e.target.value)}
-                                  placeholder="Digite o nome..."
-                                  className="w-full px-2.5 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--color-primary)] text-[var(--text-primary)] focus:outline-none"
-                                  autoFocus
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    handleUpdateProgramacaoRow(rIdx, 'is_custom_equipe', false);
-                                    handleUpdateProgramacaoRow(rIdx, 'equipe', '');
-                                  }}
-                                  className="text-[10px] px-2 py-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-muted)] hover:text-[var(--text-primary)] whitespace-nowrap font-medium"
-                                  title="Selecionar da lista de voluntários"
-                                >
-                                  Lista
-                                </button>
+                            {ensureStringArray(row.materiais).length > 0 && (
+                              <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pr-1">
+                                {ensureStringArray(row.materiais).map((mat, mIdx) => (
+                                  <span
+                                    key={mIdx}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)] shadow-xs"
+                                  >
+                                    <span className="truncate max-w-[120px]">{mat}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveMaterialFromRow(rIdx, mIdx)}
+                                      className="text-[var(--text-muted)] hover:text-[var(--color-danger)] p-0.5"
+                                      title="Remover material"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                ))}
                               </div>
-                            ) : (
-                              <select
-                                value={todosVoluntarios.some((v) => v.nome_completo === row.equipe) ? row.equipe : (row.equipe ? '__OUTRO__' : '')}
-                                onChange={(e) => {
-                                  if (e.target.value === '__OUTRO__') {
-                                    handleUpdateProgramacaoRow(rIdx, 'is_custom_equipe', true);
-                                    handleUpdateProgramacaoRow(rIdx, 'equipe', '');
-                                  } else {
-                                    handleUpdateProgramacaoRow(rIdx, 'equipe', e.target.value);
+                            )}
+
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                id={`input-mat-${row.id}`}
+                                placeholder="Adicionar item (+ Enter)..."
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddMaterialToRow(rIdx, e.currentTarget.value);
+                                    e.currentTarget.value = '';
                                   }
                                 }}
-                                className="w-full px-2.5 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                                className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const input = document.getElementById(`input-mat-${row.id}`) as HTMLInputElement;
+                                  if (input && input.value) {
+                                    handleAddMaterialToRow(rIdx, input.value);
+                                    input.value = '';
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
+                                title="Adicionar material"
                               >
-                                <option value="">Selecione um voluntário...</option>
-                                <optgroup label="Voluntários Cadastrados">
-                                  {todosVoluntarios.map((v) => (
-                                    <option key={v.id} value={v.nome_completo}>
-                                      {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
-                                    </option>
-                                  ))}
-                                </optgroup>
-                                <option value="__OUTRO__">➕ Outro (Digitar nome manual)</option>
-                              </select>
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Equipe / Responsáveis (Múltiplos) */}
+                          <div className="lg:col-span-3 space-y-1.5">
+                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                              Equipe / Responsáveis {ensureStringArray(row.equipe).length > 0 && `(${ensureStringArray(row.equipe).length})`}
+                            </label>
+
+                            {ensureStringArray(row.equipe).length > 0 && (
+                              <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto pr-1">
+                                {ensureStringArray(row.equipe).map((membro, eqIdx) => (
+                                  <span
+                                    key={eqIdx}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20 shadow-xs"
+                                  >
+                                    <span className="truncate max-w-[120px]">{membro}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveEquipeFromRow(rIdx, eqIdx)}
+                                      className="text-[var(--color-primary)] hover:text-[var(--color-danger)] p-0.5"
+                                      title="Remover responsável"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
                             )}
+
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '__OUTRO__') {
+                                  const nomeManual = prompt('Digite o nome do responsável ou equipe externa:');
+                                  if (nomeManual && nomeManual.trim()) {
+                                    handleAddEquipeToRow(rIdx, nomeManual.trim());
+                                  }
+                                } else if (val) {
+                                  handleAddEquipeToRow(rIdx, val);
+                                }
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                            >
+                                <option value="">+ Vincular responsável...</option>
+                                <optgroup label="Voluntários Cadastrados">
+                                  {todosVoluntarios
+                                    .filter((v) => !ensureStringArray(row.equipe).includes(v.nome_completo))
+                                    .map((v) => (
+                                      <option key={v.id} value={v.nome_completo}>
+                                        {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
+                                      </option>
+                                    ))}
+                                </optgroup>
+                                <option value="__OUTRO__">➕ Outro (Digitar nome manual...)</option>
+                              </select>
                           </div>
 
                           <div className="lg:col-span-1 flex items-end justify-end">
@@ -2572,15 +2674,37 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                       const metasDaLinha = todasMetasDisponiveis.filter((m) =>
                         (item.meta_ids || []).includes(m.id)
                       );
+                      const materiaisLinha = ensureStringArray(item.materiais);
+                      const equipeLinha = ensureStringArray(item.equipe);
 
                       return (
                         <tr key={item.id || idx} className="border-b border-slate-200 timbrado-avoid-break">
-                          <td className="p-2 border border-slate-300 font-bold text-slate-900">{item.horario || '—'}</td>
-                          <td className="p-2 border border-slate-300 font-medium text-slate-800">{item.atividade || '—'}</td>
-                          <td className="p-2 border border-slate-300 text-slate-700">{item.materiais || '—'}</td>
-                          <td className="p-2 border border-slate-300 text-slate-700">{item.equipe || '—'}</td>
-                          <td className="p-2 border border-slate-300 text-slate-700">{item.local || '—'}</td>
-                          <td className="p-2 border border-slate-300 text-slate-700">
+                          <td className="p-2 border border-slate-300 font-bold text-slate-900 align-top">{item.horario || '—'}</td>
+                          <td className="p-2 border border-slate-300 font-medium text-slate-800 align-top">{item.atividade || '—'}</td>
+                          <td className="p-2 border border-slate-300 text-slate-700 align-top">
+                            {materiaisLinha.length > 0 ? (
+                              <ul className="list-disc list-inside space-y-0.5">
+                                {materiaisLinha.map((m, mI) => (
+                                  <li key={mI}>{m}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                          <td className="p-2 border border-slate-300 text-slate-700 align-top">
+                            {equipeLinha.length > 0 ? (
+                              <ul className="list-disc list-inside space-y-0.5 font-medium">
+                                {equipeLinha.map((e, eI) => (
+                                  <li key={eI}>{e}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                          <td className="p-2 border border-slate-300 text-slate-700 align-top">{item.local || '—'}</td>
+                          <td className="p-2 border border-slate-300 text-slate-700 align-top">
                             {metasDaLinha.length > 0 ? (
                               <ul className="list-disc list-inside space-y-0.5">
                                 {metasDaLinha.map((m) => (
