@@ -36,18 +36,15 @@ export function PapelTimbradoModal({
     <div className="timbrado-print-modal-wrapper fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
       <style>{`
         @media print {
-          /* Esconde tudo na página */
+          /* 1. Esconde tudo fora do portal timbrado */
           body > * {
             display: none !important;
           }
 
-          /* Exibe exclusivamente o modal timbrado */
           body > .timbrado-print-portal {
             display: block !important;
             position: static !important;
             width: 100% !important;
-            height: auto !important;
-            min-height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
@@ -57,7 +54,6 @@ export function PapelTimbradoModal({
             display: block !important;
             position: static !important;
             width: 100% !important;
-            height: auto !important;
             background: white !important;
             padding: 0 !important;
             margin: 0 !important;
@@ -69,8 +65,6 @@ export function PapelTimbradoModal({
             position: static !important;
             width: 100% !important;
             max-width: 100% !important;
-            height: auto !important;
-            max-height: none !important;
             margin: 0 !important;
             padding: 0 !important;
             border: none !important;
@@ -90,20 +84,71 @@ export function PapelTimbradoModal({
             padding: 0 !important;
             margin: 0 !important;
             overflow: visible !important;
-            height: auto !important;
-            max-height: none !important;
             background: white !important;
             color: #0f172a !important;
           }
 
+          /* 2. Cabeçalho e Rodapé Fixos em TODAS as páginas de impressão */
+          .timbrado-fixed-header {
+            display: block !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: 95px !important;
+            background: white !important;
+            z-index: 9999 !important;
+            text-align: center !important;
+          }
+
+          .timbrado-fixed-footer {
+            display: block !important;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: 75px !important;
+            background: white !important;
+            z-index: 9999 !important;
+            text-align: center !important;
+          }
+
+          /* 3. Tabela de Impressão com Espaçadores que garantem que o conteúdo nunca sobreponha o cabeçalho/rodapé */
+          .timbrado-print-table {
+            display: table !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+            border: none !important;
+          }
+
+          .timbrado-table-header-space {
+            display: table-header-group !important;
+          }
+
+          .timbrado-table-header-space th {
+            height: 105px !important;
+            padding: 0 !important;
+            border: none !important;
+          }
+
+          .timbrado-table-footer-space {
+            display: table-footer-group !important;
+          }
+
+          .timbrado-table-footer-space td {
+            height: 85px !important;
+            padding: 0 !important;
+            border: none !important;
+          }
+
           .timbrado-sheet {
-            display: flex !important;
-            flex-direction: column !important;
+            display: block !important;
             width: 100% !important;
             max-width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            min-height: auto !important;
             background: white !important;
           }
 
@@ -117,12 +162,50 @@ export function PapelTimbradoModal({
             page-break-inside: avoid !important;
           }
 
+          /* Esconde os elementos estáticos na impressão para usar os fixos */
+          .timbrado-static-header,
+          .timbrado-static-footer {
+            display: none !important;
+          }
+
           @page {
             size: A4 portrait;
-            margin: 12mm 15mm;
+            margin: 8mm 14mm 8mm 14mm;
+          }
+        }
+
+        @media screen {
+          .timbrado-fixed-header,
+          .timbrado-fixed-footer {
+            display: none;
+          }
+          .timbrado-print-table {
+            display: block;
+            width: 100%;
+          }
+          .timbrado-table-header-space,
+          .timbrado-table-footer-space {
+            display: none;
           }
         }
       `}</style>
+
+      {/* Elementos Fixos para Impressão */}
+      <div className="timbrado-fixed-header">
+        <img
+          src="/images/image1.png"
+          alt="Cabeçalho Oficial Instituto Ádapo"
+          className="w-full object-contain max-h-24 mx-auto block"
+        />
+      </div>
+
+      <div className="timbrado-fixed-footer">
+        <img
+          src="/images/image2.png"
+          alt="Rodapé Oficial Instituto Ádapo"
+          className="w-full object-contain max-h-16 mx-auto block"
+        />
+      </div>
 
       <div className="timbrado-modal-card relative w-full max-w-4xl bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
         {/* Header de Controle (Não impresso) */}
@@ -145,37 +228,58 @@ export function PapelTimbradoModal({
         </div>
 
         {/* Área Impressa (Papel Timbrado Oficial Ádapo) */}
-        <div className="timbrado-print-body flex-1 overflow-y-auto p-8 md:p-12 bg-white text-slate-900 font-sans">
-          <div className="timbrado-sheet space-y-6 max-w-3xl mx-auto flex flex-col min-h-[900px]">
-            {/* Cabeçalho de Imagem Oficial do Timbrado Ádapo */}
-            <header className="w-full timbrado-avoid-break">
-              <img
-                src="/images/image1.png"
-                alt="Cabeçalho Oficial Instituto Ádapo"
-                className="w-full object-contain max-h-36 block"
-              />
-            </header>
+        <div className="timbrado-print-body flex-1 overflow-y-auto p-6 md:p-12 bg-white text-slate-900 font-sans">
+          <table className="timbrado-print-table">
+            <thead className="timbrado-table-header-space">
+              <tr>
+                <th>&nbsp;</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div className="timbrado-sheet space-y-5 max-w-3xl mx-auto flex flex-col min-h-[950px] justify-between">
+                    {/* Cabeçalho Visual na Tela */}
+                    <div className="timbrado-static-header w-full timbrado-avoid-break">
+                      <img
+                        src="/images/image1.png"
+                        alt="Cabeçalho Oficial Instituto Ádapo"
+                        className="w-full object-contain max-h-28 block mx-auto"
+                      />
+                    </div>
 
-            {/* Título do Documento */}
-            <div className="text-center py-2 border-b-2 border-[#F2632D] timbrado-avoid-break">
-              <h2 className="text-xl font-bold uppercase tracking-wide text-[#F2632D]">{tituloDocumento}</h2>
-              {subtituloDocumento && (
-                <p className="text-xs text-slate-600 mt-1 font-semibold">{subtituloDocumento}</p>
-              )}
-            </div>
+                    {/* Bloco Principal do Documento */}
+                    <div className="flex-1 space-y-4">
+                      {/* Título do Documento */}
+                      <div className="text-center py-2 border-b-2 border-[#F2632D] timbrado-avoid-break">
+                        <h2 className="text-lg md:text-xl font-bold uppercase tracking-wide text-[#F2632D]">{tituloDocumento}</h2>
+                        {subtituloDocumento && (
+                          <p className="text-xs text-slate-600 mt-1 font-semibold">{subtituloDocumento}</p>
+                        )}
+                      </div>
 
-            {/* Conteúdo Dinâmico do Documento */}
-            <div className="flex-1 py-4 text-sm text-slate-800 leading-relaxed space-y-4">{children}</div>
+                      {/* Conteúdo Dinâmico do Documento */}
+                      <div className="py-2 text-sm text-slate-800 leading-relaxed space-y-4">{children}</div>
+                    </div>
 
-            {/* Rodapé de Imagem Oficial do Timbrado Ádapo */}
-            <footer className="w-full pt-8 mt-auto timbrado-avoid-break">
-              <img
-                src="/images/image2.png"
-                alt="Rodapé Oficial Instituto Ádapo"
-                className="w-full object-contain max-h-24 block"
-              />
-            </footer>
-          </div>
+                    {/* Rodapé Visual na Tela (Fixado no final da folha) */}
+                    <div className="timbrado-static-footer w-full pt-6 mt-auto timbrado-avoid-break">
+                      <img
+                        src="/images/image2.png"
+                        alt="Rodapé Oficial Instituto Ádapo"
+                        className="w-full object-contain max-h-20 block mx-auto"
+                      />
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot className="timbrado-table-footer-space">
+              <tr>
+                <td>&nbsp;</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
     </div>

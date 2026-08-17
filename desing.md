@@ -101,7 +101,7 @@ Extraída da referência institucional (`CORES.png`):
   --border-strong: #4A4235;
 
   --color-primary: var(--raw-laranja);
-  --color-primary-hover: #F7955F;
+  --color-primary-hover: #f7955fff;
   --color-primary-soft: #3D2A1E;
 
   --color-accent-purple: #B85BB3;
