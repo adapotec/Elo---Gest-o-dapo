@@ -7,6 +7,9 @@ export interface Column<T> {
   header: string;
   render?: (item: T) => React.ReactNode;
   align?: 'left' | 'center' | 'right';
+  width?: string;
+  className?: string;
+  headerClassName?: string;
 }
 
 interface DataTableProps<T> {
@@ -29,16 +32,17 @@ export function DataTable<T>({
   loading = false,
 }: DataTableProps<T>) {
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
-      <table className="w-full text-left border-collapse text-sm">
+    <div className="w-full overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
+      <table className="w-full text-left border-collapse text-xs sm:text-sm">
         <thead>
           <tr className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50">
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`py-3.5 px-4 font-semibold text-xs text-[var(--text-secondary)] uppercase tracking-wider ${
+                style={col.width ? { width: col.width, minWidth: col.width } : undefined}
+                className={`py-3.5 px-4 font-bold text-[11px] text-[var(--text-secondary)] uppercase tracking-wider ${
                   col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'
-                }`}
+                } ${col.headerClassName || ''}`}
               >
                 {col.header}
               </th>
@@ -57,7 +61,7 @@ export function DataTable<T>({
             </tr>
           ) : data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="py-12 text-center text-[var(--text-muted)]">
+              <td colSpan={columns.length} className="py-12 text-center text-xs text-[var(--text-muted)]">
                 {emptyMessage}
               </td>
             </tr>
@@ -71,15 +75,16 @@ export function DataTable<T>({
                   key={id}
                   onClick={() => onRowClick && onRowClick(item)}
                   className={`transition-colors ${
-                    onRowClick ? 'cursor-pointer hover:bg-[var(--bg-secondary)]' : ''
-                  } ${isSelected ? 'bg-[var(--color-primary-soft)]/50 font-medium' : ''}`}
+                    onRowClick ? 'cursor-pointer hover:bg-[var(--bg-secondary)]/60' : ''
+                  } ${isSelected ? 'bg-[var(--color-primary)]/10 font-medium' : ''}`}
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={`py-3.5 px-4 text-[var(--text-primary)] ${
+                      style={col.width ? { width: col.width } : undefined}
+                      className={`py-3 px-4 text-[var(--text-primary)] ${
                         col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'
-                      }`}
+                      } ${col.className || ''}`}
                     >
                       {col.render ? col.render(item) : (item as any)[col.key]}
                     </td>
