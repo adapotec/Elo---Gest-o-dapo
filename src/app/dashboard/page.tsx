@@ -52,8 +52,8 @@ export default function DashboardPage() {
   // - Fundo Cor Viva estilo Trello (imersivo) ou Dark Mode: logo branca
   const isVibrantOrDark = bgStyle === 'imersivo' || theme === 'dark';
   const logoSrc = isVibrantOrDark
-    ? '/logo/logo branca sem fundo ádapo.png'
-    : '/logo/log preta sem fundo.png';
+    ? '/logo/logo-branca-sem-fundo.png'
+    : '/logo/logo-preta-sem-fundo.png';
 
   const [activeTab, setActiveTab] = useState<'geral' | 'modulos' | 'historico'>('geral');
   const [loading, setLoading] = useState(true);

@@ -160,7 +160,7 @@ export default function LoginPage() {
           {/* Logo & Header */}
           <div className="text-center space-y-2">
             <img
-              src="/logo/ELO Social - Gestão Ádapo.svg"
+              src="/logo/elo-social-gestao-adapo.svg"
               alt="Logo ELO Social - Instituto Ádapo"
               className="w-16 h-16 mx-auto object-contain drop-shadow-md"
             />

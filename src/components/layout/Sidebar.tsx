@@ -178,7 +178,7 @@ export function Sidebar() {
           >
             {/* Logo Oficial do Sistema ELO Social em SVG */}
             <Image
-              src="/logo/ELO Social - Gestão Ádapo.svg"
+              src="/logo/elo-social-gestao-adapo.svg"
               alt="Logo ELO Social - Instituto Ádapo"
               width={38}
               height={38}
