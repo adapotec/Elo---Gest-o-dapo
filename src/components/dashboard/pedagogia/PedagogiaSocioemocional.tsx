@@ -221,10 +221,10 @@ export function PedagogiaSocioemocional({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Barra de Seleção: Criança, Mês e Responsável */}
-      <Card className="p-5 border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div className="space-y-4">
+      {/* ── Barra de Seleção: Criança, Mês e Responsável ── */}
+      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
             {/* Selecionar Criança */}
             <div className="space-y-1">
@@ -234,7 +234,7 @@ export function PedagogiaSocioemocional({
               <select
                 value={selectedBeneficiarioId}
                 onChange={(e) => setSelectedBeneficiarioId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
               >
                 {inscritos.map((aluno) => (
                   <option key={aluno.id} value={aluno.id}>
@@ -253,7 +253,7 @@ export function PedagogiaSocioemocional({
                 type="month"
                 value={mesReferencia}
                 onChange={(e) => setMesReferencia(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
               />
             </div>
 
@@ -267,7 +267,7 @@ export function PedagogiaSocioemocional({
                 placeholder="Ex: Educadora Ana / Psicóloga Bruna"
                 value={responsavel}
                 onChange={(e) => setResponsavel(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:border-[var(--color-primary)]"
+                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
               />
             </div>
           </div>
@@ -296,7 +296,7 @@ export function PedagogiaSocioemocional({
 
         {/* Metadados da Criança */}
         {beneficiarioAtual && (
-          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[var(--border-default)]/60 text-xs text-[var(--text-muted)]">
+          <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-[var(--border-default)] text-xs text-[var(--text-muted)]">
             <Badge variant="primary">{projetoNome}</Badge>
             <span>•</span>
             <span>Nascimento: <strong>{beneficiarioAtual.data_nascimento ? new Date(beneficiarioAtual.data_nascimento).toLocaleDateString('pt-BR') : '—'}</strong></span>
@@ -312,23 +312,23 @@ export function PedagogiaSocioemocional({
             )}
           </div>
         )}
-      </Card>
+      </div>
 
       {/* Feedback de Salvamento */}
       {saveSuccess && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
+        <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
-          Ficha de Acompanhamento Socioemocional gravada com sucesso!
+          Ficha Socioemocional gravada com sucesso!
         </div>
       )}
 
-      {/* FORMULÁRIO DOS 4 EIXOS */}
-      <div className="space-y-6">
+      {/* ── FORMULÁRIO DOS 4 EIXOS ── */}
+      <div className="space-y-4">
         {/* EIXO 1: Autoestima e Autonomia */}
-        <Card className="p-6 border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-5">
-          <div className="border-b border-[var(--border-default)]/60 pb-3">
+        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
+          <div className="border-b border-[var(--border-default)] pb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[var(--color-primary)]" />
+              <Sparkles className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
               <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">
                 Eixo 1: Autoestima e Autonomia (O Sentir e o Fazer)
               </h3>
@@ -338,9 +338,9 @@ export function PedagogiaSocioemocional({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             {/* Expressão de Opiniões */}
-            <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
               <label className="font-semibold text-[var(--text-primary)] block">
                 Expressão de Opiniões
               </label>
@@ -348,7 +348,7 @@ export function PedagogiaSocioemocional({
                 A criança consegue verbalizar o que sente e expor suas ideias nas rodas de conversa e escuta?
               </p>
               <div className="space-y-1.5 pt-1">
-                {['Em desenvolvimento', 'Participa com apoio', 'Muito ativa e autônoma'].map((opcao) => (
+                {['Dificuldade em se expressar', 'Expressa-se com incentivo', 'Expressa-se espontaneamente'].map((opcao) => (
                   <label key={opcao} className="flex items-center gap-2 cursor-pointer text-[11px] text-[var(--text-secondary)]">
                     <input
                       type="radio"
@@ -365,15 +365,15 @@ export function PedagogiaSocioemocional({
             </div>
 
             {/* Enfrentamento de Desafios */}
-            <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
               <label className="font-semibold text-[var(--text-primary)] block">
                 Enfrentamento de Desafios
               </label>
               <p className="text-[10px] text-[var(--text-muted)] leading-tight">
-                Como reage diante de frustrações ou dificuldades em atividades manuais e oficinas?
+                Diante de tarefas complexas (construção de pipas, nós, desenho), persiste ou desiste com facilidade?
               </p>
               <div className="space-y-1.5 pt-1">
-                {['Apresenta irritabilidade', 'Pede ajuda facilmente', 'Persiste de forma independente'].map((opcao) => (
+                {['Frustra-se e desiste', 'Persiste com mediação', 'Enfrenta e busca soluções autônomas'].map((opcao) => (
                   <label key={opcao} className="flex items-center gap-2 cursor-pointer text-[11px] text-[var(--text-secondary)]">
                     <input
                       type="radio"
@@ -389,13 +389,13 @@ export function PedagogiaSocioemocional({
               </div>
             </div>
 
-            {/* Autoimagem */}
-            <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2.5">
+            {/* Autoimagem e Identidade */}
+            <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
               <label className="font-semibold text-[var(--text-primary)] block">
-                Autoimagem & Território
+                Autoimagem e Identidade Positiva
               </label>
               <p className="text-[10px] text-[var(--text-muted)] leading-tight">
-                Demonstra orgulho de suas produções, de sua identidade e do seu território?
+                Demonstra orgulho de suas características, sua história familiar e sua comunidade?
               </p>
               <div className="space-y-1.5 pt-1">
                 {['Em desenvolvimento', 'Demonstra pertencimento', 'Expressa orgulho de suas raízes'].map((opcao) => (
@@ -414,13 +414,13 @@ export function PedagogiaSocioemocional({
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* EIXO 2: Socialização e Cooperação */}
-        <Card className="p-6 border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-5">
-          <div className="border-b border-[var(--border-default)]/60 pb-3">
+        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
+          <div className="border-b border-[var(--border-default)] pb-3">
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-[var(--color-primary)]" />
+              <Users className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
               <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">
                 Eixo 2: Socialização e Cooperação (O Viver em Coletivo)
               </h3>
@@ -430,9 +430,9 @@ export function PedagogiaSocioemocional({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             {/* Resolução de Conflitos */}
-            <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
               <label className="font-semibold text-[var(--text-primary)] block">
                 Resolução de Conflitos
               </label>
@@ -457,7 +457,7 @@ export function PedagogiaSocioemocional({
             </div>
 
             {/* Trabalho em Equipe */}
-            <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
               <label className="font-semibold text-[var(--text-primary)] block">
                 Trabalho em Equipe
               </label>
@@ -482,7 +482,7 @@ export function PedagogiaSocioemocional({
             </div>
 
             {/* Cuidado com o Espaço Comum */}
-            <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
               <label className="font-semibold text-[var(--text-primary)] block">
                 Cuidado com o Espaço Comum
               </label>
@@ -506,25 +506,25 @@ export function PedagogiaSocioemocional({
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* EIXO 3: Adesão aos "Encantamentos" (Regras Lúdicas da Natureza) */}
-        <Card className="p-6 border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-5">
-          <div className="border-b border-[var(--border-default)]/60 pb-3">
+        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
+          <div className="border-b border-[var(--border-default)] pb-3">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[var(--color-primary)]" />
+              <Shield className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
               <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">
                 Eixo 3: Adesão aos "Encantamentos" (Regras Lúdicas)
               </h3>
             </div>
             <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-              No Ádapo, os combinados éticos são apresentados como "encantamentos" inspirados na floresta e na natureza (ex: respeitar horários, escutar o colega sem interromper, ajudar quem tem dificuldade).
+              No Ádapo, os combinados éticos são apresentados como "encantamentos" inspirados na floresta e na natureza.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             {/* Respeito ao Tempo e Ritmo */}
-            <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
               <label className="font-semibold text-[var(--text-primary)] block">
                 Respeito ao Tempo e Ritmo
               </label>
@@ -549,7 +549,7 @@ export function PedagogiaSocioemocional({
             </div>
 
             {/* Escuta Ativa */}
-            <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
               <label className="font-semibold text-[var(--text-primary)] block">
                 Escuta Ativa
               </label>
@@ -574,12 +574,12 @@ export function PedagogiaSocioemocional({
             </div>
 
             {/* Apoio Mútuo */}
-            <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
               <label className="font-semibold text-[var(--text-primary)] block">
                 Apoio Mútuo & Empatia
               </label>
               <p className="text-[10px] text-[var(--text-muted)] leading-tight">
-                Demonstra empatia e ajuda crianças que apresentam dificuldades cognitivas, motoras ou de integração?
+                Demonstra empatia e ajuda crianças que apresentam dificuldades?
               </p>
               <div className="space-y-1.5 pt-1">
                 {['Focada no próprio fazer', 'Auxilia quando orientada', 'Identifica a necessidade do outro e ajuda'].map((opcao) => (
@@ -598,59 +598,59 @@ export function PedagogiaSocioemocional({
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* EIXO 4: Registro Qualitativo (Diário de Bordo) */}
-        <Card className="p-6 border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-4">
-          <div className="border-b border-[var(--border-default)]/60 pb-3">
+        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
+          <div className="border-b border-[var(--border-default)] pb-3">
             <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[var(--color-primary)]" />
+              <FileText className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
               <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">
                 Eixo 4: Registro Qualitativo (Diário de Bordo)
               </h3>
             </div>
             <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-              Anotações descritivas, evolução de comportamento, pontos de atenção e plano de intervenção para o próximo mês.
+              Anotações descritivas, evolução de comportamento, pontos de atenção e plano de intervenção.
             </p>
           </div>
 
-          <div className="space-y-4 text-xs">
+          <div className="space-y-3 text-xs">
             {/* Evolução Observada */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className="font-semibold text-[var(--text-primary)] block">
                 1. Evolução Observada
               </label>
               <p className="text-[10px] text-[var(--text-muted)]">
-                Descreva avanços significativos de comportamento, autonomia ou socialização que ocorreram ao longo do mês.
+                Descreva avanços significativos de comportamento, autonomia ou socialização ao longo do mês.
               </p>
               <textarea
                 rows={3}
-                placeholder="Ex: Demonstrou maior segurança para expressar suas opiniões nas rodas e participou ativamente das dinâmicas em grupo..."
+                placeholder="Ex: Demonstrou maior segurança para expressar suas opiniões nas rodas e participou ativamente das dinâmicas..."
                 value={formData.eixo4_evolucao_observada}
                 onChange={(e) => setFormData({ ...formData, eixo4_evolucao_observada: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
               />
             </div>
 
             {/* Pontos de Atenção */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className="font-semibold text-[var(--text-primary)] block">
                 2. Pontos de Atenção
               </label>
               <p className="text-[10px] text-[var(--text-muted)]">
-                Registrar comportamentos que indicam necessidade de acolhimento específico, busca ativa ou articulação com a assistente social e a psicóloga.
+                Registrar comportamentos que indicam necessidade de acolhimento específico ou busca ativa.
               </p>
               <textarea
                 rows={3}
-                placeholder="Ex: Apresentou momentos de retração em dias de atividades com som alto; sugere-se acolhimento individualizado..."
+                placeholder="Ex: Apresentou momentos de retração em dias de atividades com som alto..."
                 value={formData.eixo4_pontos_atencao}
                 onChange={(e) => setFormData({ ...formData, eixo4_pontos_atencao: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
               />
             </div>
 
             {/* Intervenção Proposta */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className="font-semibold text-[var(--text-primary)] block">
                 3. Intervenção Proposta
               </label>
@@ -662,22 +662,23 @@ export function PedagogiaSocioemocional({
                 placeholder="Ex: Integrar em dupla com colega de referência nas oficinas manuais e oferecer espaço de escuta antes da saída..."
                 value={formData.eixo4_intervencao_proposta}
                 onChange={(e) => setFormData({ ...formData, eixo4_intervencao_proposta: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
               />
             </div>
           </div>
 
-          <div className="pt-3 border-t border-[var(--border-default)]/60 flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-[var(--border-default)] flex items-center justify-end gap-2">
             <Button
               variant="primary"
+              size="sm"
               icon={<Save className="w-4 h-4" />}
               onClick={handleSalvar}
               disabled={saving || !beneficiarioAtual}
             >
-              {saving ? 'Salvando...' : 'Salvar Ficha do Mês'}
+              {saving ? 'Salvando...' : 'Salvar Ficha Socioemocional'}
             </Button>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* MODAL DE DEVOLUTIVA ÀS FAMÍLIAS EM PAPEL TIMBRADO */}

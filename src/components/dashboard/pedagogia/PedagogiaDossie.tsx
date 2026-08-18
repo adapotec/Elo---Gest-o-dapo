@@ -122,10 +122,10 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
       {/* Coluna Esquerda: Lista de Crianças / Alunos */}
       <div className="lg:col-span-4 space-y-3">
-        <Card className="p-4 border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-3">
+        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
               Crianças do Projeto ({inscritos.length})
@@ -139,7 +139,7 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
               placeholder="Buscar criança..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
             />
           </div>
 
@@ -186,31 +186,31 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
               })
             )}
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Coluna Direita: Dossiê Individual Detalhado */}
-      <div className="lg:col-span-8 space-y-6">
+      <div className="lg:col-span-8 space-y-4">
         {!beneficiarioAtual ? (
-          <Card className="p-12 text-center border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-3">
+          <div className="p-12 text-center rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-3">
             <User className="w-10 h-10 mx-auto text-[var(--text-muted)] opacity-50" />
             <p className="text-sm font-semibold text-[var(--text-secondary)]">Selecione uma criança na lista para abrir seu dossiê.</p>
-          </Card>
+          </div>
         ) : (
           <>
             {/* Header do Dossiê */}
-            <Card className="p-6 border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border-default)]/60 pb-5">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary)]/15 text-[var(--color-primary)] font-bold text-lg flex items-center justify-center shadow-inner">
+            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-[var(--color-primary)]/15 text-[var(--color-primary)] font-bold text-base flex items-center justify-center shrink-0">
                     {beneficiarioAtual.nome_completo.charAt(0).toUpperCase()}
                   </div>
-                  <div className="space-y-0.5">
-                    <h2 className="text-base font-display font-bold text-[var(--text-primary)]">
+                  <div className="space-y-0.5 min-w-0">
+                    <h2 className="text-sm sm:text-base font-display font-bold text-[var(--text-primary)] truncate">
                       {beneficiarioAtual.nome_completo}
                     </h2>
                     <p className="text-xs text-[var(--text-muted)]">
-                      Projeto Vigente: <strong className="text-[var(--text-primary)]">{projetoNome}</strong>
+                      Projeto: <strong className="text-[var(--text-primary)]">{projetoNome}</strong>
                     </p>
                   </div>
                 </div>
@@ -221,50 +221,49 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                   icon={<Printer className="w-4 h-4" />}
                   onClick={() => setShowPrintModal(true)}
                 >
-                  Exportar Dossiê do Aluno
+                  Exportar Dossiê
                 </Button>
               </div>
 
               {/* Informações Cadastrais & Territoriais */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-                <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/60 border border-[var(--border-default)] space-y-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/70 border border-[var(--border-default)] space-y-1">
                   <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] flex items-center gap-1">
                     <Calendar className="w-3 h-3 text-[var(--color-primary)]" />
                     Nascimento & Idade
                   </span>
-                  <p className="font-semibold text-[var(--text-primary)]">
+                  <p className="font-semibold text-[var(--text-primary)] text-xs">
                     {beneficiarioAtual.data_nascimento
                       ? `${new Date(beneficiarioAtual.data_nascimento).toLocaleDateString('pt-BR')} (${calcularIdade(beneficiarioAtual.data_nascimento)} anos)`
                       : 'Não informado'}
                   </p>
                 </div>
 
-                <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/60 border border-[var(--border-default)] space-y-1">
+                <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/70 border border-[var(--border-default)] space-y-1">
                   <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-[var(--color-primary)]" />
-                    Território / Comunidade
+                    Território
                   </span>
-                  <p className="font-semibold text-[var(--text-primary)] truncate">
+                  <p className="font-semibold text-[var(--text-primary)] text-xs truncate">
                     {beneficiarioAtual.comunidade || beneficiarioAtual.bairro || 'Sem território'}
-                    {beneficiarioAtual.cidade ? ` - ${beneficiarioAtual.cidade}/${beneficiarioAtual.uf}` : ''}
                   </p>
                 </div>
 
-                <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/60 border border-[var(--border-default)] space-y-1">
+                <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/70 border border-[var(--border-default)] space-y-1">
                   <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] flex items-center gap-1">
                     <Phone className="w-3 h-3 text-[var(--color-primary)]" />
-                    Contato / Família
+                    Contato
                   </span>
-                  <p className="font-semibold text-[var(--text-primary)]">
-                    {beneficiarioAtual.telefone || 'Sem telefone informado'}
+                  <p className="font-semibold text-[var(--text-primary)] text-xs truncate">
+                    {beneficiarioAtual.telefone || 'Sem telefone'}
                   </p>
                 </div>
               </div>
 
               {/* Indicadores de Frequência do Aluno */}
-              <div className="p-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-3">
+              <div className="p-4 rounded-xl bg-[var(--bg-secondary)]/70 border border-[var(--border-default)] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                  <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
                     Assiduidade no Projeto
                   </span>
                   <span className="text-xs font-bold text-[var(--color-primary)]">
@@ -279,45 +278,45 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
-                  <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                <div className="grid grid-cols-3 gap-2 text-center text-xs pt-0.5">
+                  <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                     <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-medium">Presenças</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{totalPresencas}</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{totalPresencas}</span>
                   </div>
-                  <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                  <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
                     <span className="text-[10px] text-rose-600 dark:text-rose-400 block font-medium">Faltas</span>
-                    <span className="font-bold text-rose-600 dark:text-rose-400">{totalFaltas}</span>
+                    <span className="font-bold text-rose-600 dark:text-rose-400 text-sm">{totalFaltas}</span>
                   </div>
-                  <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
                     <span className="text-[10px] text-amber-600 dark:text-amber-400 block font-medium">Justificadas</span>
-                    <span className="font-bold text-amber-600 dark:text-amber-400">{totalJustificadas}</span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400 text-sm">{totalJustificadas}</span>
                   </div>
                 </div>
               </div>
-            </Card>
+            </div>
 
             {/* Linha do Tempo: Acompanhamento Socioemocional Realizado */}
-            <Card className="p-6 border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)]/60 pb-3">
+            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
                 <div className="flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-[var(--color-primary)]" />
+                  <Heart className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
                   <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                    Histórico de Avaliações Socioemocionais (4 Eixos)
+                    Histórico Socioemocional (4 Eixos)
                   </h3>
                 </div>
                 <Badge variant="neutral">{historicoSocioemocional.length} avaliações</Badge>
               </div>
 
               {historicoSocioemocional.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)] italic py-4 text-center">
-                  Nenhuma avaliação socioemocional mensal registrada para este aluno ainda. Registre na aba "Socioemocional".
+                <p className="text-xs text-[var(--text-muted)] italic py-3 text-center">
+                  Nenhuma avaliação socioemocional mensal registrada para este aluno ainda. Registre na aba "Acomp. Socioemocional".
                 </p>
               ) : (
                 <div className="space-y-3">
                   {historicoSocioemocional.map((aval) => (
                     <div
                       key={aval.id}
-                      className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-3"
+                      className="p-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-2.5"
                     >
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
@@ -356,13 +355,13 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                   ))}
                 </div>
               )}
-            </Card>
+            </div>
 
             {/* Histórico Detalhado de Presenças nos Encontros */}
-            <Card className="p-6 border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)]/60 pb-3">
+            <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[var(--color-primary)]" />
+                  <Calendar className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
                   <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
                     Histórico de Presenças por Encontro
                   </h3>
@@ -371,7 +370,7 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
               </div>
 
               {historicoFrequencia.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)] italic py-4 text-center">
+                <p className="text-xs text-[var(--text-muted)] italic py-3 text-center">
                   Nenhuma chamada realizada para este aluno ainda.
                 </p>
               ) : (
@@ -420,7 +419,7 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                   </table>
                 </div>
               )}
-            </Card>
+            </div>
           </>
         )}
       </div>

@@ -201,18 +201,18 @@ export function PedagogiaPlanosAula({
   const metaVinculadaAoPlanoPrint = metas.find((m) => m.id === planoToPrint?.meta_projeto_id);
 
   return (
-    <div className="space-y-6">
-      {/* Topo: Resumo e Botão Novo Plano */}
-      <Card className="p-5 border-[var(--border-default)] bg-[var(--bg-elevated)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
+    <div className="space-y-4">
+      {/* ── Topo: Resumo e Botão Novo Plano ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
+        <div className="space-y-0.5 min-w-0">
           <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-[var(--color-primary)]" />
+            <BookOpen className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
             <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
               Planos de Aula do Projeto ({planos.length})
             </h3>
           </div>
-          <p className="text-xs text-[var(--text-muted)]">
-            Planejamento socioeducativo, práticas antirracistas, atividades dirigidas e brincadeiras livres vinculadas às metas de <strong>{projetoNome}</strong>.
+          <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+            Planejamento socioeducativo vinculado às metas de <strong>{projetoNome}</strong>.
           </p>
         </div>
 
@@ -222,148 +222,158 @@ export function PedagogiaPlanosAula({
           icon={<Plus className="w-4 h-4" />}
           onClick={handleNovoPlano}
         >
-          Criar Novo Plano de Aula
+          Novo Plano de Aula
         </Button>
-      </Card>
+      </div>
 
       {/* Feedback de Salvamento */}
       {saveSuccess && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
+        <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
-          Plano de Aula salvo e sincronizado com o projeto com sucesso!
+          Plano de Aula salvo com sucesso!
         </div>
       )}
 
-      {/* Grade de Planos de Aula */}
+      {/* ── Grade de Planos de Aula ── */}
       {loading ? (
         <div className="p-12 text-center text-xs text-[var(--text-muted)]">Carregando planos de aula...</div>
       ) : planos.length === 0 ? (
-        <Card className="p-12 text-center border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-3">
+        <div className="p-12 text-center rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-3">
           <BookOpen className="w-10 h-10 mx-auto text-[var(--text-muted)] opacity-40" />
           <p className="text-sm font-semibold text-[var(--text-secondary)]">
-            Nenhum Plano de Aula cadastrado para o projeto {projetoNome}.
+            Nenhum Plano de Aula cadastrado para {projetoNome}.
           </p>
           <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto">
-            Clique no botão acima para cadastrar um novo plano estruturado com objetivos, atividades dirigidas, brincadeiras livres e vínculo com as metas.
+            Clique no botão acima para criar um plano de aula com objetivos, atividades dirigidas, brincadeiras livres e vínculo com metas.
           </p>
-        </Card>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {planos.map((plano) => {
             const metaObj = metas.find((m) => m.id === plano.meta_projeto_id);
             const acaoObj = acoes.find((a) => a.id === plano.acao_id);
 
             return (
-              <Card
+              <div
                 key={plano.id}
-                className="p-5 border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40 transition-all flex flex-col justify-between space-y-4"
+                className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--border-strong)] transition-all flex flex-col"
               >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <Badge variant="primary">
-                          <Calendar className="w-3 h-3 mr-1" />
-                          {plano.data_oficina ? new Date(plano.data_oficina).toLocaleDateString('pt-BR') : 'Data não inf.'}
+                {/* Cabeçalho do Card */}
+                <div className="p-4 pb-3 space-y-2 flex-1">
+                  {/* Badges e Ações do card */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                      <Badge variant="primary">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        {plano.data_oficina
+                          ? new Date(plano.data_oficina).toLocaleDateString('pt-BR')
+                          : 'Data não inf.'}
+                      </Badge>
+                      {acaoObj && (
+                        <Badge variant="neutral">
+                          Ação: {acaoObj.nome_acao}
                         </Badge>
-                        {acaoObj && (
-                          <Badge variant="neutral">
-                            Ação: {acaoObj.nome_acao}
-                          </Badge>
-                        )}
-                      </div>
-                      <h4 className="text-base font-display font-bold text-[var(--text-primary)]">
-                        {plano.titulo}
-                      </h4>
+                      )}
                     </div>
 
+                    {/* Botões de ação */}
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         type="button"
                         onClick={() => handleImprimirPlano(plano)}
-                        className="p-1.5 rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
                         title="Exportar PDF Timbrado"
                       >
-                        <Printer className="w-4 h-4" />
+                        <Printer className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleEditarPlano(plano)}
-                        className="p-1.5 rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--bg-secondary)]"
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-soft)] transition-colors"
                         title="Editar Plano"
                       >
-                        <Edit3 className="w-4 h-4" />
+                        <Edit3 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleExcluirPlano(plano.id)}
-                        className="p-1.5 rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors"
                         title="Excluir Plano"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  <p className="text-xs text-[var(--text-secondary)] line-clamp-2">
+                  {/* Título */}
+                  <h4 className="text-sm font-display font-bold text-[var(--text-primary)] leading-snug">
+                    {plano.titulo}
+                  </h4>
+
+                  {/* Descrição resumida */}
+                  <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
                     {plano.descricao || plano.objetivos || 'Sem descrição cadastrada.'}
                   </p>
 
+                  {/* Meta vinculada */}
                   {metaObj && (
-                    <div className="p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]/60 text-[11px] space-y-1">
+                    <div className="p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]/60 text-[11px] space-y-0.5">
                       <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase flex items-center gap-1">
                         <Target className="w-3 h-3 text-[var(--color-primary)]" />
-                        Meta Vinculada do Projeto
+                        Meta Vinculada
                       </span>
                       <p className="font-semibold text-[var(--text-primary)] truncate">{metaObj.descricao}</p>
                     </div>
                   )}
-
-                  <div className="grid grid-cols-2 gap-2 text-xs pt-1 text-[var(--text-muted)]">
-                    <p>Educador(a): <strong className="text-[var(--text-primary)]">{plano.oficineiro}</strong></p>
-                    <p className="text-right">
-                      {plano.recursos_materiais ? 'Materiais definidos' : 'Sem materiais'}
-                    </p>
-                  </div>
                 </div>
-              </Card>
+
+                {/* Rodapé do card */}
+                <div className="px-4 py-2.5 border-t border-[var(--border-default)]/60 text-xs text-[var(--text-muted)] flex items-center justify-between">
+                  <span>Educador(a): <strong className="text-[var(--text-primary)]">{plano.oficineiro}</strong></span>
+                  <span className="text-[11px]">
+                    {plano.recursos_materiais ? '📦 Materiais definidos' : '—'}
+                  </span>
+                </div>
+              </div>
             );
           })}
         </div>
       )}
 
-      {/* MODAL: CRIAR / EDITAR PLANO DE AULA */}
+      {/* ═══════════════════════════════════════════════════════════════
+          MODAL: CRIAR / EDITAR PLANO DE AULA
+      ═══════════════════════════════════════════════════════════════ */}
       {showEditorModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="w-full max-w-4xl bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-default)] shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-start justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="w-full max-w-3xl bg-[var(--bg-elevated)] rounded-2xl border border-[var(--border-default)] shadow-2xl my-6 sm:my-10 flex flex-col max-h-[90vh]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4 shrink-0">
-              <div className="space-y-0.5">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-[var(--border-default)] shrink-0">
+              <div className="space-y-0.5 min-w-0">
                 <div className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-[var(--color-primary)]" />
-                  <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">
-                    {formData.id ? 'Editar Plano de Aula' : 'Novo Plano de Aula Socioeducativo'}
+                  <BookOpen className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+                  <h3 className="font-display font-bold text-base sm:text-lg text-[var(--text-primary)]">
+                    {formData.id ? 'Editar Plano de Aula' : 'Novo Plano de Aula'}
                   </h3>
                 </div>
                 <p className="text-xs text-[var(--text-muted)]">
-                  Projeto Vigente: <strong>{projetoNome}</strong>
+                  Projeto: <strong>{projetoNome}</strong>
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={() => setShowEditorModal(false)}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+                className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Body / Formulário */}
-            <div className="flex-1 overflow-y-auto space-y-5 pr-1 text-xs">
-              {/* Linha 1: Título, Educador, Data */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2 space-y-1">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              {/* Linha 1: Título, Data */}
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-3">
+                <div className="space-y-1">
                   <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
                     Título da Aula / Encontro *
                   </label>
@@ -372,46 +382,46 @@ export function PedagogiaPlanosAula({
                     placeholder="Ex: Oficina de Construção de Pipas e Narrativas Ancestrais"
                     value={formData.titulo}
                     onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
                   />
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                    Data da Aula *
+                    Data *
                   </label>
                   <input
                     type="date"
                     value={formData.data_oficina}
                     onChange={(e) => setFormData({ ...formData, data_oficina: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
                   />
                 </div>
               </div>
 
-              {/* Linha 2: Educador(a) / Oficineiro(a) e Vínculo com Encontro */}
+              {/* Linha 2: Educador(a) e Vínculo com Encontro */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                    Educador(a) / Oficineiro(a) Responsável *
+                    Educador(a) / Oficineiro(a) *
                   </label>
                   <input
                     type="text"
                     placeholder="Ex: Carlos Eduardo (Educador Social)"
                     value={formData.oficineiro}
                     onChange={(e) => setFormData({ ...formData, oficineiro: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
                   />
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                    Vincular ao Encontro / Ação da Agenda (Opcional)
+                    Vincular ao Encontro (Opcional)
                   </label>
                   <select
                     value={formData.acao_id || ''}
                     onChange={(e) => setFormData({ ...formData, acao_id: e.target.value || null })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
                   >
                     <option value="">Nenhum encontro vinculado</option>
                     {acoes.map((acao) => (
@@ -423,21 +433,21 @@ export function PedagogiaPlanosAula({
                 </div>
               </div>
 
-              {/* Linha 3: Vínculo com Metas do Projeto */}
-              <div className="space-y-1.5 p-3.5 rounded-xl bg-[var(--bg-secondary)]/70 border border-[var(--border-default)]">
-                <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block flex items-center gap-1">
+              {/* Linha 3: Meta do Projeto */}
+              <div className="space-y-1.5 p-3 rounded-xl bg-[var(--bg-secondary)]/70 border border-[var(--border-default)]">
+                <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
                   <Target className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                  Meta do Projeto em que esta Aula Contribui
+                  Meta do Projeto Vinculada
                 </label>
                 {metas.length === 0 ? (
                   <p className="text-xs text-[var(--text-muted)] italic">
-                    Nenhuma meta cadastrada no projeto {projetoNome}. Cadastre metas na aba Planejamento &gt; Objetivos &amp; Metas.
+                    Nenhuma meta cadastrada no projeto {projetoNome}.
                   </p>
                 ) : (
                   <select
                     value={formData.meta_projeto_id}
                     onChange={(e) => setFormData({ ...formData, meta_projeto_id: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
                   >
                     <option value="">Selecione uma meta vinculada...</option>
                     {metas.map((m) => (
@@ -453,14 +463,14 @@ export function PedagogiaPlanosAula({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                    Objetivos Pedagógicos & Socioeducativos
+                    Objetivos Pedagógicos
                   </label>
                   <textarea
                     rows={3}
-                    placeholder="Ex: Estimular a coordenação motora fina, promover o diálogo sobre respeito mútuo e identidade..."
+                    placeholder="Ex: Estimular a coordenação motora fina, promover o diálogo sobre respeito mútuo..."
                     value={formData.objetivos}
                     onChange={(e) => setFormData({ ...formData, objetivos: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                    className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
                   />
                 </div>
 
@@ -470,87 +480,87 @@ export function PedagogiaPlanosAula({
                   </label>
                   <textarea
                     rows={3}
-                    placeholder="Ex: Introdução lúdica sobre a história das pipas e roda de escuta sobre os encantamentos da floresta..."
+                    placeholder="Ex: Introdução lúdica sobre a história das pipas e roda de escuta..."
                     value={formData.descricao}
                     onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                    className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
                   />
                 </div>
               </div>
 
-              {/* Linha 5: Metodologia - Atividades Dirigidas vs Brincadeiras Livres */}
-              <div className="space-y-3 pt-2 border-t border-[var(--border-default)]/60">
+              {/* Linha 5: Metodologia */}
+              <div className="space-y-3 pt-3 border-t border-[var(--border-default)]/60">
                 <div className="space-y-0.5">
                   <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles className="w-4 h-4 text-[var(--color-primary)]" />
-                    Metodologia Socioeducativa & Dinâmica do Encontro
+                    Metodologia Socioeducativa
                   </h4>
                   <p className="text-[11px] text-[var(--text-muted)]">
-                    Práticas antirracistas, valorização da diversidade, combate à desigualdade e protagonismo infantil.
+                    Práticas antirracistas, valorização da diversidade e protagonismo infantil.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                      1. Atividades Propostas Dirigidas (Passo a Passo)
+                      1. Atividades Dirigidas (Passo a Passo)
                     </label>
                     <textarea
                       rows={4}
-                      placeholder="Ex: 1. Acolhimento e roda de escuta (15min); 2. Distribuição das varetas e seda (30min); 3. Montagem orientada das armações..."
+                      placeholder="Ex: 1. Acolhimento e roda de escuta (15min); 2. Distribuição de materiais (30min)..."
                       value={formData.atividades_dirigidas}
                       onChange={(e) => setFormData({ ...formData, atividades_dirigidas: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                      className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                      2. Brincadeiras Livres & Espaço Lúdico (Quintal)
+                      2. Brincadeiras Livres & Quintal
                     </label>
                     <textarea
                       rows={4}
-                      placeholder="Ex: Momento de voo das pipas no quintal com revezamento de linhas, jogos cooperativos e roda livre..."
+                      placeholder="Ex: Momento de voo das pipas no quintal com revezamento, jogos cooperativos..."
                       value={formData.brincadeiras_livres}
                       onChange={(e) => setFormData({ ...formData, brincadeiras_livres: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                      className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Linha 6: Recursos Materiais & Avaliação */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[var(--border-default)]/60">
+              {/* Linha 6: Recursos & Avaliação */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-[var(--border-default)]/60">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                    Recursos & Materiais Necessários
+                    Recursos & Materiais
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Ex: Varetas de bambu, papel de seda colorido, tesouras sem ponta, cola branca, carretéis de linha..."
+                    placeholder="Ex: Varetas de bambu, papel de seda, tesouras sem ponta, cola branca..."
                     value={formData.recursos_materiais}
                     onChange={(e) => setFormData({ ...formData, recursos_materiais: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                    className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
                   />
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                    Avaliação do Encontro / Diário do Educador
+                    Diário do Educador
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Ex: Todas as crianças conseguiram finalizar seus modelos; alta integração no quintal e colaboração mútua..."
+                    placeholder="Ex: Crianças finalizaram os modelos; alta integração e colaboração mútua..."
                     value={formData.avaliacao_encontro}
                     onChange={(e) => setFormData({ ...formData, avaliacao_encontro: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                    className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
                   />
                 </div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-between border-t border-[var(--border-default)] pt-4 shrink-0">
+            <div className="flex items-center justify-between p-4 sm:p-5 border-t border-[var(--border-default)] shrink-0">
               <Button
                 variant="secondary"
                 size="sm"
@@ -572,7 +582,9 @@ export function PedagogiaPlanosAula({
         </div>
       )}
 
-      {/* MODAL DE IMPRESSÃO DO PLANO DE AULA EM PAPEL TIMBRADO */}
+      {/* ═══════════════════════════════════════════════════════════════
+          MODAL DE IMPRESSÃO EM PAPEL TIMBRADO
+      ═══════════════════════════════════════════════════════════════ */}
       <PapelTimbradoModal
         isOpen={showPrintModal}
         onClose={() => setShowPrintModal(false)}
