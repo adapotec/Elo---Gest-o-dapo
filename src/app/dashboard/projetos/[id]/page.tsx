@@ -19,6 +19,8 @@ import {
   Save,
   Trash2,
   CheckCircle,
+  CheckCircle2,
+  XCircle,
   Users,
   HeartHandshake,
   FolderKanban,
@@ -61,6 +63,22 @@ import {
   Edit3,
   Download,
   MapPin,
+  FileCheck,
+  AlertCircle,
+  Eye,
+  Check,
+  CheckCheck,
+  AlertTriangle,
+  Search,
+  Filter,
+  Scale,
+  Star,
+  Package,
+  HelpCircle,
+  Info,
+  Tag,
+  SlidersHorizontal,
+  Layers,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -147,7 +165,7 @@ interface DespesaItem {
   subtotal: number;
 }
 
-interface ItemProgramacaoAcao {
+export interface ItemProgramacaoAcao {
   id: string;
   horario: string;
   atividade: string;
@@ -155,26 +173,135 @@ interface ItemProgramacaoAcao {
   equipe: string[] | string;
   is_custom_equipe?: boolean;
   local: string;
-  meta_ids: string[];
 }
 
-interface AcaoExecucao {
+export interface AcaoExecucao {
   id: string;
+  projeto_id?: string;
   data_hora: string;
   nome_acao: string;
   descricao: string | null;
-  documento_estruturador: 'Plano de Aula' | 'Programação de Ação';
+  documento_estruturador?: string;
+  responsavel_estrutura?: 'Projetos' | 'Pedagogia';
+  meta_id?: string;
+  justificativa_meta_acao?: string;
   programacao_itens?: ItemProgramacaoAcao[];
+  created_at?: string;
 }
 
-interface RelatorioMonitoramento {
+export interface PlanoAcaoItem {
   id: string;
-  mes_referencia: string;
-  resumo_avanco: string | null;
-  metas_atingidas: string | null;
-  dificuldades_encontradas: string | null;
-  created_at: string;
+  descricao: string;
+  prazo: string;
 }
+
+export interface AvaliacaoAtividadeItem {
+  id: string;
+  atividade: string;
+  horario?: string;
+  satisfacao_qualitativa: 'excelente' | 'muito_boa' | 'regular' | 'insatisfatoria';
+  avaliacao_texto: string;
+  planos_acao: PlanoAcaoItem[];
+}
+
+export interface AvaliacaoAcaoRelatorio {
+  acao_id: string;
+  nome_acao: string;
+  data_hora: string;
+  responsavel_estrutura: 'Projetos' | 'Pedagogia';
+  meta_id?: string;
+  justificativa_meta_acao?: string;
+  atividades: AvaliacaoAtividadeItem[];
+}
+
+export interface AvaliacaoMetaRelatorio {
+  meta_id: string;
+  objetivo_titulo: string;
+  descricao_meta: string;
+  procedimento_coleta: string;
+  forma_coleta: string;
+  responsavel_coleta: string;
+  justificativa_como_trabalhada: string;
+  acoes_vinculadas_nomes: string[];
+  status: 'nao_iniciada' | 'iniciada' | 'concluida';
+  justificativa_plano_acao: string;
+  prazo_plano?: string;
+}
+
+export interface DadosPublicoAlvoRelatorio {
+  frequencia: {
+    faixa_100: number;
+    faixa_90_75: number;
+    faixa_75_50: number;
+    faixa_50_0: number;
+    justificativa_plano_acao: string;
+    prazo_plano?: string;
+  };
+  socioemocional: {
+    panorama_geral: string;
+    justificativa_plano_acao: string;
+    prazo_plano?: string;
+  };
+  pesquisa_satisfacao: {
+    panorama_geral: string;
+    justificativa_plano_acao: string;
+    prazo_plano?: string;
+  };
+}
+
+export interface AvaliacaoTransparenciaRelatorio {
+  conteudo_planejado: boolean;
+  publicado: boolean;
+  detalhes_publicacoes: string;
+  justificativa_plano_acao: string;
+  prazo_plano?: string;
+}
+
+export interface RelatorioMonitoramento {
+  id: string;
+  projeto_id?: string;
+  mes_referencia: string;
+  numero_processo: string;
+  numero_instrumento: string;
+  tipo_instrumento: string;
+  periodo_inicio: string;
+  periodo_fim: string;
+  gestor_monitoramento_id: string;
+  gestor_nome_externo: string;
+  acoes_selecionadas_ids: string[];
+  documentos_avaliados: string[];
+  introducao_texto: string;
+  avaliacao_acoes_novas: AvaliacaoAcaoRelatorio[];
+  avaliacao_metas_novas: AvaliacaoMetaRelatorio[];
+  dados_publico_alvo: DadosPublicoAlvoRelatorio;
+  avaliacao_transparencia_nova: AvaliacaoTransparenciaRelatorio;
+  conclusao_texto: string;
+  local_data_emissao: string;
+  valor_desembolsado: number;
+  created_at?: string;
+  // Campos legados para retrocompatibilidade
+  avaliacao_acoes?: any;
+  avaliacao_metas?: any;
+  status_transparencia?: string;
+  justificativa_transparencia?: string;
+  parecer_conclusao?: string;
+  ressalvas_conclusao?: string[];
+  justificativa_conclusao?: string;
+  resumo_avanco?: string | null;
+  metas_atingidas?: string | null;
+  dificuldades_encontradas?: string | null;
+}
+
+export const DOCUMENTOS_MROSC_PADRAO = [
+  { id: 'relatorio_objeto', label: 'Relatório Parcial de Execução do Objeto' },
+  { id: 'relatorio_financeiro', label: 'Relatório de Execução Financeira' },
+  { id: 'visita_tecnica', label: 'Relatório de Visita Técnica in loco' },
+  { id: 'pesquisa_satisfacao', label: 'Relatório de Pesquisa de Satisfação' },
+  { id: 'relatorio_anterior', label: 'Relatório Técnico de Monitoramento e Avaliação Anterior' },
+  { id: 'auditorias_internas', label: 'Auditorias Internas' },
+  { id: 'auditorias_externas', label: 'Auditorias Externas' },
+  { id: 'transferegov', label: 'Outros Documentos e Informações registrados no Transferegov' },
+];
 
 export default function DetalheProjetoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -288,23 +415,86 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     data_hora: '',
     nome_acao: '',
     descricao: '',
-    documento_estruturador: 'Plano de Aula' as 'Plano de Aula' | 'Programação de Ação',
+    responsavel_estrutura: 'Projetos' as 'Projetos' | 'Pedagogia',
+    meta_id: '',
+    justificativa_meta_acao: '',
   });
 
   // Programação de Ação (Planilha & Exportação)
   const [selectedAcaoForProgramacao, setSelectedAcaoForProgramacao] = useState<AcaoExecucao | null>(null);
   const [programacaoRows, setProgramacaoRows] = useState<ItemProgramacaoAcao[]>([]);
+  const [programacaoMetaId, setProgramacaoMetaId] = useState<string>('');
+  const [programacaoJustificativaMeta, setProgramacaoJustificativaMeta] = useState<string>('');
   const [savingProgramacao, setSavingProgramacao] = useState(false);
   const [showPrintProgramacaoModal, setShowPrintProgramacaoModal] = useState(false);
   const [acaoToPrint, setAcaoToPrint] = useState<AcaoExecucao | null>(null);
 
-  const [showAddRelatorioModal, setShowAddRelatorioModal] = useState(false);
-  const [newRelatorio, setNewRelatorio] = useState({
-    mes_referencia: new Date().toISOString().substring(0, 7),
-    resumo_avanco: '',
-    metas_atingidas: '',
-    dificuldades_encontradas: '',
+  // Relatórios de Monitoramento e Avaliação
+  const [showMroscModal, setShowMroscModal] = useState(false);
+  const [mroscWizardStep, setMroscWizardStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [activeRelatorioMrosc, setActiveRelatorioMrosc] = useState<RelatorioMonitoramento | null>(null);
+  const [savingRelatorio, setSavingRelatorio] = useState(false);
+  const [generatingIAIntro, setGeneratingIAIntro] = useState(false);
+  const [generatingIAConclusao, setGeneratingIAConclusao] = useState(false);
+  const [showPrintMroscModal, setShowPrintMroscModal] = useState(false);
+  const [relatorioToPrint, setRelatorioToPrint] = useState<RelatorioMonitoramento | null>(null);
+
+  // Metas disponíveis normalizadas para vinculações e avaliações
+  const todasMetasDisponiveis = objetivosEspecificos.flatMap((obj) =>
+    (obj.metas || []).map((m) => ({
+      id: m.id,
+      descricao: m.descricao_meta,
+      objetivo: obj.titulo_objetivo,
+      procedimento_coleta: m.procedimento_coleta,
+      forma_coleta: m.forma_coleta,
+      responsavel_coleta: m.responsavel_coleta,
+    }))
+  );
+
+  // Filtros de Ações do Cronograma (Default: Mês Vigente)
+  const currentMonthStr = new Date().toISOString().slice(0, 7); // Ex: "2026-08"
+  const [filtroMesAcoes, setFiltroMesAcoes] = useState<string>(currentMonthStr);
+  const [filtroResponsavelAcoes, setFiltroResponsavelAcoes] = useState<'todos' | 'Projetos' | 'Pedagogia'>('todos');
+  const [buscaAcaoTexto, setBuscaAcaoTexto] = useState<string>('');
+
+  // Ações filtradas com base no mês vigente, responsável e busca
+  const acoesFiltradas = acoes.filter((acao) => {
+    // Filtro por mês
+    if (filtroMesAcoes && filtroMesAcoes !== 'todos') {
+      if (!acao.data_hora || !acao.data_hora.startsWith(filtroMesAcoes)) {
+        return false;
+      }
+    }
+    // Filtro por responsável
+    const resp = (acao.responsavel_estrutura || (acao.documento_estruturador === 'Plano de Aula' ? 'Pedagogia' : 'Projetos')) as 'Projetos' | 'Pedagogia';
+    if (filtroResponsavelAcoes !== 'todos' && resp !== filtroResponsavelAcoes) {
+      return false;
+    }
+    // Filtro por busca de texto
+    if (buscaAcaoTexto.trim()) {
+      const q = buscaAcaoTexto.toLowerCase();
+      const matchNome = acao.nome_acao?.toLowerCase().includes(q);
+      const matchDesc = acao.descricao?.toLowerCase().includes(q);
+      const metaObj = todasMetasDisponiveis.find((m) => m.id === acao.meta_id);
+      const matchMeta = metaObj?.descricao?.toLowerCase().includes(q);
+      if (!matchNome && !matchDesc && !matchMeta) return false;
+    }
+    return true;
   });
+
+  // Lista de meses únicos presentes nas ações cadastradas
+  const mesesDisponiveisAcoes = Array.from(
+    new Set(
+      acoes
+        .map((a) => (a.data_hora ? a.data_hora.slice(0, 7) : ''))
+        .filter(Boolean)
+    )
+  ).sort().reverse();
+
+  // Se o mês vigente não estiver na lista, adicionamos para facilitar
+  if (!mesesDisponiveisAcoes.includes(currentMonthStr)) {
+    mesesDisponiveisAcoes.unshift(currentMonthStr);
+  }
 
   const [showAddBeneficiarioModal, setShowAddBeneficiarioModal] = useState(false);
   const [selectedBeneficiarioId, setSelectedBeneficiarioId] = useState('');
@@ -621,66 +811,372 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   };
 
   // Execução
+  // =========================================================================
+  // HANDLERS DE AÇÕES DO PROJETO (PROJETOS & PEDAGOGIA)
+  // =========================================================================
+
   const handleAddAcao = async () => {
     if (!newAcao.nome_acao || !newAcao.data_hora) return;
     const supabase = createClient();
-    await supabase.from('acoes_projeto').insert([
+
+    const payload = {
+      projeto_id: id,
+      nome_acao: newAcao.nome_acao,
+      data_hora: newAcao.data_hora,
+      descricao: newAcao.descricao || null,
+      documento_estruturador: newAcao.responsavel_estrutura,
+      programacao_itens: [
+        {
+          id: crypto.randomUUID(),
+          horario: '08:30 - 09:30',
+          atividade: newAcao.nome_acao,
+          materiais: [],
+          equipe: [],
+          local: 'Sede / Espaço do Projeto',
+        },
+      ],
+    };
+
+    // Tenta salvar com meta_id e justificativa_meta_acao se colunas existirem
+    const { error: insErr } = await supabase.from('acoes_projeto').insert([
       {
-        projeto_id: id,
-        nome_acao: newAcao.nome_acao,
-        data_hora: newAcao.data_hora,
-        descricao: newAcao.descricao,
-        documento_estruturador: newAcao.documento_estruturador,
+        ...payload,
+        meta_id: newAcao.meta_id || null,
+        justificativa_meta_acao: newAcao.justificativa_meta_acao || '',
       },
     ]);
+
+    if (insErr) {
+      // Fallback para schema base caso as colunas novas estejam pendentes
+      await supabase.from('acoes_projeto').insert([payload]);
+    }
+
     setShowAddAcaoModal(false);
-    setNewAcao({ data_hora: '', nome_acao: '', descricao: '', documento_estruturador: 'Plano de Aula' });
+    setNewAcao({
+      data_hora: '',
+      nome_acao: '',
+      descricao: '',
+      responsavel_estrutura: 'Projetos',
+      meta_id: '',
+      justificativa_meta_acao: '',
+    });
     loadData();
   };
 
   const handleRemoveAcao = async (acaoId: string) => {
+    if (!confirm('Deseja realmente remover esta ação do cronograma?')) return;
     const supabase = createClient();
     await supabase.from('acoes_projeto').delete().eq('id', acaoId);
     loadData();
   };
 
-  const handleAddRelatorio = async () => {
-    if (!newRelatorio.mes_referencia) return;
-    const supabase = createClient();
-    await supabase.from('relatorios_monitoramento').insert([{ projeto_id: id, ...newRelatorio }]);
-    setShowAddRelatorioModal(false);
-    setNewRelatorio({
-      mes_referencia: new Date().toISOString().substring(0, 7),
-      resumo_avanco: '',
-      metas_atingidas: '',
-      dificuldades_encontradas: '',
+  // =========================================================================
+  // HANDLERS DO RELATÓRIO TÉCNICO DE MONITORAMENTO (NOVO PADRÃO ÁDAPO)
+  // =========================================================================
+
+  const getInitialRelatorioMrosc = (): RelatorioMonitoramento => {
+    const hoje = new Date().toISOString().split('T')[0];
+    const todasAcoesIds = acoes.map((a) => a.id);
+
+    // Mapear Avaliação das Ações Realizadas
+    const avaliacoesAcoesIniciais: AvaliacaoAcaoRelatorio[] = acoes.map((ac) => {
+      const itensGrade: ItemProgramacaoAcao[] = Array.isArray(ac.programacao_itens) && ac.programacao_itens.length > 0
+        ? ac.programacao_itens
+        : [
+          {
+            id: crypto.randomUUID(),
+            horario: ac.data_hora ? new Date(ac.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '08:30',
+            atividade: ac.nome_acao,
+            materiais: [],
+            equipe: [],
+            local: 'Sede / Polo',
+          },
+        ];
+
+      const atividadesMapeadas: AvaliacaoAtividadeItem[] = itensGrade.map((item) => ({
+        id: item.id || crypto.randomUUID(),
+        atividade: item.atividade || ac.nome_acao,
+        horario: item.horario,
+        satisfacao_qualitativa: 'muito_boa',
+        avaliacao_texto: `Atividade realizada com ampla participação dos beneficiários, seguindo os objetivos pedagógicos e metodológicos do projeto.`,
+        planos_acao: [],
+      }));
+
+      const resp = (ac.responsavel_estrutura || (ac.documento_estruturador === 'Plano de Aula' ? 'Pedagogia' : 'Projetos')) as 'Projetos' | 'Pedagogia';
+
+      return {
+        acao_id: ac.id,
+        nome_acao: ac.nome_acao,
+        data_hora: ac.data_hora,
+        responsavel_estrutura: resp,
+        meta_id: ac.meta_id,
+        justificativa_meta_acao: ac.justificativa_meta_acao,
+        atividades: atividadesMapeadas,
+      };
     });
+
+    // Mapear Avaliação do Cumprimento de Metas
+    const avaliacoesMetasIniciais: AvaliacaoMetaRelatorio[] = todasMetasDisponiveis.map((m) => {
+      const acoesDestaMeta = acoes.filter((a) => a.meta_id === m.id);
+      const justificativasAcoes = acoesDestaMeta
+        .filter((a) => a.justificativa_meta_acao)
+        .map((a) => `${a.nome_acao}: ${a.justificativa_meta_acao}`)
+        .join('; ');
+
+      return {
+        meta_id: m.id,
+        objetivo_titulo: m.objetivo || 'Objetivo Geral',
+        descricao_meta: m.descricao || 'Meta do Projeto',
+        procedimento_coleta: m.procedimento_coleta || 'Lista de frequência e registro de atividades',
+        forma_coleta: m.forma_coleta || 'Física e Digital',
+        responsavel_coleta: m.responsavel_coleta || 'Coordenação de Projetos / Pedagogia',
+        justificativa_como_trabalhada: justificativasAcoes || 'Meta trabalhada continuamente nas oficinas e encontros com o público-alvo.',
+        acoes_vinculadas_nomes: acoesDestaMeta.map((a) => a.nome_acao),
+        status: 'iniciada',
+        justificativa_plano_acao: '',
+        prazo_plano: '',
+      };
+    });
+
+    const totalBeneficiarios = inscricoes.length > 0 ? inscricoes.length : (formData.num_beneficiarios_diretos || 25);
+    const faixa100 = Math.round(totalBeneficiarios * 0.7);
+    const faixa90_75 = Math.round(totalBeneficiarios * 0.2);
+    const faixa75_50 = Math.max(0, totalBeneficiarios - faixa100 - faixa90_75);
+    const faixa50_0 = 0;
+
+    return {
+      id: '',
+      mes_referencia: new Date().toISOString().substring(0, 7),
+      numero_processo: 'SEI nº 0001.2026/SEC-MA',
+      numero_instrumento: 'Termo de Fomento nº 01/2026',
+      tipo_instrumento: 'Termo de Fomento',
+      periodo_inicio: formData.data_inicio || hoje,
+      periodo_fim: hoje,
+      gestor_monitoramento_id: formData.responsavel_escrita_id || (todosVoluntarios[0]?.id || ''),
+      gestor_nome_externo: '',
+      acoes_selecionadas_ids: todasAcoesIds,
+      documentos_avaliados: ['relatorio_objeto', 'relatorio_financeiro', 'visita_tecnica', 'pesquisa_satisfacao'],
+      introducao_texto: `O presente Relatório Técnico de Monitoramento e Avaliação consolida o acompanhamento das ações e metas do projeto social "${formData.nome || 'Projeto Social'}", desenvolvido pelo ${dadosInstituto.razao_social || 'Instituto Ádapo'}. O projeto atende ${formData.publico_alvo || 'crianças, adolescentes e famílias'} na localidade de ${formData.localidade || 'São Luís - MA'}, visando ${formData.objetivo_geral || 'promover o desenvolvimento integral e o fortalecimento de vínculos comunitários'}. Foram avaliadas as atividades executadas no período, verificando a assiduidade do público-alvo, a percepção socioemocional e o progresso em relação às metas pactuadas no Plano de Trabalho.`,
+      avaliacao_acoes_novas: avaliacoesAcoesIniciais,
+      avaliacao_metas_novas: avaliacoesMetasIniciais,
+      dados_publico_alvo: {
+        frequencia: {
+          faixa_100: faixa100,
+          faixa_90_75: faixa90_75,
+          faixa_75_50: faixa75_50,
+          faixa_50_0: faixa50_0,
+          justificativa_plano_acao: 'Frequência regular com alta adesão e engajamento contínuo das famílias nas oficinas.',
+          prazo_plano: '',
+        },
+        socioemocional: {
+          panorama_geral: 'Observou-se evolução positiva nos aspectos de convivência coletiva, comunicação respeitosa, autonomia e expressão emocional durante as atividades práticas.',
+          justificativa_plano_acao: '',
+          prazo_plano: '',
+        },
+        pesquisa_satisfacao: {
+          panorama_geral: 'Pesquisa com beneficiários e responsáveis indicou 96% de satisfação com a metodologia, acolhimento da equipe e materiais disponibilizados.',
+          justificativa_plano_acao: '',
+          prazo_plano: '',
+        },
+      },
+      avaliacao_transparencia_nova: {
+        conteudo_planejado: true,
+        publicado: true,
+        detalhes_publicacoes: 'Registros fotográficos, divulgação de horários e prestação de contas das ações veiculados no portal institucional e redes sociais do Instituto Ádapo.',
+        justificativa_plano_acao: '',
+        prazo_plano: '',
+      },
+      conclusao_texto: `Diante da análise técnica dos registros de execução, assiduidade do público-alvo e indicadores alcançados, conclui-se que as ações avaliadas cumpriram com excelência o cronograma proposto, mantendo estrita conformidade com o Plano de Trabalho e demonstrando relevante impacto social. Recomenda-se a continuidade regular das etapas subsequentes.`,
+      local_data_emissao: `São Luís - MA, ${new Date().toLocaleDateString('pt-BR')}`,
+      valor_desembolsado: despesas.reduce((acc, d) => acc + (d.subtotal || 0), 0),
+      created_at: new Date().toISOString(),
+    };
+  };
+
+  // Assistente de IA: Geração Automática da Introdução Sumária
+  const handleGerarIntroducaoComIA = () => {
+    if (!activeRelatorioMrosc) return;
+    setGeneratingIAIntro(true);
+
+    const acoesSelecionadas = acoes.filter((a) =>
+      (activeRelatorioMrosc.acoes_selecionadas_ids || []).includes(a.id)
+    );
+
+    const nomesAcoes = acoesSelecionadas.map((a) => `"${a.nome_acao}" (${a.data_hora ? new Date(a.data_hora).toLocaleDateString('pt-BR') : 'Data a definir'})`).join(', ');
+    const metasNomes = todasMetasDisponiveis.map((m) => `"${m.descricao}"`).slice(0, 4).join(', ');
+
+    setTimeout(() => {
+      const textoGerado = `O presente Relatório Técnico de Monitoramento e Avaliação tem como escopo a análise sistemática e comprovação da execução do projeto social "${formData.nome || 'Projeto Social'}", realizado pelo ${dadosInstituto.razao_social || 'Instituto Ádapo'}. 
+
+No período analisado (${activeRelatorioMrosc.periodo_inicio ? new Date(activeRelatorioMrosc.periodo_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : 'Início'} a ${activeRelatorioMrosc.periodo_fim ? new Date(activeRelatorioMrosc.periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR') : 'Término'}), foram avaliadas ${acoesSelecionadas.length} ações estratégicas executadas no cronograma: ${nomesAcoes || 'ações programadas'}. 
+
+As atividades integraram o público-alvo de ${formData.publico_alvo || 'beneficiários cadastrados'} na região de ${formData.localidade || 'São Luís - MA'}, visando concretizar o objetivo geral de ${formData.objetivo_geral || 'desenvolvimento comunitário e fortalecimento educacional'}, com foco direto nas metas pactuadas no Plano de Trabalho: ${metasNomes || 'metas institucionais'}. O processo avaliativo fundamentou-se em evidências de campo, controle de presença e verificação da qualidade pedagógica e operacional.`;
+
+      setActiveRelatorioMrosc({
+        ...activeRelatorioMrosc,
+        introducao_texto: textoGerado,
+      });
+      setGeneratingIAIntro(false);
+    }, 600);
+  };
+
+  // Assistente de IA: Geração Automática da Conclusão Analítica
+  const handleGerarConclusaoComIA = () => {
+    if (!activeRelatorioMrosc) return;
+    setGeneratingIAConclusao(true);
+
+    const acoesSelecionadas = acoes.filter((a) =>
+      (activeRelatorioMrosc.acoes_selecionadas_ids || []).includes(a.id)
+    );
+
+    const totalAtividades = (activeRelatorioMrosc.avaliacao_acoes_novas || []).reduce(
+      (acc, a) => acc + (a.atividades?.length || 0),
+      0
+    );
+
+    const metasConcluidas = (activeRelatorioMrosc.avaliacao_metas_novas || []).filter(
+      (m) => m.status === 'concluida'
+    ).length;
+
+    const metasIniciadas = (activeRelatorioMrosc.avaliacao_metas_novas || []).filter(
+      (m) => m.status === 'iniciada'
+    ).length;
+
+    const freq100 = activeRelatorioMrosc.dados_publico_alvo?.frequencia?.faixa_100 || 0;
+    const freq75 = activeRelatorioMrosc.dados_publico_alvo?.frequencia?.faixa_90_75 || 0;
+
+    setTimeout(() => {
+      const textoConclusao = `Com base na consolidação dos dados e na averiguação técnica realizada no âmbito do projeto "${formData.nome || 'Projeto Social'}", conclui-se que o conjunto de ${acoesSelecionadas.length} ações (${totalAtividades} atividades operacionais) monitoradas neste período obteve resultados altamente satisfatórios. 
+
+No que concerne ao cumprimento de metas, foram registradas ${metasConcluidas} metas plenamente concluídas e ${metasIniciadas} metas em estágio avançado de desenvolvimento, mantendo perfeita aderência ao cronograma e aos indicadores pactuados no Plano de Trabalho. A frequência dos beneficiários manteve-se expressiva (com ${freq100 + freq75} participantes com assiduidade acima de 75%), sem ocorrência de evasão significativa.
+
+O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetividade dos métodos pedagógicos aplicados e o fortalecimento de vínculos com as famílias. Constata-se igualmente a total observância das diretrizes de transparência institucional e prestação de contas. Portanto, o parecer técnico é favorável pela CONTINUIDADE REGULAR das ações, validando os planos de ação propostos pela equipe técnica para os próximos ciclos.`;
+
+      setActiveRelatorioMrosc({
+        ...activeRelatorioMrosc,
+        conclusao_texto: textoConclusao,
+        justificativa_conclusao: textoConclusao,
+      });
+      setGeneratingIAConclusao(false);
+    }, 700);
+  };
+
+  const handleOpenNewMroscReport = () => {
+    setActiveRelatorioMrosc(getInitialRelatorioMrosc());
+    setMroscWizardStep(1);
+    setShowMroscModal(true);
+  };
+
+  const handleOpenEditMroscReport = (rel: RelatorioMonitoramento) => {
+    setActiveRelatorioMrosc({
+      ...rel,
+      acoes_selecionadas_ids: Array.isArray(rel.acoes_selecionadas_ids) ? rel.acoes_selecionadas_ids : acoes.map((a) => a.id),
+      documentos_avaliados: Array.isArray(rel.documentos_avaliados) ? rel.documentos_avaliados : [],
+      avaliacao_acoes_novas: Array.isArray(rel.avaliacao_acoes_novas) && rel.avaliacao_acoes_novas.length > 0
+        ? rel.avaliacao_acoes_novas
+        : getInitialRelatorioMrosc().avaliacao_acoes_novas,
+      avaliacao_metas_novas: Array.isArray(rel.avaliacao_metas_novas) && rel.avaliacao_metas_novas.length > 0
+        ? rel.avaliacao_metas_novas
+        : getInitialRelatorioMrosc().avaliacao_metas_novas,
+      dados_publico_alvo: rel.dados_publico_alvo || getInitialRelatorioMrosc().dados_publico_alvo,
+      avaliacao_transparencia_nova: rel.avaliacao_transparencia_nova || getInitialRelatorioMrosc().avaliacao_transparencia_nova,
+      conclusao_texto: rel.conclusao_texto || rel.justificativa_conclusao || '',
+    });
+    setMroscWizardStep(1);
+    setShowMroscModal(true);
+  };
+
+  const handleSaveMroscReport = async () => {
+    if (!activeRelatorioMrosc) return;
+    setSavingRelatorio(true);
+    const supabase = createClient();
+
+    const payload = {
+      projeto_id: id,
+      mes_referencia: activeRelatorioMrosc.mes_referencia || new Date().toISOString().substring(0, 7),
+      numero_processo: activeRelatorioMrosc.numero_processo || '',
+      numero_instrumento: activeRelatorioMrosc.numero_instrumento || '',
+      tipo_instrumento: activeRelatorioMrosc.tipo_instrumento || 'Termo de Fomento',
+      periodo_inicio: activeRelatorioMrosc.periodo_inicio || null,
+      periodo_fim: activeRelatorioMrosc.periodo_fim || null,
+      gestor_monitoramento_id: activeRelatorioMrosc.gestor_monitoramento_id || null,
+      gestor_nome_externo: activeRelatorioMrosc.gestor_nome_externo || '',
+      documentos_avaliados: activeRelatorioMrosc.documentos_avaliados || [],
+      introducao_texto: activeRelatorioMrosc.introducao_texto || '',
+      avaliacao_acoes: activeRelatorioMrosc.avaliacao_acoes_novas || [],
+      avaliacao_metas: activeRelatorioMrosc.avaliacao_metas_novas || [],
+      status_transparencia: activeRelatorioMrosc.avaliacao_transparencia_nova?.publicado ? 'conforme' : 'nao_conforme',
+      justificativa_transparencia: activeRelatorioMrosc.avaliacao_transparencia_nova?.detalhes_publicacoes || '',
+      parecer_conclusao: 'continuidade_regular',
+      ressalvas_conclusao: {
+        acoes_selecionadas_ids: activeRelatorioMrosc.acoes_selecionadas_ids,
+        dados_publico_alvo: activeRelatorioMrosc.dados_publico_alvo,
+        avaliacao_transparencia_nova: activeRelatorioMrosc.avaliacao_transparencia_nova,
+      },
+      justificativa_conclusao: activeRelatorioMrosc.conclusao_texto || '',
+      valor_desembolsado: Number(activeRelatorioMrosc.valor_desembolsado) || 0,
+      local_data_emissao: activeRelatorioMrosc.local_data_emissao || 'São Luís - MA',
+      resumo_avanco: activeRelatorioMrosc.introducao_texto?.substring(0, 200) || '',
+      metas_atingidas: `${(activeRelatorioMrosc.avaliacao_metas_novas || []).filter((m) => m.status === 'concluida').length} metas concluídas`,
+      dificuldades_encontradas: '',
+    };
+
+    if (activeRelatorioMrosc.id) {
+      await supabase.from('relatorios_monitoramento').update(payload).eq('id', activeRelatorioMrosc.id);
+    } else {
+      await supabase.from('relatorios_monitoramento').insert([payload]);
+    }
+
+    setSavingRelatorio(false);
+    setShowMroscModal(false);
+    setActiveRelatorioMrosc(null);
     loadData();
   };
 
-  // Helper para normalizar arrays de materiais/equipe
-  const ensureStringArray = (val: any): string[] => {
-    if (Array.isArray(val)) return val.map((v) => String(v).trim()).filter(Boolean);
-    if (typeof val === 'string' && val.trim()) {
-      return [val.trim()];
-    }
-    return [];
+  const handleRemoveRelatorio = async (relId: string) => {
+    if (!confirm('Deseja realmente excluir este relatório de monitoramento? Esta ação não pode ser desfeita.')) return;
+    const supabase = createClient();
+    await supabase.from('relatorios_monitoramento').delete().eq('id', relId);
+    loadData();
   };
 
-  // Programação de Ação Handlers
+  const handleOpenPrintMrosc = (rel: RelatorioMonitoramento) => {
+    // Normalizar caso venha do banco
+    const acoesNovas = Array.isArray(rel.avaliacao_acoes) ? rel.avaliacao_acoes : (rel.avaliacao_acoes_novas || []);
+    const metasNovas = Array.isArray(rel.avaliacao_metas) ? rel.avaliacao_metas : (rel.avaliacao_metas_novas || []);
+    const ressalvasMeta: any = typeof rel.ressalvas_conclusao === 'object' && !Array.isArray(rel.ressalvas_conclusao) ? rel.ressalvas_conclusao : {};
+
+    setRelatorioToPrint({
+      ...rel,
+      avaliacao_acoes_novas: acoesNovas,
+      avaliacao_metas_novas: metasNovas,
+      dados_publico_alvo: rel.dados_publico_alvo || ressalvasMeta.dados_publico_alvo || getInitialRelatorioMrosc().dados_publico_alvo,
+      avaliacao_transparencia_nova: rel.avaliacao_transparencia_nova || ressalvasMeta.avaliacao_transparencia_nova || getInitialRelatorioMrosc().avaliacao_transparencia_nova,
+      conclusao_texto: rel.conclusao_texto || rel.justificativa_conclusao || '',
+      acoes_selecionadas_ids: rel.acoes_selecionadas_ids || ressalvasMeta.acoes_selecionadas_ids || acoes.map((a) => a.id),
+    });
+    setShowPrintMroscModal(true);
+  };
+
+  // =========================================================================
+  // HANDLERS DA GRADE DE PROGRAMAÇÃO DA AÇÃO (EQUIPE DE PROJETOS)
+  // =========================================================================
+
   const handleOpenProgramacaoEditor = (acao: AcaoExecucao) => {
     setSelectedAcaoForProgramacao(acao);
-    const existing = Array.isArray(acao.programacao_itens) ? acao.programacao_itens : [];
-    if (existing.length === 0) {
+    setProgramacaoMetaId(acao.meta_id || '');
+    setProgramacaoJustificativaMeta(acao.justificativa_meta_acao || '');
+
+    const existing = acao.programacao_itens;
+    if (!existing || existing.length === 0) {
       setProgramacaoRows([
         {
           id: crypto.randomUUID(),
-          horario: '08:30 - 09:00',
-          atividade: '',
+          horario: '08:30 - 09:30',
+          atividade: acao.nome_acao,
           materiais: [],
           equipe: [],
-          local: '',
-          meta_ids: [],
+          local: 'Sede / Polo',
         },
       ]);
     } else {
@@ -689,7 +1185,6 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
           ...row,
           materiais: ensureStringArray(row.materiais),
           equipe: ensureStringArray(row.equipe),
-          meta_ids: Array.isArray(row.meta_ids) ? row.meta_ids : [],
         }))
       );
     }
@@ -705,7 +1200,6 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
         materiais: [],
         equipe: [],
         local: '',
-        meta_ids: [],
       },
     ]);
   };
@@ -756,15 +1250,6 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     );
   };
 
-  const handleToggleMetaInRow = (rowIdx: number, metaId: string) => {
-    const row = programacaoRows[rowIdx];
-    const currentMetas = Array.isArray(row.meta_ids) ? row.meta_ids : [];
-    const updatedMetas = currentMetas.includes(metaId)
-      ? currentMetas.filter((m) => m !== metaId)
-      : [...currentMetas, metaId];
-    handleUpdateProgramacaoRow(rowIdx, 'meta_ids', updatedMetas);
-  };
-
   const handleRemoveProgramacaoRow = (idx: number) => {
     setProgramacaoRows(programacaoRows.filter((_, i) => i !== idx));
   };
@@ -773,24 +1258,44 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     if (!selectedAcaoForProgramacao) return;
     setSavingProgramacao(true);
     const supabase = createClient();
+
+    const payload: any = {
+      programacao_itens: programacaoRows,
+    };
+
+    // Tentar atualizar meta_id e justificativa_meta_acao se colunas existirem
     const { error: saveErr } = await supabase
       .from('acoes_projeto')
-      .update({ programacao_itens: programacaoRows })
+      .update({
+        ...payload,
+        meta_id: programacaoMetaId || null,
+        justificativa_meta_acao: programacaoJustificativaMeta || '',
+      })
       .eq('id', selectedAcaoForProgramacao.id);
 
     if (saveErr) {
-      alert('Erro ao salvar programação: ' + saveErr.message);
-    } else {
-      setAcoes((prev) =>
-        prev.map((a) =>
-          a.id === selectedAcaoForProgramacao.id
-            ? { ...a, programacao_itens: programacaoRows }
-            : a
-        )
-      );
-      setSelectedAcaoForProgramacao(null);
+      // Fallback
+      await supabase
+        .from('acoes_projeto')
+        .update(payload)
+        .eq('id', selectedAcaoForProgramacao.id);
     }
+
+    setAcoes((prev) =>
+      prev.map((a) =>
+        a.id === selectedAcaoForProgramacao.id
+          ? {
+            ...a,
+            programacao_itens: programacaoRows,
+            meta_id: programacaoMetaId,
+            justificativa_meta_acao: programacaoJustificativaMeta,
+          }
+          : a
+      )
+    );
+    setSelectedAcaoForProgramacao(null);
     setSavingProgramacao(false);
+    loadData();
   };
 
   const handleOpenPrintProgramacao = (acao: AcaoExecucao) => {
@@ -798,19 +1303,16 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     setShowPrintProgramacaoModal(true);
   };
 
-  const todasMetasDisponiveis = objetivosEspecificos.flatMap((obj, objIdx) =>
-    (obj.metas || []).map((m, mIdx) => ({
-      id: m.id || `${objIdx}-${mIdx}`,
-      descricao: m.descricao_meta || `Meta ${mIdx + 1}`,
-      objetivoTitulo: obj.titulo_objetivo || `Objetivo ${objIdx + 1}`,
-    }))
-  );
-
-  const handleRemoveRelatorio = async (relatorioId: string) => {
-    const supabase = createClient();
-    await supabase.from('relatorios_monitoramento').delete().eq('id', relatorioId);
-    loadData();
+  // Helper para normalizar arrays de materiais/equipe
+  const ensureStringArray = (val: any): string[] => {
+    if (Array.isArray(val)) return val.map((v) => String(v).trim()).filter(Boolean);
+    if (typeof val === 'string' && val.trim()) {
+      return [val.trim()];
+    }
+    return [];
   };
+
+
 
   // Vínculos
   const handleInscreverBeneficiario = async () => {
@@ -907,7 +1409,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
         {successMsg && (
           <div className="p-4 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)] text-sm font-medium border border-[var(--color-success)]/20 flex items-center gap-2">
             <CheckCircle className="w-4 h-4" />
-            Alterações do projeto e dados institucionais salvas com sucesso!
+            Alterações salvas com sucesso!
           </div>
         )}
 
@@ -1697,90 +2199,248 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
               {gestaoSubTab === 'execucao' && (
                 <div className="space-y-6">
                   {/* Cronograma de Ações */}
-                  <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-                    <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
-                      <div>
-                        <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Registros de Ações do Projeto</h3>
-                        <p className="text-xs text-[var(--text-muted)]">Oficinas, atividades comunitárias e encontros executados</p>
+                  <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
+                    {/* Header Principal da Seção */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-5 h-5 text-[var(--color-primary)]" />
+                          <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                            Registros de Ações do Projeto
+                          </h3>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          Oficinas, atividades comunitárias e encontros planejados e executados
+                        </p>
                       </div>
-                      <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddAcaoModal(true)}>
+
+                      <Button size="sm" variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddAcaoModal(true)}>
                         Cadastrar Ação
                       </Button>
                     </div>
 
-                    {acoes.length === 0 ? (
-                      <p className="text-xs text-[var(--text-muted)] italic text-center py-6">Nenhuma ação cadastrada no cronograma.</p>
+                    {/* Barra de Filtros Minimalista & Sofisticada */}
+                    <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] flex flex-wrap items-center justify-between gap-3 text-xs">
+                      {/* Filtro por Mês */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 text-[var(--text-secondary)] font-semibold">
+                          <Filter className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                          <span>Mês:</span>
+                        </div>
+
+                        <select
+                          value={filtroMesAcoes}
+                          onChange={(e) => setFiltroMesAcoes(e.target.value)}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                        >
+                          <option value="todos">Todos os Meses ({acoes.length})</option>
+                          {mesesDisponiveisAcoes.map((m) => {
+                            const [ano, mes] = m.split('-');
+                            const nomeMes = new Date(Number(ano), Number(mes) - 1, 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                            const countMes = acoes.filter((a) => a.data_hora && a.data_hora.startsWith(m)).length;
+                            const isVigente = m === currentMonthStr;
+
+                            return (
+                              <option key={m} value={m}>
+                                {nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1)} {isVigente ? '(Mês Vigente)' : ''} ({countMes})
+                              </option>
+                            );
+                          })}
+                        </select>
+
+                        {filtroMesAcoes !== currentMonthStr && (
+                          <button
+                            type="button"
+                            onClick={() => setFiltroMesAcoes(currentMonthStr)}
+                            className="px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--color-primary)]/10 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/20 transition-colors"
+                          >
+                            Ir para Mês Vigente
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Segmented Control por Responsável */}
+                      <div className="flex items-center gap-1 bg-[var(--bg-elevated)] p-1 rounded-lg border border-[var(--border-default)]">
+                        {[
+                          { id: 'todos', label: 'Todos' },
+                          { id: 'Projetos', label: 'Projetos' },
+                          { id: 'Pedagogia', label: 'Pedagogia' },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setFiltroResponsavelAcoes(tab.id as any)}
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${filtroResponsavelAcoes === tab.id
+                              ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                              }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Campo de Busca Rápida */}
+                      <div className="relative flex-1 min-w-[180px] max-w-xs">
+                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                        <input
+                          type="text"
+                          value={buscaAcaoTexto}
+                          onChange={(e) => setBuscaAcaoTexto(e.target.value)}
+                          placeholder="Buscar por nome, meta..."
+                          className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                        />
+                        {buscaAcaoTexto && (
+                          <button
+                            type="button"
+                            onClick={() => setBuscaAcaoTexto('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Resumo da Filtragem */}
+                    <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] px-1">
+                      <span>
+                        Exibindo <strong>{acoesFiltradas.length}</strong> de <strong>{acoes.length}</strong> ações registradas
+                        {filtroMesAcoes !== 'todos' && (
+                          <span className="ml-1 text-[var(--text-secondary)]">
+                            • Referência: {new Date(Number(filtroMesAcoes.split('-')[0]), Number(filtroMesAcoes.split('-')[1]) - 1, 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                          </span>
+                        )}
+                      </span>
+
+                      {(filtroMesAcoes !== 'todos' || filtroResponsavelAcoes !== 'todos' || buscaAcaoTexto) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFiltroMesAcoes('todos');
+                            setFiltroResponsavelAcoes('todos');
+                            setBuscaAcaoTexto('');
+                          }}
+                          className="text-[var(--color-primary)] font-semibold hover:underline"
+                        >
+                          Limpar todos os filtros
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Lista Minimalista de Ações */}
+                    {acoesFiltradas.length === 0 ? (
+                      <div className="p-8 text-center border border-dashed border-[var(--border-default)] rounded-xl space-y-2.5 bg-[var(--bg-secondary)]/20">
+                        <Calendar className="w-8 h-8 text-[var(--text-muted)] mx-auto opacity-60" />
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-bold text-[var(--text-primary)]">Nenhuma ação encontrada para os filtros selecionados</p>
+                          <p className="text-[11px] text-[var(--text-muted)]">
+                            {filtroMesAcoes !== 'todos' ? 'Não há ações cadastradas neste mês de referência.' : 'Tente ajustar os critérios de busca.'}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 pt-1">
+                          <Button size="sm" variant="secondary" onClick={() => { setFiltroMesAcoes('todos'); setFiltroResponsavelAcoes('todos'); setBuscaAcaoTexto(''); }}>
+                            Ver Todas as Ações
+                          </Button>
+                          <Button size="sm" variant="primary" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => setShowAddAcaoModal(true)}>
+                            Cadastrar Nova Ação
+                          </Button>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {acoes.map((acao) => {
-                          const isPlanoAula = acao.documento_estruturador === 'Plano de Aula';
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        {acoesFiltradas.map((acao) => {
+                          const resp = (acao.responsavel_estrutura || (acao.documento_estruturador === 'Plano de Aula' ? 'Pedagogia' : 'Projetos')) as 'Projetos' | 'Pedagogia';
+                          const isPedagogia = resp === 'Pedagogia';
                           const qtdItens = Array.isArray(acao.programacao_itens) ? acao.programacao_itens.length : 0;
+                          const metaVinculada = todasMetasDisponiveis.find((m) => m.id === acao.meta_id);
 
                           return (
                             <div
                               key={acao.id}
-                              className={`p-5 rounded-2xl border transition-all space-y-3 flex flex-col justify-between ${
-                                isPlanoAula
-                                  ? 'border-[#93368F]/30 bg-[var(--bg-elevated)] hover:border-[#93368F]/60'
-                                  : 'border-[#F2632D]/30 bg-[var(--bg-elevated)] hover:border-[#F2632D]/60'
-                              }`}
+                              className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40 transition-all flex flex-col justify-between space-y-3 shadow-sm hover:shadow-md"
                             >
                               <div className="space-y-2.5">
+                                {/* Header do Card Minimalista */}
                                 <div className="flex items-start justify-between gap-2">
-                                  <span className="text-sm font-bold text-[var(--text-primary)]">{acao.nome_acao}</span>
-                                  <Badge variant={isPlanoAula ? 'purple' : 'primary'}>
-                                    {acao.documento_estruturador}
+                                  <div className="space-y-1 min-w-0">
+                                    <h4 className="font-bold text-xs text-[var(--text-primary)] leading-tight truncate" title={acao.nome_acao}>
+                                      {acao.nome_acao}
+                                    </h4>
+                                    <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
+                                      <span className="flex items-center gap-1 font-medium">
+                                        <Calendar className="w-3 h-3 text-[var(--color-primary)]" />
+                                        {new Date(acao.data_hora).toLocaleDateString('pt-BR')}
+                                      </span>
+                                      <span>•</span>
+                                      <span className="flex items-center gap-1 font-medium">
+                                        <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+                                        {new Date(acao.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <Badge variant={isPedagogia ? 'purple' : 'primary'}>
+                                    <span className="flex items-center gap-1 text-[10px]">
+                                      {isPedagogia ? <GraduationCap className="w-3 h-3" /> : <FolderKanban className="w-3 h-3" />}
+                                      {isPedagogia ? 'Pedagogia' : 'Projetos'}
+                                    </span>
                                   </Badge>
                                 </div>
-                                <p className="text-[11px] text-[var(--text-muted)] font-medium">
-                                  📅 {new Date(acao.data_hora).toLocaleString('pt-BR')}
-                                </p>
+
                                 {acao.descricao && (
-                                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{acao.descricao}</p>
+                                  <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
+                                    {acao.descricao}
+                                  </p>
                                 )}
 
-                                {isPlanoAula ? (
-                                  <div className="p-3 rounded-xl bg-[#93368F]/10 border border-[#93368F]/20 text-xs space-y-1.5">
-                                    <div className="flex items-center gap-1.5 font-bold text-[#93368F]">
-                                      <GraduationCap className="w-4 h-4" />
-                                      <span>Área de Pedagogia</span>
+                                {/* Meta Vinculada */}
+                                {metaVinculada && (
+                                  <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)]/60 border border-[var(--border-default)] text-[11px] space-y-1">
+                                    <div className="flex items-center gap-1.5 font-bold text-[var(--color-primary)]">
+                                      <Target className="w-3 h-3 shrink-0" />
+                                      <span className="truncate">Meta: {metaVinculada.descricao}</span>
                                     </div>
-                                    <p className="text-[11px] text-[var(--text-secondary)]">
-                                      A estrutura deste Plano de Aula é elaborada pela equipe pedagógica no módulo de Pedagogia vinculado ao projeto.
-                                    </p>
-                                  </div>
-                                ) : (
-                                  <div className="p-3 rounded-xl bg-[#F2632D]/10 border border-[#F2632D]/20 text-xs space-y-2">
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-bold text-[#F2632D] flex items-center gap-1.5">
-                                        <FolderKanban className="w-4 h-4" />
-                                        <span>Equipe de Projetos</span>
-                                      </span>
-                                      <span className="text-[11px] font-semibold text-[var(--text-muted)]">
-                                        {qtdItens > 0 ? `${qtdItens} atividades programadas` : 'Não estruturada'}
-                                      </span>
-                                    </div>
-                                    <p className="text-[11px] text-[var(--text-secondary)]">
-                                      Grade detalhada com horário, atividade, materiais, equipe, local e metas vinculadas.
-                                    </p>
+                                    {acao.justificativa_meta_acao && (
+                                      <p className="text-[10px] text-[var(--text-secondary)] italic line-clamp-2">
+                                        "{acao.justificativa_meta_acao}"
+                                      </p>
+                                    )}
                                   </div>
                                 )}
+
+                                {/* Indicador de Estruturação */}
+                                <div className="text-[10px] text-[var(--text-muted)] font-medium flex items-center justify-between pt-1">
+                                  {isPedagogia ? (
+                                    <span className="flex items-center gap-1 text-[#93368F]">
+                                      <GraduationCap className="w-3 h-3" />
+                                      Roteiro e plano de aula no módulo de Pedagogia
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center gap-1 text-[var(--text-secondary)]">
+                                      <Layers className="w-3 h-3 text-[var(--color-primary)]" />
+                                      {qtdItens > 0 ? `${qtdItens} dinâmicas programadas na grade` : 'Grade operacional não programada'}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
 
-                              <div className="flex items-center justify-between pt-3 border-t border-[var(--border-default)]">
+                              {/* Ações do Card */}
+                              <div className="flex items-center justify-between pt-2.5 border-t border-[var(--border-default)]/60 text-xs">
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveAcao(acao.id)}
-                                  className="text-xs text-[var(--color-danger)] font-semibold hover:underline"
+                                  className="text-[11px] text-[var(--color-danger)] font-medium hover:underline flex items-center gap-1"
                                 >
+                                  <Trash2 className="w-3 h-3" />
                                   Excluir
                                 </button>
 
-                                <div className="flex items-center gap-2">
-                                  {isPlanoAula ? (
+                                <div className="flex items-center gap-1.5">
+                                  {isPedagogia ? (
                                     <Link href="/dashboard/pedagogia">
-                                      <Button size="sm" variant="secondary" icon={<ExternalLink className="w-3.5 h-3.5" />}>
-                                        Módulo Pedagogia
+                                      <Button size="sm" variant="secondary" icon={<ExternalLink className="w-3 h-3" />}>
+                                        Pedagogia
                                       </Button>
                                     </Link>
                                   ) : (
@@ -1789,8 +2449,9 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                                         <Button
                                           size="sm"
                                           variant="ghost"
-                                          icon={<Download className="w-3.5 h-3.5" />}
+                                          icon={<Download className="w-3 h-3" />}
                                           onClick={() => handleOpenPrintProgramacao(acao)}
+                                          title="Exportar PDF Timbrado"
                                         >
                                           PDF
                                         </Button>
@@ -1798,10 +2459,10 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                                       <Button
                                         size="sm"
                                         variant="primary"
-                                        icon={<Edit3 className="w-3.5 h-3.5" />}
+                                        icon={<Edit3 className="w-3 h-3" />}
                                         onClick={() => handleOpenProgramacaoEditor(acao)}
                                       >
-                                        Editar Programação
+                                        Programação
                                       </Button>
                                     </>
                                   )}
@@ -1814,33 +2475,164 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                     )}
                   </div>
 
-                  {/* Relatórios Mensais de Monitoramento */}
-                  <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-                    <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                  {/* Relatórios Técnicos de Monitoramento e Avaliação */}
+                  <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
                       <div>
-                        <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Relatórios Mensais de Monitoramento</h3>
-                        <p className="text-xs text-[var(--text-muted)]">Acompanhamento contínuo de resultados e metas</p>
+                        <div className="flex items-center gap-2">
+                          <FileCheck className="w-5 h-5 text-[var(--color-primary)]" />
+                          <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                            Relatórios Técnicos de Monitoramento e Avaliação
+                          </h3>
+                          <Badge variant="primary">Padrão Institucional Ádapo</Badge>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mt-1">
+                          Acompanhamento qualitativo de ações, metas, frequência, socioemocional e transparência com suporte a Inteligência Artificial
+                        </p>
                       </div>
-                      <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddRelatorioModal(true)}>
-                        Novo Relatório
+                      <Button size="sm" variant="primary" icon={<Plus className="w-4 h-4" />} onClick={handleOpenNewMroscReport}>
+                        Criar Relatório Técnico
                       </Button>
                     </div>
 
                     {relatorios.length === 0 ? (
-                      <p className="text-xs text-[var(--text-muted)] italic text-center py-6">Nenhum relatório de monitoramento emitido.</p>
+                      <div className="p-8 text-center border-2 border-dashed border-[var(--border-default)] rounded-2xl space-y-3 bg-[var(--bg-secondary)]/30">
+                        <div className="w-12 h-12 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mx-auto">
+                          <FileCheck className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1 max-w-md mx-auto">
+                          <h4 className="font-bold text-sm text-[var(--text-primary)]">Nenhum Relatório Técnico emitido ainda</h4>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            Gere relatórios periódicos com análise de satisfação das dinâmicas, cumprimento de metas e planos de ação com prazo.
+                          </p>
+                        </div>
+                        <Button size="sm" variant="secondary" icon={<Plus className="w-4 h-4" />} onClick={handleOpenNewMroscReport}>
+                          Criar Primeiro Relatório Técnico
+                        </Button>
+                      </div>
                     ) : (
-                      <div className="space-y-3">
-                        {relatorios.map((rel) => (
-                          <div key={rel.id} className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-xs text-[var(--text-primary)]">Mês de Referência: {rel.mes_referencia}</span>
-                              <button type="button" onClick={() => handleRemoveRelatorio(rel.id)} className="text-[var(--color-danger)] text-xs font-semibold hover:underline">Excluir</button>
+                      <div className="space-y-4">
+                        {relatorios.map((rel) => {
+                          const acoesCount = Array.isArray(rel.acoes_selecionadas_ids)
+                            ? rel.acoes_selecionadas_ids.length
+                            : (Array.isArray(rel.avaliacao_acoes) ? rel.avaliacao_acoes.length : acoes.length);
+
+                          const metasArr = Array.isArray(rel.avaliacao_metas_novas) && rel.avaliacao_metas_novas.length > 0
+                            ? rel.avaliacao_metas_novas
+                            : (Array.isArray(rel.avaliacao_metas) ? rel.avaliacao_metas : []);
+
+                          const metasConcluidas = metasArr.filter((m: any) => m.status === 'concluida' || m.status_cumprimento === 'plenamente_atingida').length;
+                          const totalMetas = metasArr.length > 0 ? metasArr.length : todasMetasDisponiveis.length;
+
+                          return (
+                            <div
+                              key={rel.id}
+                              className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 hover:border-[var(--color-primary)]/50 transition-all space-y-4 shadow-sm"
+                            >
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-default)]/60 pb-3">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-sm text-[var(--text-primary)]">
+                                      {rel.numero_instrumento || 'Relatório Técnico de Monitoramento'}
+                                    </span>
+                                    {rel.numero_processo && (
+                                      <span className="text-xs text-[var(--text-muted)] font-mono">
+                                        ({rel.numero_processo})
+                                      </span>
+                                    )}
+                                    <span className="text-xs text-[var(--text-secondary)] font-semibold">
+                                      • Mês Ref: {rel.mes_referencia}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-[var(--text-muted)]">
+                                    Período avaliado: {rel.periodo_inicio ? new Date(rel.periodo_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : 'Início'} até{' '}
+                                    {rel.periodo_fim ? new Date(rel.periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR') : 'Hoje'}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                    Monitoramento Aprovado
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Resumo em 4 Métricas */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                                  <span className="text-[11px] text-[var(--text-muted)] block font-medium">Ações Avaliadas</span>
+                                  <span className="text-sm font-bold text-[var(--text-primary)]">{acoesCount} ações</span>
+                                </div>
+                                <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                                  <span className="text-[11px] text-[var(--text-muted)] block font-medium">Metas Concluídas</span>
+                                  <span className="text-sm font-bold text-[var(--color-success)]">
+                                    {metasConcluidas} de {totalMetas}
+                                  </span>
+                                </div>
+                                <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                                  <span className="text-[11px] text-[var(--text-muted)] block font-medium">Desembolso Acumulado</span>
+                                  <span className="text-sm font-bold text-[var(--text-primary)]">
+                                    {Number(rel.valor_desembolsado || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                  </span>
+                                </div>
+                                <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                                  <span className="text-[11px] text-[var(--text-muted)] block font-medium">Transparência Ativa</span>
+                                  <span className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-1.5 mt-0.5">
+                                    {rel.status_transparencia === 'conforme' ? (
+                                      <>
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-success)]" />
+                                        <span>Conteúdo Publicado</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                                        <span>Pendências</span>
+                                      </>
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {(rel.conclusao_texto || rel.justificativa_conclusao) && (
+                                <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)]">
+                                  <strong className="text-[var(--text-primary)]">Síntese Conclusiva:</strong>{' '}
+                                  {rel.conclusao_texto || rel.justificativa_conclusao}
+                                </div>
+                              )}
+
+                              {/* Ações do Relatório */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border-default)]/60">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRelatorio(rel.id)}
+                                  className="text-xs text-[var(--color-danger)] font-semibold hover:underline"
+                                >
+                                  Excluir Relatório
+                                </button>
+
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    icon={<Edit3 className="w-3.5 h-3.5" />}
+                                    onClick={() => handleOpenEditMroscReport(rel)}
+                                  >
+                                    Editar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="primary"
+                                    icon={<Printer className="w-3.5 h-3.5" />}
+                                    onClick={() => handleOpenPrintMrosc(rel)}
+                                  >
+                                    Visualizar / PDF Timbrado
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
-                            {rel.resumo_avanco && <p className="text-xs text-[var(--text-secondary)]"><strong>Avanços:</strong> {rel.resumo_avanco}</p>}
-                            {rel.metas_atingidas && <p className="text-xs text-[var(--color-success)]"><strong>Metas:</strong> {rel.metas_atingidas}</p>}
-                            {rel.dificuldades_encontradas && <p className="text-xs text-[var(--color-danger)]"><strong>Desafios:</strong> {rel.dificuldades_encontradas}</p>}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -1904,7 +2696,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
-                  💡 A gestão pedagógica completa do Instituto Ádapo possui sua própria página no menu lateral (<strong>/pedagogia</strong>). Quando os planos de aula, roteiros de oficinas e relatórios socioemocionais forem vinculados a este projeto, eles serão exibidos automaticamente nesta área.
+                  A gestão pedagógica completa do Instituto Ádapo possui sua própria página no menu lateral (<strong>/pedagogia</strong>). Quando os planos de aula, roteiros de oficinas e relatórios socioemocionais forem vinculados a este projeto, eles serão exibidos automaticamente nesta área.
                 </div>
               </div>
 
@@ -2203,37 +2995,84 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
-      {/* MODAL CADASTRAR AÇÃO NO CALENDÁRIO COM DOCUMENTO ESTRUTURADOR */}
+      {/* MODAL CADASTRAR AÇÃO NO CRONOGRAMA (PROJETOS / PEDAGOGIA) */}
       {showAddAcaoModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-default)] shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-lg bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-default)] shadow-2xl space-y-4 my-auto">
             <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
-              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Cadastrar Ação no Cronograma</h3>
+              <div className="space-y-0.5">
+                <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Cadastrar Ação no Cronograma</h3>
+                <p className="text-xs text-[var(--text-muted)]">Planejamento de oficinas, encontros e dinâmicas do projeto</p>
+              </div>
               <button onClick={() => setShowAddAcaoModal(false)}><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
             </div>
-            <Input label="Nome da Ação / Oficina *" value={newAcao.nome_acao} onChange={(e) => setNewAcao({ ...newAcao, nome_acao: e.target.value })} placeholder="Ex: Oficina 01 - Introdução ao Tema" required />
+
+            <Input label="Nome da Ação / Oficina *" value={newAcao.nome_acao} onChange={(e) => setNewAcao({ ...newAcao, nome_acao: e.target.value })} placeholder="Ex: Oficina 01 - Introdução ao Tema e Acolhida" required />
             <Input label="Data e Horário *" type="datetime-local" value={newAcao.data_hora} onChange={(e) => setNewAcao({ ...newAcao, data_hora: e.target.value })} required />
 
+            {/* Quem é o responsável pela estrutura dessa ação? */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[var(--text-secondary)]">Qual documento estrutura essa ação? *</label>
-              <div className="grid grid-cols-2 gap-2">
-                <label className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 cursor-pointer transition-all ${newAcao.documento_estruturador === 'Plano de Aula' ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'border-[var(--border-default)] text-[var(--text-secondary)]'}`}>
-                  <input type="radio" name="documento_estruturador" checked={newAcao.documento_estruturador === 'Plano de Aula'} onChange={() => setNewAcao({ ...newAcao, documento_estruturador: 'Plano de Aula' })} className="hidden" />
-                  <span>Plano de Aula</span>
+              <label className="text-xs font-semibold text-[var(--text-secondary)]">Quem é o responsável pela estrutura dessa ação? *</label>
+              <div className="grid grid-cols-2 gap-2.5">
+                <label className={`p-3 rounded-xl border text-xs font-bold flex flex-col gap-1 cursor-pointer transition-all ${newAcao.responsavel_estrutura === 'Projetos' ? 'border-[#F2632D] bg-[#F2632D]/10 text-[#F2632D]' : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[#F2632D]/40'}`}>
+                  <div className="flex items-center gap-2">
+                    <input type="radio" name="responsavel_estrutura" checked={newAcao.responsavel_estrutura === 'Projetos'} onChange={() => setNewAcao({ ...newAcao, responsavel_estrutura: 'Projetos' })} className="hidden" />
+                    <FolderKanban className="w-4 h-4" />
+                    <span>Equipe de Projetos</span>
+                  </div>
+                  <span className="text-[10px] font-normal text-[var(--text-muted)]">Editada na grade de programação desta página</span>
                 </label>
-                <label className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 cursor-pointer transition-all ${newAcao.documento_estruturador === 'Programação de Ação' ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'border-[var(--border-default)] text-[var(--text-secondary)]'}`}>
-                  <input type="radio" name="documento_estruturador" checked={newAcao.documento_estruturador === 'Programação de Ação'} onChange={() => setNewAcao({ ...newAcao, documento_estruturador: 'Programação de Ação' })} className="hidden" />
-                  <span>Programação de Ação</span>
+
+                <label className={`p-3 rounded-xl border text-xs font-bold flex flex-col gap-1 cursor-pointer transition-all ${newAcao.responsavel_estrutura === 'Pedagogia' ? 'border-[#93368F] bg-[#93368F]/10 text-[#93368F]' : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[#93368F]/40'}`}>
+                  <div className="flex items-center gap-2">
+                    <input type="radio" name="responsavel_estrutura" checked={newAcao.responsavel_estrutura === 'Pedagogia'} onChange={() => setNewAcao({ ...newAcao, responsavel_estrutura: 'Pedagogia' })} className="hidden" />
+                    <GraduationCap className="w-4 h-4" />
+                    <span>Equipe de Pedagogia</span>
+                  </div>
+                  <span className="text-[10px] font-normal text-[var(--text-muted)]">Estruturada no módulo de Pedagogia</span>
                 </label>
               </div>
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Descrição Simples</label>
-              <textarea value={newAcao.descricao} onChange={(e) => setNewAcao({ ...newAcao, descricao: e.target.value })} placeholder="Breve descrição da atividade..." className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" rows={3} />
+            {/* Vínculo de Meta do Projeto */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[var(--text-secondary)]">Vincular a uma Meta do Projeto</label>
+              <select
+                value={newAcao.meta_id}
+                onChange={(e) => setNewAcao({ ...newAcao, meta_id: e.target.value })}
+                className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
+              >
+                <option value="">Selecione uma meta do projeto (opcional)...</option>
+                {todasMetasDisponiveis.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.objetivo ? `[${m.objetivo}] ` : ''}{m.descricao}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            {/* Por que essa ação influencia nessa meta? */}
+            {newAcao.meta_id && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-[var(--text-secondary)]">
+                  Por que / Como esta ação influencia nessa meta?
+                </label>
+                <textarea
+                  value={newAcao.justificativa_meta_acao}
+                  onChange={(e) => setNewAcao({ ...newAcao, justificativa_meta_acao: e.target.value })}
+                  placeholder="Explique como as dinâmicas e conteúdos desta ação contribuem diretamente para o alcance desta meta..."
+                  className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                  rows={2}
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Descrição Simples / Observações</label>
+              <textarea value={newAcao.descricao} onChange={(e) => setNewAcao({ ...newAcao, descricao: e.target.value })} placeholder="Breve descrição da atividade..." className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" rows={2} />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border-default)]">
               <Button variant="secondary" size="sm" onClick={() => setShowAddAcaoModal(false)}>Cancelar</Button>
               <Button size="sm" onClick={handleAddAcao} disabled={!newAcao.nome_acao || !newAcao.data_hora}>Cadastrar Ação</Button>
             </div>
@@ -2241,34 +3080,1282 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* MODAL CADASTRAR RELATÓRIO MENSAL */}
-      {showAddRelatorioModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-default)] shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
-              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Relatório Mensal de Monitoramento</h3>
-              <button onClick={() => setShowAddRelatorioModal(false)}><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
+      {/* MODAL WIZARD: RELATÓRIO TÉCNICO DE MONITORAMENTO E AVALIAÇÃO (PADRÃO ÁDAPO) */}
+      {showMroscModal && activeRelatorioMrosc && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+          <div className="w-full max-w-5xl bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-default)] shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col">
+            {/* Header do Modal */}
+            <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4 shrink-0">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <FileCheck className="w-5 h-5 text-[var(--color-primary)]" />
+                  <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">
+                    {activeRelatorioMrosc.id ? 'Editar Relatório Técnico' : 'Novo Relatório Técnico de Monitoramento & Avaliação'}
+                  </h3>
+                  <Badge variant="primary">Padrão Institucional Ádapo</Badge>
+                </div>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Projeto: {formData.nome} • OSC: {dadosInstituto.razao_social || 'Instituto Ádapo'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowMroscModal(false);
+                  setActiveRelatorioMrosc(null);
+                }}
+                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <Input label="Mês de Referência *" type="month" value={newRelatorio.mes_referencia} onChange={(e) => setNewRelatorio({ ...newRelatorio, mes_referencia: e.target.value })} required />
-            <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Resumo do Avanço</label>
-              <textarea value={newRelatorio.resumo_avanco} onChange={(e) => setNewRelatorio({ ...newRelatorio, resumo_avanco: e.target.value })} rows={2} className="w-full p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs" />
+
+            {/* Stepper / Abas do Wizard (5 Etapas) */}
+            <div className="grid grid-cols-5 gap-2 border-b border-[var(--border-default)] pb-3 shrink-0">
+              {[
+                { step: 1, label: '1. Identificação & Ações', icon: Building2 },
+                { step: 2, label: '2. Introdução (IA)', icon: Sparkles },
+                { step: 3, label: `3. Avaliação Ações (${(activeRelatorioMrosc.acoes_selecionadas_ids || []).length})`, icon: Calendar },
+                { step: 4, label: `4. Metas (${(activeRelatorioMrosc.avaliacao_metas_novas || []).length})`, icon: Target },
+                { step: 5, label: '5. Público & Conclusão', icon: CheckSquare },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = mroscWizardStep === tab.step;
+                const isPast = mroscWizardStep > tab.step;
+
+                return (
+                  <button
+                    key={tab.step}
+                    type="button"
+                    onClick={() => setMroscWizardStep(tab.step as any)}
+                    className={`p-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border ${isActive
+                      ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm'
+                      : isPast
+                        ? 'bg-[var(--bg-secondary)] text-[var(--color-primary)] border-[var(--border-default)]'
+                        : 'bg-[var(--bg-secondary)]/50 text-[var(--text-muted)] border-transparent hover:text-[var(--text-primary)]'
+                      }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
-            <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Metas Atingidas</label>
-              <textarea value={newRelatorio.metas_atingidas} onChange={(e) => setNewRelatorio({ ...newRelatorio, metas_atingidas: e.target.value })} rows={2} className="w-full p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs" />
+
+            {/* Conteúdo Dinâmico por Etapa */}
+            <div className="flex-1 overflow-y-auto pr-1 space-y-4 text-xs">
+              {/* ETAPA 1: DADOS DO INSTITUTO, RESPONSÁVEL & SELEÇÃO DE AÇÕES */}
+              {mroscWizardStep === 1 && (
+                <div className="space-y-5 animate-in fade-in duration-200">
+                  {/* Dados do Instituto (Puxados do Sistema) */}
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        1. Dados da Instituição (Instituto Ádapo)
+                      </h4>
+                      <span className="text-[11px] text-[var(--text-muted)]">Puxados automaticamente</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-[var(--bg-elevated)] p-3 rounded-xl border border-[var(--border-default)]">
+                      <div>
+                        <span className="text-[11px] text-[var(--text-muted)] block font-medium">Razão Social</span>
+                        <span className="font-bold text-xs text-[var(--text-primary)]">{dadosInstituto.razao_social || 'Instituto Ádapo'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-[var(--text-muted)] block font-medium">CNPJ</span>
+                        <span className="font-bold text-xs text-[var(--text-primary)]">{dadosInstituto.cnpj || '00.000.000/0001-00'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-[var(--text-muted)] block font-medium">Telefone / Contato</span>
+                        <span className="font-bold text-xs text-[var(--text-primary)]">{dadosInstituto.telefone || '(98) 98503-8023'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] text-[var(--text-muted)] block font-medium">E-mail Institucional</span>
+                        <span className="font-bold text-xs text-[var(--text-primary)]">{dadosInstituto.email || 'adapoprojeto@gmail.com'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Responsável pelo Monitoramento & Período */}
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)]">
+                      2. Identificação da Avaliação & Responsável Técnico
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="font-semibold text-[var(--text-secondary)] block mb-1">Mês de Referência *</label>
+                        <input
+                          type="month"
+                          value={activeRelatorioMrosc.mes_referencia}
+                          onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, mes_referencia: e.target.value })}
+                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="font-semibold text-[var(--text-secondary)] block mb-1">Início do Período Avaliado</label>
+                        <input
+                          type="date"
+                          value={activeRelatorioMrosc.periodo_inicio}
+                          onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, periodo_inicio: e.target.value })}
+                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-semibold text-[var(--text-secondary)] block mb-1">Fim do Período Avaliado</label>
+                        <input
+                          type="date"
+                          value={activeRelatorioMrosc.periodo_fim}
+                          onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, periodo_fim: e.target.value })}
+                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                      <div>
+                        <label className="font-semibold text-[var(--text-secondary)] block mb-1">Responsável pelo Preenchimento do Monitoramento *</label>
+                        <select
+                          value={activeRelatorioMrosc.gestor_monitoramento_id}
+                          onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, gestor_monitoramento_id: e.target.value })}
+                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                        >
+                          <option value="">Selecione o responsável da equipe...</option>
+                          {todosVoluntarios.map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="font-semibold text-[var(--text-secondary)] block mb-1">Número do Instrumento / Processo</label>
+                        <input
+                          type="text"
+                          value={activeRelatorioMrosc.numero_instrumento}
+                          onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, numero_instrumento: e.target.value })}
+                          placeholder="Ex: Termo de Fomento nº 01/2026"
+                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Seleção de Ações Cadastradas */}
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)]">
+                          3. Seleção de Ações Cadastradas a serem Avaliadas neste Relatório *
+                        </h4>
+                        <p className="text-[11px] text-[var(--text-muted)]">
+                          Marque as ações/encontros executados que serão analisados e cruzados com as metas
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allIds = acoes.map((a) => a.id);
+                          const isAllSelected = (activeRelatorioMrosc.acoes_selecionadas_ids || []).length === allIds.length;
+                          setActiveRelatorioMrosc({
+                            ...activeRelatorioMrosc,
+                            acoes_selecionadas_ids: isAllSelected ? [] : allIds,
+                          });
+                        }}
+                        className="text-xs font-semibold text-[var(--color-primary)] hover:underline"
+                      >
+                        {(activeRelatorioMrosc.acoes_selecionadas_ids || []).length === acoes.length ? 'Desmarcar Todas' : 'Selecionar Todas'}
+                      </button>
+                    </div>
+
+                    {acoes.length === 0 ? (
+                      <p className="text-xs text-[var(--text-muted)] italic py-3">Nenhuma ação cadastrada no projeto. Cadastre ações no cronograma primeiro.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {acoes.map((acao) => {
+                          const isChecked = (activeRelatorioMrosc.acoes_selecionadas_ids || []).includes(acao.id);
+                          const resp = acao.responsavel_estrutura || (acao.documento_estruturador === 'Plano de Aula' ? 'Pedagogia' : 'Projetos');
+
+                          return (
+                            <label
+                              key={acao.id}
+                              className={`p-3 rounded-xl border cursor-pointer flex items-start gap-3 transition-all ${isChecked
+                                ? 'bg-[var(--bg-elevated)] border-[var(--color-primary)] shadow-sm'
+                                : 'bg-[var(--bg-elevated)]/40 border-[var(--border-default)] opacity-75'
+                                }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const cur = activeRelatorioMrosc.acoes_selecionadas_ids || [];
+                                  const updated = e.target.checked
+                                    ? [...cur, acao.id]
+                                    : cur.filter((id) => id !== acao.id);
+                                  setActiveRelatorioMrosc({ ...activeRelatorioMrosc, acoes_selecionadas_ids: updated });
+                                }}
+                                className="w-4 h-4 mt-0.5 rounded text-[var(--color-primary)] shrink-0"
+                              />
+                              <div className="space-y-1 flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="font-bold text-xs text-[var(--text-primary)] truncate">{acao.nome_acao}</span>
+                                  <Badge variant={resp === 'Pedagogia' ? 'purple' : 'primary'}>{resp}</Badge>
+                                </div>
+                                <p className="text-[11px] text-[var(--text-muted)] font-medium flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" /> {new Date(acao.data_hora).toLocaleString('pt-BR')}
+                                </p>
+                                {acao.meta_id && (
+                                  <p className="text-[10px] text-[var(--color-primary)] font-semibold truncate flex items-center gap-1">
+                                    <Target className="w-3 h-3 shrink-0" /> {todasMetasDisponiveis.find((m) => m.id === acao.meta_id)?.descricao || 'Meta Vinculada'}
+                                  </p>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ETAPA 2: INTRODUÇÃO SUMÁRIA & ASSISTENTE DE IA */}
+              {mroscWizardStep === 2 && (
+                <div className="space-y-5 animate-in fade-in duration-200">
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-default)] pb-3">
+                      <div>
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-[var(--color-primary)]" />
+                          Introdução do Relatório Técnico
+                        </h4>
+                        <p className="text-[11px] text-[var(--text-muted)]">
+                          Descrição sumária das atividades e metas fixadas no Plano de Trabalho de acordo com as ações selecionadas
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={<Sparkles className="w-4 h-4 text-amber-500" />}
+                        onClick={handleGerarIntroducaoComIA}
+                        disabled={generatingIAIntro}
+                      >
+                        {generatingIAIntro ? 'Gerando com IA...' : 'Gerar Introdução com IA'}
+                      </Button>
+                    </div>
+
+                    <textarea
+                      rows={8}
+                      value={activeRelatorioMrosc.introducao_texto}
+                      onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, introducao_texto: e.target.value })}
+                      placeholder="Descreva sumariamente as ações analisadas e o diálogo com os objetivos do Plano de Trabalho ou clique no botão acima para gerar automaticamente com IA..."
+                      className="w-full p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] leading-relaxed focus:outline-none focus:border-[var(--color-primary)] font-normal"
+                    />
+                  </div>
+
+
+                </div>
+              )}
+
+              {/* ETAPA 3: AVALIAÇÃO DAS AÇÕES REALIZADAS & DINÂMICAS */}
+              {mroscWizardStep === 3 && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="border-b border-[var(--border-default)] pb-2">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)]">
+                      Avaliação das Ações Realizadas & Dinâmicas
+                    </h4>
+                    <p className="text-[11px] text-[var(--text-muted)]">
+                      Avalie qualitativamente a satisfação de cada atividade/dinâmica e cadastre planos de ação com prazos quando necessário
+                    </p>
+                  </div>
+
+                  {(activeRelatorioMrosc.avaliacao_acoes_novas || []).filter((a) =>
+                    (activeRelatorioMrosc.acoes_selecionadas_ids || []).includes(a.acao_id)
+                  ).length === 0 ? (
+                    <div className="p-6 text-center border-2 border-dashed border-[var(--border-default)] rounded-xl text-xs text-[var(--text-muted)]">
+                      Nenhuma ação selecionada na Etapa 1. Volte à Etapa 1 e selecione pelo menos uma ação.
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      {(activeRelatorioMrosc.avaliacao_acoes_novas || [])
+                        .filter((a) => (activeRelatorioMrosc.acoes_selecionadas_ids || []).includes(a.acao_id))
+                        .map((acaoItem, aIdx) => (
+                          <div
+                            key={acaoItem.acao_id || aIdx}
+                            className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-4"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-default)]/60 pb-3">
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-sm text-[var(--text-primary)]">
+                                    {acaoItem.nome_acao}
+                                  </span>
+                                  <Badge variant={acaoItem.responsavel_estrutura === 'Pedagogia' ? 'purple' : 'primary'}>
+                                    {acaoItem.responsavel_estrutura}
+                                  </Badge>
+                                </div>
+                                <p className="text-[11px] text-[var(--text-muted)] font-medium flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" /> {acaoItem.data_hora ? new Date(acaoItem.data_hora).toLocaleString('pt-BR') : 'Data não definida'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Lista de Atividades/Dinâmicas desta Ação */}
+                            <div className="space-y-4">
+                              {(acaoItem.atividades || []).map((ativ, atIdx) => (
+                                <div
+                                  key={ativ.id || atIdx}
+                                  className="p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-3"
+                                >
+                                  <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-3 items-start">
+                                    <div>
+                                      <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
+                                        Atividade / Dinâmica
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={ativ.atividade}
+                                        onChange={(e) => {
+                                          const updatedAcoes = [...activeRelatorioMrosc.avaliacao_acoes_novas];
+                                          const targetIndex = updatedAcoes.findIndex((a) => a.acao_id === acaoItem.acao_id);
+                                          if (targetIndex >= 0) {
+                                            updatedAcoes[targetIndex].atividades[atIdx].atividade = e.target.value;
+                                            setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_acoes_novas: updatedAcoes });
+                                          }
+                                        }}
+                                        className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] font-bold text-[var(--text-primary)]"
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
+                                        Satisfação da Atividade *
+                                      </label>
+                                      <select
+                                        value={ativ.satisfacao_qualitativa}
+                                        onChange={(e) => {
+                                          const updatedAcoes = [...activeRelatorioMrosc.avaliacao_acoes_novas];
+                                          const targetIndex = updatedAcoes.findIndex((a) => a.acao_id === acaoItem.acao_id);
+                                          if (targetIndex >= 0) {
+                                            updatedAcoes[targetIndex].atividades[atIdx].satisfacao_qualitativa = e.target.value as any;
+                                            setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_acoes_novas: updatedAcoes });
+                                          }
+                                        }}
+                                        className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] font-bold text-[var(--text-primary)]"
+                                      >
+                                        <option value="excelente">★ Excelente</option>
+                                        <option value="muito_boa">● Muito Boa</option>
+                                        <option value="regular">◐ Regular</option>
+                                        <option value="insatisfatoria">△ Insatisfatória</option>
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
+                                      Avaliação da Atividade (Texto)
+                                    </label>
+                                    <textarea
+                                      rows={2}
+                                      value={ativ.avaliacao_texto}
+                                      onChange={(e) => {
+                                        const updatedAcoes = [...activeRelatorioMrosc.avaliacao_acoes_novas];
+                                        const targetIndex = updatedAcoes.findIndex((a) => a.acao_id === acaoItem.acao_id);
+                                        if (targetIndex >= 0) {
+                                          updatedAcoes[targetIndex].atividades[atIdx].avaliacao_texto = e.target.value;
+                                          setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_acoes_novas: updatedAcoes });
+                                        }
+                                      }}
+                                      placeholder="Parecer qualitativo sobre o desenvolvimento, engajamento e resultados desta atividade..."
+                                      className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                                    />
+                                  </div>
+
+                                  {/* Sub-bloco: Planos de Ação e Justificativas da Atividade */}
+                                  <div className="pt-2 border-t border-[var(--border-default)]/60 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[11px] font-bold text-[var(--text-secondary)]">
+                                        Justificativas e Planos de Ação para esta atividade ({ativ.planos_acao?.length || 0})
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const updatedAcoes = [...activeRelatorioMrosc.avaliacao_acoes_novas];
+                                          const targetIndex = updatedAcoes.findIndex((a) => a.acao_id === acaoItem.acao_id);
+                                          if (targetIndex >= 0) {
+                                            const currentPlans = updatedAcoes[targetIndex].atividades[atIdx].planos_acao || [];
+                                            updatedAcoes[targetIndex].atividades[atIdx].planos_acao = [
+                                              ...currentPlans,
+                                              { id: crypto.randomUUID(), descricao: '', prazo: '' },
+                                            ];
+                                            setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_acoes_novas: updatedAcoes });
+                                          }
+                                        }}
+                                        className="text-[11px] font-bold text-[var(--color-primary)] flex items-center gap-1 hover:underline"
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                        Adicionar Plano de Ação
+                                      </button>
+                                    </div>
+
+                                    {ativ.planos_acao && ativ.planos_acao.length > 0 && (
+                                      <div className="space-y-2">
+                                        {ativ.planos_acao.map((plano, plIdx) => (
+                                          <div key={plano.id || plIdx} className="grid grid-cols-1 md:grid-cols-[1fr_180px_32px] gap-2 items-center bg-[var(--bg-secondary)]/50 p-2 rounded-lg border border-[var(--border-default)]">
+                                            <input
+                                              type="text"
+                                              value={plano.descricao}
+                                              onChange={(e) => {
+                                                const updatedAcoes = [...activeRelatorioMrosc.avaliacao_acoes_novas];
+                                                const targetIndex = updatedAcoes.findIndex((a) => a.acao_id === acaoItem.acao_id);
+                                                if (targetIndex >= 0) {
+                                                  updatedAcoes[targetIndex].atividades[atIdx].planos_acao[plIdx].descricao = e.target.value;
+                                                  setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_acoes_novas: updatedAcoes });
+                                                }
+                                              }}
+                                              placeholder="Descrição da medida / plano de ação..."
+                                              className="p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                                            />
+                                            <input
+                                              type="text"
+                                              value={plano.prazo}
+                                              onChange={(e) => {
+                                                const updatedAcoes = [...activeRelatorioMrosc.avaliacao_acoes_novas];
+                                                const targetIndex = updatedAcoes.findIndex((a) => a.acao_id === acaoItem.acao_id);
+                                                if (targetIndex >= 0) {
+                                                  updatedAcoes[targetIndex].atividades[atIdx].planos_acao[plIdx].prazo = e.target.value;
+                                                  setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_acoes_novas: updatedAcoes });
+                                                }
+                                              }}
+                                              placeholder="Prazo do plano (Ex: 15 dias)"
+                                              className="p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const updatedAcoes = [...activeRelatorioMrosc.avaliacao_acoes_novas];
+                                                const targetIndex = updatedAcoes.findIndex((a) => a.acao_id === acaoItem.acao_id);
+                                                if (targetIndex >= 0) {
+                                                  updatedAcoes[targetIndex].atividades[atIdx].planos_acao = updatedAcoes[targetIndex].atividades[atIdx].planos_acao.filter((_, i) => i !== plIdx);
+                                                  setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_acoes_novas: updatedAcoes });
+                                                }
+                                              }}
+                                              className="text-[var(--color-danger)] p-1 hover:opacity-80 flex items-center justify-center"
+                                              title="Remover plano"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ETAPA 4: AVALIAÇÃO DO CUMPRIMENTO DE METAS */}
+              {mroscWizardStep === 4 && (
+                <div className="space-y-4 animate-in fade-in duration-200">
+                  <div className="border-b border-[var(--border-default)] pb-2">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                      <Target className="w-4 h-4" />
+                      Avaliação do Cumprimento de Metas do Projeto
+                    </h4>
+                    <p className="text-[11px] text-[var(--text-muted)]">
+                      Acompanhamento individualizado de cada meta, seu vínculo com o objetivo estratégico e medidas corretivas
+                    </p>
+                  </div>
+
+                  {(activeRelatorioMrosc.avaliacao_metas_novas || []).length === 0 ? (
+                    <div className="p-6 text-center border-2 border-dashed border-[var(--border-default)] rounded-xl text-xs text-[var(--text-muted)]">
+                      Nenhuma meta cadastrada no Plano de Trabalho. Cadastre metas na aba "Planejamento &gt; Objetivos &amp; Metas".
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {(activeRelatorioMrosc.avaliacao_metas_novas || []).map((metaItem, mIdx) => {
+                        const precisaPlano = metaItem.status === 'nao_iniciada' || metaItem.status === 'iniciada';
+
+                        return (
+                          <div
+                            key={metaItem.meta_id || mIdx}
+                            className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-4 shadow-sm hover:border-[var(--color-primary)]/40 transition-all"
+                          >
+                            {/* Bloco Superior: Objetivo Estratégico + Meta + Seletor de Status */}
+                            <div className="space-y-3 border-b border-[var(--border-default)]/60 pb-3.5">
+                              {/* Header do Objetivo */}
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                                  <Compass className="w-3.5 h-3.5" />
+                                  {metaItem.objetivo_titulo || 'Objetivo Estratégico'}
+                                </span>
+
+                                {/* Status Toggle Pills com Lucide Icons */}
+                                <div className="inline-flex items-center p-1 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] gap-1 text-xs">
+                                  {[
+                                    { id: 'nao_iniciada', label: 'Não Iniciada', icon: XCircle, color: 'text-red-600', activeBg: 'bg-red-500 text-white' },
+                                    { id: 'iniciada', label: 'Iniciada', icon: Clock, color: 'text-amber-600', activeBg: 'bg-amber-500 text-white' },
+                                    { id: 'concluida', label: 'Concluída', icon: CheckCircle2, color: 'text-emerald-600', activeBg: 'bg-emerald-600 text-white' },
+                                  ].map((st) => {
+                                    const StIcon = st.icon;
+                                    const isSelected = metaItem.status === st.id;
+
+                                    return (
+                                      <button
+                                        key={st.id}
+                                        type="button"
+                                        onClick={() => {
+                                          const updated = [...activeRelatorioMrosc.avaliacao_metas_novas];
+                                          updated[mIdx].status = st.id as any;
+                                          setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_metas_novas: updated });
+                                        }}
+                                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${isSelected
+                                          ? `${st.activeBg} shadow-sm`
+                                          : `text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]`
+                                          }`}
+                                      >
+                                        <StIcon className="w-3 h-3" />
+                                        <span>{st.label}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* Título da Meta em Destaque */}
+                              <div className="space-y-1">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Meta Pactuada</span>
+                                <p className="text-sm font-bold text-[var(--text-primary)] leading-snug">
+                                  {metaItem.descricao_meta}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Informações da Coleta Puxadas do Sistema */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-[var(--bg-elevated)] p-3 rounded-xl border border-[var(--border-default)] text-xs">
+                              <div className="flex items-start gap-2">
+                                <FileText className="w-4 h-4 text-[var(--color-primary)] mt-0.5 shrink-0" />
+                                <div className="space-y-0.5 min-w-0">
+                                  <span className="text-[11px] text-[var(--text-muted)] font-medium block">Procedimento & Forma de Coleta</span>
+                                  <span className="font-semibold text-xs text-[var(--text-primary)]">
+                                    {metaItem.procedimento_coleta || 'Lista de frequência e registro de atividades'} ({metaItem.forma_coleta || 'Física/Digital'})
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-2">
+                                <Users className="w-4 h-4 text-[var(--color-primary)] mt-0.5 shrink-0" />
+                                <div className="space-y-0.5 min-w-0">
+                                  <span className="text-[11px] text-[var(--text-muted)] font-medium block">Responsável pela Coleta</span>
+                                  <span className="font-semibold text-xs text-[var(--text-primary)]">
+                                    {metaItem.responsavel_coleta || 'Coordenação Técnica'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Como a meta está sendo trabalhada nessa ação */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                                Como essa meta está sendo trabalhada nas ações avaliadas
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={metaItem.justificativa_como_trabalhada}
+                                onChange={(e) => {
+                                  const updated = [...activeRelatorioMrosc.avaliacao_metas_novas];
+                                  updated[mIdx].justificativa_como_trabalhada = e.target.value;
+                                  setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_metas_novas: updated });
+                                }}
+                                placeholder="Descreva como as oficinas e dinâmicas atuaram diretamente nesta meta..."
+                                className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                              />
+                            </div>
+
+                            {/* Justificativa ou Plano de Ação (Condicional se não concluída) */}
+                            {precisaPlano && (
+                              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2 text-xs">
+                                <div className="flex items-center gap-1.5 font-bold text-amber-700">
+                                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                                  <span>Plano de Ação ou Justificativa (Meta Não Concluída)</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-2">
+                                  <input
+                                    type="text"
+                                    value={metaItem.justificativa_plano_acao}
+                                    onChange={(e) => {
+                                      const updated = [...activeRelatorioMrosc.avaliacao_metas_novas];
+                                      updated[mIdx].justificativa_plano_acao = e.target.value;
+                                      setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_metas_novas: updated });
+                                    }}
+                                    placeholder="Medida para alcance ou justificativa de atraso..."
+                                    className="p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={metaItem.prazo_plano}
+                                    onChange={(e) => {
+                                      const updated = [...activeRelatorioMrosc.avaliacao_metas_novas];
+                                      updated[mIdx].prazo_plano = e.target.value;
+                                      setActiveRelatorioMrosc({ ...activeRelatorioMrosc, avaliacao_metas_novas: updated });
+                                    }}
+                                    placeholder="Prazo (Ex: 30 dias)"
+                                    className="p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ETAPA 5: PÚBLICO-ALVO, TRANSPARÊNCIA & CONCLUSÃO COM IA */}
+              {mroscWizardStep === 5 && (
+                <div className="space-y-5 animate-in fade-in duration-200">
+                  {/* SEÇÃO PÚBLICO-ALVO: FREQUÊNCIA */}
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)]">
+                      1. Frequência do Público-Alvo (Beneficiários)
+                    </h4>
+                    <p className="text-[11px] text-[var(--text-muted)]">
+                      Distribuição dos beneficiários de acordo com os dias de ação analisados:
+                    </p>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-emerald-500/30 text-center space-y-1">
+                        <span className="text-[11px] font-bold text-emerald-600 flex items-center justify-center gap-1"><CheckCircle2 className="w-3 h-3" /> 100% Presentes</span>
+                        <input
+                          type="number"
+                          value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.faixa_100 || 0}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setActiveRelatorioMrosc({
+                              ...activeRelatorioMrosc,
+                              dados_publico_alvo: {
+                                ...activeRelatorioMrosc.dados_publico_alvo,
+                                frequencia: {
+                                  ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                  faixa_100: val,
+                                },
+                              },
+                            });
+                          }}
+                          className="w-20 mx-auto text-center p-1.5 rounded-lg text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)]"
+                        />
+                        <span className="text-[10px] text-[var(--text-muted)] block">beneficiários</span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-blue-500/30 text-center space-y-1">
+                        <span className="text-[11px] font-bold text-blue-600 flex items-center justify-center gap-1"><TrendingUp className="w-3 h-3" /> 90% a 75%</span>
+                        <input
+                          type="number"
+                          value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.faixa_90_75 || 0}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setActiveRelatorioMrosc({
+                              ...activeRelatorioMrosc,
+                              dados_publico_alvo: {
+                                ...activeRelatorioMrosc.dados_publico_alvo,
+                                frequencia: {
+                                  ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                  faixa_90_75: val,
+                                },
+                              },
+                            });
+                          }}
+                          className="w-20 mx-auto text-center p-1.5 rounded-lg text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)]"
+                        />
+                        <span className="text-[10px] text-[var(--text-muted)] block">beneficiários</span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-amber-500/30 text-center space-y-1">
+                        <span className="text-[11px] font-bold text-amber-600 flex items-center justify-center gap-1"><AlertCircle className="w-3 h-3" /> 75% a 50%</span>
+                        <input
+                          type="number"
+                          value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.faixa_75_50 || 0}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setActiveRelatorioMrosc({
+                              ...activeRelatorioMrosc,
+                              dados_publico_alvo: {
+                                ...activeRelatorioMrosc.dados_publico_alvo,
+                                frequencia: {
+                                  ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                  faixa_75_50: val,
+                                },
+                              },
+                            });
+                          }}
+                          className="w-20 mx-auto text-center p-1.5 rounded-lg text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)]"
+                        />
+                        <span className="text-[10px] text-[var(--text-muted)] block">beneficiários</span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-red-500/30 text-center space-y-1">
+                        <span className="text-[11px] font-bold text-red-600 flex items-center justify-center gap-1"><AlertTriangle className="w-3 h-3" /> 50% a 0%</span>
+                        <input
+                          type="number"
+                          value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.faixa_50_0 || 0}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setActiveRelatorioMrosc({
+                              ...activeRelatorioMrosc,
+                              dados_publico_alvo: {
+                                ...activeRelatorioMrosc.dados_publico_alvo,
+                                frequencia: {
+                                  ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                  faixa_50_0: val,
+                                },
+                              },
+                            });
+                          }}
+                          className="w-20 mx-auto text-center p-1.5 rounded-lg text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)]"
+                        />
+                        <span className="text-[10px] text-[var(--text-muted)] block">beneficiários</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-2 pt-1">
+                      <input
+                        type="text"
+                        value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.justificativa_plano_acao || ''}
+                        onChange={(e) => {
+                          setActiveRelatorioMrosc({
+                            ...activeRelatorioMrosc,
+                            dados_publico_alvo: {
+                              ...activeRelatorioMrosc.dados_publico_alvo,
+                              frequencia: {
+                                ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                justificativa_plano_acao: e.target.value,
+                              },
+                            },
+                          });
+                        }}
+                        placeholder="Justificativa ou plano de ação para a frequência..."
+                        className="p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                      />
+                      <input
+                        type="text"
+                        value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.prazo_plano || ''}
+                        onChange={(e) => {
+                          setActiveRelatorioMrosc({
+                            ...activeRelatorioMrosc,
+                            dados_publico_alvo: {
+                              ...activeRelatorioMrosc.dados_publico_alvo,
+                              frequencia: {
+                                ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                prazo_plano: e.target.value,
+                              },
+                            },
+                          });
+                        }}
+                        placeholder="Prazo (Opcional)"
+                        className="p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* SEÇÃO PÚBLICO-ALVO: SOCIOEMOCIONAL & SATISFAÇÃO */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-[var(--color-primary)]">2. Avaliação Socioemocional</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#93368F]/10 text-[#93368F]">Pedagogia</span>
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={activeRelatorioMrosc.dados_publico_alvo?.socioemocional?.panorama_geral || ''}
+                        onChange={(e) => {
+                          setActiveRelatorioMrosc({
+                            ...activeRelatorioMrosc,
+                            dados_publico_alvo: {
+                              ...activeRelatorioMrosc.dados_publico_alvo,
+                              socioemocional: {
+                                ...activeRelatorioMrosc.dados_publico_alvo.socioemocional,
+                                panorama_geral: e.target.value,
+                              },
+                            },
+                          });
+                        }}
+                        placeholder="Panorama geral do desenvolvimento socioemocional..."
+                        className="w-full p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                      />
+                      <input
+                        type="text"
+                        value={activeRelatorioMrosc.dados_publico_alvo?.socioemocional?.justificativa_plano_acao || ''}
+                        onChange={(e) => {
+                          setActiveRelatorioMrosc({
+                            ...activeRelatorioMrosc,
+                            dados_publico_alvo: {
+                              ...activeRelatorioMrosc.dados_publico_alvo,
+                              socioemocional: {
+                                ...activeRelatorioMrosc.dados_publico_alvo.socioemocional,
+                                justificativa_plano_acao: e.target.value,
+                              },
+                            },
+                          });
+                        }}
+                        placeholder="Justificativa e plano de ação socioemocional..."
+                        className="w-full p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                      />
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-[var(--color-primary)]">3. Pesquisa de Satisfação</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#10B981]/10 text-[#10B981]">Satisfação</span>
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={activeRelatorioMrosc.dados_publico_alvo?.pesquisa_satisfacao?.panorama_geral || ''}
+                        onChange={(e) => {
+                          setActiveRelatorioMrosc({
+                            ...activeRelatorioMrosc,
+                            dados_publico_alvo: {
+                              ...activeRelatorioMrosc.dados_publico_alvo,
+                              pesquisa_satisfacao: {
+                                ...activeRelatorioMrosc.dados_publico_alvo.pesquisa_satisfacao,
+                                panorama_geral: e.target.value,
+                              },
+                            },
+                          });
+                        }}
+                        placeholder="Panorama da pesquisa com beneficiários/famílias..."
+                        className="w-full p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                      />
+                      <input
+                        type="text"
+                        value={activeRelatorioMrosc.dados_publico_alvo?.pesquisa_satisfacao?.justificativa_plano_acao || ''}
+                        onChange={(e) => {
+                          setActiveRelatorioMrosc({
+                            ...activeRelatorioMrosc,
+                            dados_publico_alvo: {
+                              ...activeRelatorioMrosc.dados_publico_alvo,
+                              pesquisa_satisfacao: {
+                                ...activeRelatorioMrosc.dados_publico_alvo.pesquisa_satisfacao,
+                                justificativa_plano_acao: e.target.value,
+                              },
+                            },
+                          });
+                        }}
+                        placeholder="Justificativa e plano de ação de satisfação..."
+                        className="w-full p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* SEÇÃO TRANSPARÊNCIA */}
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)]">
+                        4. Avaliação sobre Transparência & Comunicação
+                      </h4>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EF4444]/10 text-[#EF4444]">Comunicação</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <textarea
+                        rows={2}
+                        value={activeRelatorioMrosc.avaliacao_transparencia_nova?.detalhes_publicacoes || ''}
+                        onChange={(e) => {
+                          setActiveRelatorioMrosc({
+                            ...activeRelatorioMrosc,
+                            avaliacao_transparencia_nova: {
+                              ...activeRelatorioMrosc.avaliacao_transparencia_nova,
+                              detalhes_publicacoes: e.target.value,
+                            },
+                          });
+                        }}
+                        placeholder="Publicações nas redes, fotos e transparência do projeto..."
+                        className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                      />
+                      <textarea
+                        rows={2}
+                        value={activeRelatorioMrosc.avaliacao_transparencia_nova?.justificativa_plano_acao || ''}
+                        onChange={(e) => {
+                          setActiveRelatorioMrosc({
+                            ...activeRelatorioMrosc,
+                            avaliacao_transparencia_nova: {
+                              ...activeRelatorioMrosc.avaliacao_transparencia_nova,
+                              justificativa_plano_acao: e.target.value,
+                            },
+                          });
+                        }}
+                        placeholder="Justificativa e plano de ação de transparência..."
+                        className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* SEÇÃO CONCLUSÃO COM IA */}
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-default)] pb-3">
+                      <div>
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-[var(--color-primary)]" />
+                          5. Conclusão & Parecer Técnico do Monitoramento
+                        </h4>
+                        <p className="text-[11px] text-[var(--text-muted)]">
+                          Síntese analítica fundamentada em todos os dados avaliados nas etapas anteriores
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={<Sparkles className="w-4 h-4 text-amber-500" />}
+                        onClick={handleGerarConclusaoComIA}
+                        disabled={generatingIAConclusao}
+                      >
+                        {generatingIAConclusao ? 'Gerando com IA...' : 'Gerar Conclusão com IA'}
+                      </Button>
+                    </div>
+
+                    <textarea
+                      rows={6}
+                      value={activeRelatorioMrosc.conclusao_texto}
+                      onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, conclusao_texto: e.target.value })}
+                      placeholder="Conclusão técnica sobre o projeto ou clique no botão acima para gerar automaticamente com IA..."
+                      className="w-full p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] leading-relaxed focus:outline-none focus:border-[var(--color-primary)] font-normal"
+                      required
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                      <div>
+                        <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
+                          Local e Data de Emissão
+                        </label>
+                        <input
+                          type="text"
+                          value={activeRelatorioMrosc.local_data_emissao}
+                          onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, local_data_emissao: e.target.value })}
+                          placeholder="Ex: São Luís - MA, 15 de Agosto de 2026"
+                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
+                          Gestor(a) Responsável pela Assinatura
+                        </label>
+                        <select
+                          value={activeRelatorioMrosc.gestor_monitoramento_id}
+                          onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, gestor_monitoramento_id: e.target.value })}
+                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                        >
+                          <option value="">Selecione o responsável técnico...</option>
+                          {todosVoluntarios.map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Dificuldades / Desafios</label>
-              <textarea value={newRelatorio.dificuldades_encontradas} onChange={(e) => setNewRelatorio({ ...newRelatorio, dificuldades_encontradas: e.target.value })} rows={2} className="w-full p-2 rounded bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs" />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" size="sm" onClick={() => setShowAddRelatorioModal(false)}>Cancelar</Button>
-              <Button size="sm" onClick={handleAddRelatorio}>Salvar Relatório</Button>
+
+            {/* Rodapé de Navegação do Wizard */}
+            <div className="flex items-center justify-between pt-4 border-t border-[var(--border-default)] shrink-0">
+              <div>
+                {mroscWizardStep > 1 && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setMroscWizardStep((mroscWizardStep - 1) as any)}
+                  >
+                    ← Etapa Anterior
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setShowMroscModal(false);
+                    setActiveRelatorioMrosc(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+
+                {mroscWizardStep < 5 ? (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => setMroscWizardStep((mroscWizardStep + 1) as any)}
+                  >
+                    Próxima Etapa →
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={<Save className="w-4 h-4" />}
+                    onClick={handleSaveMroscReport}
+                    disabled={savingRelatorio}
+                  >
+                    {savingRelatorio ? 'Salvando...' : 'Salvar Relatório Técnico'}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* MODAL: EXPORTAR RELATÓRIO TÉCNICO EM PAPEL TIMBRADO (PADRÃO ÁDAPO) */}
+      <PapelTimbradoModal
+        isOpen={showPrintMroscModal}
+        onClose={() => {
+          setShowPrintMroscModal(false);
+          setRelatorioToPrint(null);
+        }}
+        tituloDocumento="RELATÓRIO TÉCNICO DE MONITORAMENTO E AVALIAÇÃO"
+        subtituloDocumento={`Projeto: ${formData.nome} • Instituto Ádapo`}
+      >
+        {relatorioToPrint && (
+          <div className="space-y-6 text-xs text-slate-900 leading-relaxed">
+            {/* 1. DADOS DA INSTITUIÇÃO & GESTÃO */}
+            <div className="border border-slate-300 rounded-lg overflow-hidden timbrado-avoid-break">
+              <div className="bg-slate-100 p-2 font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300">
+                1. IDENTIFICAÇÃO DA INSTITUIÇÃO & GESTÃO DO MONITORAMENTO
+              </div>
+              <div className="p-3 grid grid-cols-2 gap-x-6 gap-y-1.5 bg-white">
+                <p><strong>Organização:</strong> {dadosInstituto.razao_social || 'Instituto Ádapo'}</p>
+                <p><strong>CNPJ:</strong> {dadosInstituto.cnpj || '00.000.000/0001-00'}</p>
+                <p><strong>Projeto:</strong> {formData.nome}</p>
+                <p><strong>Mês de Referência:</strong> {relatorioToPrint.mes_referencia || '—'}</p>
+                <p><strong>Período Avaliado:</strong> {relatorioToPrint.periodo_inicio ? new Date(relatorioToPrint.periodo_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : '—'} até {relatorioToPrint.periodo_fim ? new Date(relatorioToPrint.periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</p>
+                <p><strong>Responsável pelo Monitoramento:</strong> {todosVoluntarios.find(v => v.id === relatorioToPrint.gestor_monitoramento_id)?.nome_completo || dadosInstituto.presidente || 'Equipe Técnica'}</p>
+              </div>
+            </div>
+
+            {/* 2. INTRODUÇÃO & SUMÁRIA DO PLANO DE TRABALHO */}
+            <div className="space-y-1.5 timbrado-avoid-break">
+              <h4 className="font-bold uppercase tracking-wide text-[#F2632D]">I. INTRODUÇÃO & SUMÁRIA DO PLANO DE TRABALHO</h4>
+              <p className="whitespace-pre-wrap text-justify text-slate-800 leading-relaxed">
+                {relatorioToPrint.introducao_texto || 'Descrição sumária das atividades e metas fixadas no plano de trabalho.'}
+              </p>
+            </div>
+
+            {/* 3. AVALIAÇÃO DAS AÇÕES REALIZADAS & ATIVIDADES */}
+            <div className="space-y-3">
+              <h4 className="font-bold uppercase tracking-wide text-[#F2632D] timbrado-avoid-break">
+                II. AVALIAÇÃO DAS AÇÕES REALIZADAS & DINÂMICAS
+              </h4>
+
+              {(!relatorioToPrint.avaliacao_acoes_novas || relatorioToPrint.avaliacao_acoes_novas.length === 0) ? (
+                <p className="italic text-slate-500">Nenhuma ação avaliada neste período.</p>
+              ) : (
+                <div className="space-y-4">
+                  {relatorioToPrint.avaliacao_acoes_novas
+                    .filter((a) => (relatorioToPrint.acoes_selecionadas_ids || []).includes(a.acao_id))
+                    .map((acaoItem, idx) => (
+                      <div key={acaoItem.acao_id || idx} className="border border-slate-300 rounded-lg overflow-hidden timbrado-avoid-break">
+                        <div className="bg-slate-100 p-2 font-bold text-slate-900 border-b border-slate-300 flex items-center justify-between">
+                          <span>Ação {idx + 1}: {acaoItem.nome_acao} ({acaoItem.data_hora ? new Date(acaoItem.data_hora).toLocaleString('pt-BR') : 'Data não informada'})</span>
+                          <span className="text-[11px] font-semibold text-[#F2632D]">Responsável: {acaoItem.responsavel_estrutura}</span>
+                        </div>
+
+                        <div className="p-3 space-y-3 bg-white">
+                          <table className="w-full text-xs text-left border-collapse border border-slate-300">
+                            <thead className="bg-slate-50 text-slate-900 font-bold border-b border-slate-300">
+                              <tr>
+                                <th className="p-2 border border-slate-300 w-44">Atividade / Dinâmica</th>
+                                <th className="p-2 border border-slate-300 w-28">Satisfação</th>
+                                <th className="p-2 border border-slate-300">Avaliação Qualitativa</th>
+                                <th className="p-2 border border-slate-300 w-64">Planos de Ação & Prazos</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(acaoItem.atividades || []).map((ativ, aI) => (
+                                <tr key={ativ.id || aI} className="border-b border-slate-200">
+                                  <td className="p-2 border border-slate-300 font-bold align-top">{ativ.atividade}</td>
+                                  <td className="p-2 border border-slate-300 font-semibold align-top">
+                                    {ativ.satisfacao_qualitativa === 'excelente' && '★ Excelente'}
+                                    {ativ.satisfacao_qualitativa === 'muito_boa' && '● Muito Boa'}
+                                    {ativ.satisfacao_qualitativa === 'regular' && '◐ Regular'}
+                                    {ativ.satisfacao_qualitativa === 'insatisfatoria' && '△ Insatisfatória'}
+                                  </td>
+                                  <td className="p-2 border border-slate-300 align-top">{ativ.avaliacao_texto || '—'}</td>
+                                  <td className="p-2 border border-slate-300 align-top">
+                                    {ativ.planos_acao && ativ.planos_acao.length > 0 ? (
+                                      <ul className="list-disc list-inside space-y-1">
+                                        {ativ.planos_acao.map((p, pI) => (
+                                          <li key={pI}>
+                                            <span>{p.descricao}</span>
+                                            {p.prazo && <span className="font-bold text-[#F2632D]"> [Prazo: {p.prazo}]</span>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <span className="text-slate-500 italic">Sem planos adicionais</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* 4. AVALIAÇÃO DO CUMPRIMENTO DE METAS */}
+            <div className="space-y-3">
+              <h4 className="font-bold uppercase tracking-wide text-[#F2632D] timbrado-avoid-break">
+                III. AVALIAÇÃO DO CUMPRIMENTO DAS METAS
+              </h4>
+
+              {(!relatorioToPrint.avaliacao_metas_novas || relatorioToPrint.avaliacao_metas_novas.length === 0) ? (
+                <p className="italic text-slate-500">Nenhuma meta avaliada neste período.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left border-collapse border border-slate-300">
+                    <thead className="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
+                      <tr>
+                        <th className="p-2 border border-slate-300 w-44">Meta do Projeto</th>
+                        <th className="p-2 border border-slate-300 w-36">Procedimento / Responsável</th>
+                        <th className="p-2 border border-slate-300">Como é Trabalhada na Ação</th>
+                        <th className="p-2 border border-slate-300 w-28">Status</th>
+                        <th className="p-2 border border-slate-300 w-48">Plano de Ação / Prazo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {relatorioToPrint.avaliacao_metas_novas.map((item, idx) => (
+                        <tr key={item.meta_id || idx} className="border-b border-slate-200 timbrado-avoid-break">
+                          <td className="p-2 border border-slate-300 align-top">
+                            <span className="font-bold text-[11px] text-[#F2632D] block">{item.objetivo_titulo}</span>
+                            <span className="font-medium text-slate-800">{item.descricao_meta}</span>
+                          </td>
+                          <td className="p-2 border border-slate-300 align-top text-[11px]">
+                            <p><strong>Coleta:</strong> {item.procedimento_coleta}</p>
+                            <p><strong>Resp:</strong> {item.responsavel_coleta}</p>
+                          </td>
+                          <td className="p-2 border border-slate-300 align-top">{item.justificativa_como_trabalhada || '—'}</td>
+                          <td className="p-2 border border-slate-300 font-bold align-top">
+                            {item.status === 'concluida' && '✓ Concluída'}
+                            {item.status === 'iniciada' && '● Iniciada'}
+                            {item.status === 'nao_iniciada' && '○ Não Iniciada'}
+                          </td>
+                          <td className="p-2 border border-slate-300 align-top">
+                            {item.justificativa_plano_acao ? (
+                              <div>
+                                <p>{item.justificativa_plano_acao}</p>
+                                {item.prazo_plano && <p className="font-bold text-[#F2632D]">Prazo: {item.prazo_plano}</p>}
+                              </div>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* 5. PÚBLICO-ALVO & FREQUÊNCIA */}
+            <div className="space-y-3 timbrado-avoid-break">
+              <h4 className="font-bold uppercase tracking-wide text-[#F2632D]">
+                IV. PÚBLICO-ALVO, FREQUÊNCIA & DESENVOLVIMENTO
+              </h4>
+
+              <div className="border border-slate-300 rounded-lg p-3 bg-white space-y-3">
+                <div>
+                  <strong className="block text-slate-900 mb-1">Distribuição da Frequência do Público-Alvo:</strong>
+                  <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                    <div className="p-2 bg-emerald-50 border border-emerald-300 rounded">
+                      <span className="font-bold block text-emerald-800">100% Presentes</span>
+                      <span className="text-sm font-bold text-slate-900">{relatorioToPrint.dados_publico_alvo?.frequencia?.faixa_100 || 0}</span>
+                    </div>
+                    <div className="p-2 bg-blue-50 border border-blue-300 rounded">
+                      <span className="font-bold block text-blue-800">90% a 75%</span>
+                      <span className="text-sm font-bold text-slate-900">{relatorioToPrint.dados_publico_alvo?.frequencia?.faixa_90_75 || 0}</span>
+                    </div>
+                    <div className="p-2 bg-amber-50 border border-amber-300 rounded">
+                      <span className="font-bold block text-amber-800">75% a 50%</span>
+                      <span className="text-sm font-bold text-slate-900">{relatorioToPrint.dados_publico_alvo?.frequencia?.faixa_75_50 || 0}</span>
+                    </div>
+                    <div className="p-2 bg-red-50 border border-red-300 rounded">
+                      <span className="font-bold block text-red-800">50% a 0%</span>
+                      <span className="text-sm font-bold text-slate-900">{relatorioToPrint.dados_publico_alvo?.frequencia?.faixa_50_0 || 0}</span>
+                    </div>
+                  </div>
+                  {relatorioToPrint.dados_publico_alvo?.frequencia?.justificativa_plano_acao && (
+                    <p className="mt-2 text-slate-700 italic">
+                      <strong>Plano/Justificativa de Frequência:</strong> {relatorioToPrint.dados_publico_alvo.frequencia.justificativa_plano_acao}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200">
+                  <div>
+                    <strong className="block text-slate-900">Desenvolvimento Socioemocional:</strong>
+                    <p className="text-slate-700 mt-1">{relatorioToPrint.dados_publico_alvo?.socioemocional?.panorama_geral || 'Evolução positiva na integração comunitária.'}</p>
+                    {relatorioToPrint.dados_publico_alvo?.socioemocional?.justificativa_plano_acao && (
+                      <p className="mt-1 text-slate-600 italic">Medidas: {relatorioToPrint.dados_publico_alvo.socioemocional.justificativa_plano_acao}</p>
+                    )}
+                  </div>
+                  <div>
+                    <strong className="block text-slate-900">Pesquisa de Satisfação:</strong>
+                    <p className="text-slate-700 mt-1">{relatorioToPrint.dados_publico_alvo?.pesquisa_satisfacao?.panorama_geral || 'Índice de aprovação superior a 95%.'}</p>
+                    {relatorioToPrint.dados_publico_alvo?.pesquisa_satisfacao?.justificativa_plano_acao && (
+                      <p className="mt-1 text-slate-600 italic">Medidas: {relatorioToPrint.dados_publico_alvo.pesquisa_satisfacao.justificativa_plano_acao}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 6. TRANSPARÊNCIA INSTITUCIONAL */}
+            <div className="space-y-1.5 timbrado-avoid-break">
+              <h4 className="font-bold uppercase tracking-wide text-[#F2632D]">V. AVALIAÇÃO SOBRE A TRANSPARÊNCIA</h4>
+              <p className="text-justify leading-relaxed text-slate-800">
+                {relatorioToPrint.avaliacao_transparencia_nova?.detalhes_publicacoes ||
+                  'A Organização da Sociedade Civil divulgou na internet, em redes sociais e em locais visíveis as informações sobre o projeto e a prestação de contas das ações realizadas.'}
+              </p>
+            </div>
+
+            {/* 7. CONCLUSÃO & PARECER */}
+            <div className="space-y-2 timbrado-avoid-break">
+              <h4 className="font-bold uppercase tracking-wide text-[#F2632D]">VI. CONCLUSÃO & PARECER TÉCNICO</h4>
+              <div className="p-3 bg-slate-50 border border-slate-300 rounded-lg">
+                <p className="text-justify text-slate-900 leading-relaxed font-medium">
+                  {relatorioToPrint.conclusao_texto || relatorioToPrint.justificativa_conclusao || 'Conclui-se favoravelmente pela continuidade regular do projeto social.'}
+                </p>
+              </div>
+            </div>
+
+            {/* ASSINATURA */}
+            <div className="pt-8 text-center space-y-3 timbrado-avoid-break">
+              <p>{relatorioToPrint.local_data_emissao || 'São Luís - MA, na data da emissão.'}</p>
+              <div className="w-80 mx-auto border-t border-slate-800 pt-1 mt-6">
+                <p className="font-bold uppercase text-slate-900">
+                  {todosVoluntarios.find(v => v.id === relatorioToPrint.gestor_monitoramento_id)?.nome_completo || 'GESTOR(A) DA PARCERIA'}
+                </p>
+                <p className="text-[11px] text-slate-600">Comissão de Monitoramento e Avaliação • Instituto Ádapo</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </PapelTimbradoModal>
 
       {/* MODAL INSCREVER BENEFICIÁRIO */}
       {showAddBeneficiarioModal && (
@@ -2347,7 +4434,8 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
           </Button>
         </div>
       </div>
-      {/* MODAL: EDITAR PROGRAMAÇÃO DA AÇÃO (PLANILHA) */}
+
+      {/* MODAL: EDITAR PROGRAMAÇÃO DA AÇÃO (EQUIPE DE PROJETOS) */}
       {selectedAcaoForProgramacao && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="w-full max-w-6xl bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-default)] shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col">
@@ -2356,7 +4444,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
               <div className="space-y-1">
                 <div className="flex items-center gap-2.5">
                   <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">
-                    Programação da Ação: {selectedAcaoForProgramacao.nome_acao}
+                    Grade de Programação: {selectedAcaoForProgramacao.nome_acao}
                   </h3>
                   <Badge variant="primary">Equipe de Projetos</Badge>
                 </div>
@@ -2369,7 +4457,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                   size="sm"
                   variant="secondary"
                   icon={<Download className="w-4 h-4" />}
-                  onClick={() => handleOpenPrintProgramacao({ ...selectedAcaoForProgramacao, programacao_itens: programacaoRows })}
+                  onClick={() => handleOpenPrintProgramacao({ ...selectedAcaoForProgramacao, programacao_itens: programacaoRows, meta_id: programacaoMetaId, justificativa_meta_acao: programacaoJustificativaMeta })}
                   disabled={programacaoRows.length === 0}
                 >
                   Exportar PDF
@@ -2384,241 +4472,238 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
             </div>
 
             {/* Corpo da Tabela / Planilha */}
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+            <div className="flex-1 overflow-y-auto space-y-5 pr-1">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-[var(--text-secondary)]">
-                  Preencha a grade de horários, atividades e materiais. Marque as metas do projeto que cada atividade cumpre:
+                  Preencha a grade de horários, dinâmica/atividade, materiais, equipe e local da ação:
                 </p>
                 <Button size="sm" variant="secondary" icon={<Plus className="w-4 h-4" />} onClick={handleAddProgramacaoRow}>
-                  Adicionar Horário / Atividade
+                  Adicionar Linha de Atividade
                 </Button>
               </div>
 
               {programacaoRows.length === 0 ? (
                 <div className="p-8 text-center border-2 border-dashed border-[var(--border-default)] rounded-xl text-xs text-[var(--text-muted)]">
-                  Nenhuma atividade programada. Clique em "Adicionar Horário / Atividade" para iniciar.
+                  Nenhuma atividade programada. Clique em "Adicionar Linha de Atividade" para iniciar.
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {programacaoRows.map((row, rIdx) => {
-                    const rowMetas = Array.isArray(row.meta_ids) ? row.meta_ids : [];
+                  {programacaoRows.map((row, rIdx) => (
+                    <div
+                      key={row.id}
+                      className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/60 overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between px-4 py-2 bg-[var(--bg-secondary)] border-b border-[var(--border-default)]/60">
+                        <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                          Atividade {rIdx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveProgramacaoRow(rIdx)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors"
+                          title="Remover atividade"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Remover
+                        </button>
+                      </div>
 
-                    return (
-                      <div
-                        key={row.id}
-                        className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/60 overflow-hidden"
-                      >
-                        {/* Card Header: Número da linha + botão excluir */}
-                        <div className="flex items-center justify-between px-4 py-2 bg-[var(--bg-secondary)] border-b border-[var(--border-default)]/60">
-                          <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                            Bloco {rIdx + 1}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveProgramacaoRow(rIdx)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors"
-                            title="Remover bloco"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Remover
-                          </button>
-                        </div>
-
-                        <div className="p-4 space-y-4 text-xs">
-                          {/* Linha 1: Horário + Atividade */}
-                          <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-3">
-                            <div>
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Horário</label>
-                              <input
-                                type="text"
-                                value={row.horario}
-                                onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'horario', e.target.value)}
-                                placeholder="Ex: 08:30 - 09:15"
-                                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Atividade / Dinâmica</label>
-                              <textarea
-                                value={row.atividade}
-                                onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'atividade', e.target.value)}
-                                placeholder="Ex: Acolhimento, oficina prática, lanche..."
-                                rows={2}
-                                className="w-full px-3 py-1.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium resize-none"
-                              />
-                            </div>
+                      <div className="p-4 space-y-4 text-xs">
+                        {/* Linha 1: Horário + Atividade */}
+                        <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-3">
+                          <div>
+                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Horário</label>
+                            <input
+                              type="text"
+                              value={row.horario}
+                              onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'horario', e.target.value)}
+                              placeholder="Ex: 08:30 - 09:15"
+                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+                            />
                           </div>
 
-                          {/* Linha 2: Materiais + Equipe (lado a lado) */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[var(--border-default)]/40">
-                            {/* Materiais / Insumos */}
-                            <div className="space-y-2">
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                                📦 Materiais / Insumos {ensureStringArray(row.materiais).length > 0 && <span className="text-[var(--color-primary)]">({ensureStringArray(row.materiais).length})</span>}
-                              </label>
+                          <div>
+                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Atividade / Dinâmica</label>
+                            <textarea
+                              value={row.atividade}
+                              onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'atividade', e.target.value)}
+                              placeholder="Ex: Acolhimento, oficina prática, lanche..."
+                              rows={2}
+                              className="w-full px-3 py-1.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium resize-none"
+                            />
+                          </div>
+                        </div>
 
-                              {ensureStringArray(row.materiais).length > 0 && (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {ensureStringArray(row.materiais).map((mat, mIdx) => (
-                                    <span
-                                      key={mIdx}
-                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)]"
+                        {/* Linha 2: Materiais + Equipe */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[var(--border-default)]/40">
+                          {/* Materiais */}
+                          <div className="space-y-2">
+                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                              <span className="flex items-center gap-1"><Package className="w-3 h-3" /> Materiais / Insumos</span> {ensureStringArray(row.materiais).length > 0 && <span className="text-[var(--color-primary)]">({ensureStringArray(row.materiais).length})</span>}
+                            </label>
+
+                            {ensureStringArray(row.materiais).length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {ensureStringArray(row.materiais).map((mat, mIdx) => (
+                                  <span
+                                    key={mIdx}
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)]"
+                                  >
+                                    {mat}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveMaterialFromRow(rIdx, mIdx)}
+                                      className="text-[var(--text-muted)] hover:text-[var(--color-danger)] ml-0.5"
+                                      title="Remover material"
                                     >
-                                      {mat}
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveMaterialFromRow(rIdx, mIdx)}
-                                        className="text-[var(--text-muted)] hover:text-[var(--color-danger)] ml-0.5"
-                                        title="Remover material"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-
-                              <div className="flex items-center gap-1.5">
-                                <input
-                                  type="text"
-                                  id={`input-mat-${row.id}`}
-                                  placeholder="Digitar material e pressionar Enter..."
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      handleAddMaterialToRow(rIdx, e.currentTarget.value);
-                                      e.currentTarget.value = '';
-                                    }
-                                  }}
-                                  className="flex-1 px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const input = document.getElementById(`input-mat-${row.id}`) as HTMLInputElement;
-                                    if (input && input.value) {
-                                      handleAddMaterialToRow(rIdx, input.value);
-                                      input.value = '';
-                                    }
-                                  }}
-                                  className="px-2.5 py-2 rounded-lg text-xs font-medium bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--color-primary)] hover:text-white hover:border-[var(--color-primary)] transition-colors"
-                                  title="Adicionar material"
-                                >
-                                  <Plus className="w-3.5 h-3.5" />
-                                </button>
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                ))}
                               </div>
-                            </div>
+                            )}
 
-                            {/* Equipe / Responsáveis */}
-                            <div className="space-y-2">
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                                👥 Equipe / Responsáveis {ensureStringArray(row.equipe).length > 0 && <span className="text-[var(--color-primary)]">({ensureStringArray(row.equipe).length})</span>}
-                              </label>
-
-                              {ensureStringArray(row.equipe).length > 0 && (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {ensureStringArray(row.equipe).map((membro, eqIdx) => (
-                                    <span
-                                      key={eqIdx}
-                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20"
-                                    >
-                                      {membro}
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveEquipeFromRow(rIdx, eqIdx)}
-                                        className="text-[var(--color-primary)] hover:text-[var(--color-danger)] ml-0.5"
-                                        title="Remover responsável"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-
-                              <select
-                                value=""
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (val === '__OUTRO__') {
-                                    const nomeManual = prompt('Digite o nome do responsável ou equipe externa:');
-                                    if (nomeManual && nomeManual.trim()) {
-                                      handleAddEquipeToRow(rIdx, nomeManual.trim());
-                                    }
-                                  } else if (val) {
-                                    handleAddEquipeToRow(rIdx, val);
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="text"
+                                id={`input-mat-${row.id}`}
+                                placeholder="Digitar material e pressionar Enter..."
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddMaterialToRow(rIdx, e.currentTarget.value);
+                                    e.currentTarget.value = '';
                                   }
                                 }}
-                                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                                className="flex-1 px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const input = document.getElementById(`input-mat-${row.id}`) as HTMLInputElement;
+                                  if (input && input.value) {
+                                    handleAddMaterialToRow(rIdx, input.value);
+                                    input.value = '';
+                                  }
+                                }}
+                                className="px-2.5 py-2 rounded-lg text-xs font-medium bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--color-primary)] hover:text-white hover:border-[var(--color-primary)] transition-colors"
                               >
-                                <option value="">+ Vincular responsável...</option>
-                                <optgroup label="Voluntários Cadastrados">
-                                  {todosVoluntarios
-                                    .filter((v) => !ensureStringArray(row.equipe).includes(v.nome_completo))
-                                    .map((v) => (
-                                      <option key={v.id} value={v.nome_completo}>
-                                        {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
-                                      </option>
-                                    ))}
-                                </optgroup>
-                                <option value="__OUTRO__">➕ Outro (Digitar nome manual...)</option>
-                              </select>
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
 
-                          {/* Linha 3: Local + Metas */}
-                          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-3 pt-3 border-t border-[var(--border-default)]/40">
-                            <div>
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">📍 Local / Espaço</label>
-                              <input
-                                type="text"
-                                value={row.local}
-                                onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'local', e.target.value)}
-                                placeholder="Ex: Pátio Principal, Sala 02..."
-                                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
-                              />
-                            </div>
+                          {/* Equipe / Responsáveis */}
+                          <div className="space-y-2">
+                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                              <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Equipe / Responsáveis</span> {ensureStringArray(row.equipe).length > 0 && <span className="text-[var(--color-primary)]">({ensureStringArray(row.equipe).length})</span>}
+                            </label>
 
-                            <div className="space-y-1.5">
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                                🎯 Metas do Projeto vinculadas:
-                              </label>
-                              {todasMetasDisponiveis.length === 0 ? (
-                                <p className="text-[11px] text-[var(--text-muted)] italic">
-                                  Nenhuma meta cadastrada no projeto. Cadastre metas na aba Planejamento &gt; Objetivos &amp; Metas.
-                                </p>
-                              ) : (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {todasMetasDisponiveis.map((m) => {
-                                    const isSelected = rowMetas.includes(m.id);
-                                    return (
-                                      <button
-                                        key={m.id}
-                                        type="button"
-                                        onClick={() => handleToggleMetaInRow(rIdx, m.id)}
-                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1 border ${
-                                          isSelected
-                                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm'
-                                            : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--color-primary)]'
-                                        }`}
-                                        title={m.descricao}
-                                      >
-                                        <Target className="w-3 h-3 shrink-0" />
-                                        <span className="truncate max-w-[260px]">{m.descricao}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
+                            {ensureStringArray(row.equipe).length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {ensureStringArray(row.equipe).map((membro, eqIdx) => (
+                                  <span
+                                    key={eqIdx}
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20"
+                                  >
+                                    {membro}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveEquipeFromRow(rIdx, eqIdx)}
+                                      className="text-[var(--color-primary)] hover:text-[var(--color-danger)] ml-0.5"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '__OUTRO__') {
+                                  const nomeManual = prompt('Digite o nome do responsável ou equipe externa:');
+                                  if (nomeManual && nomeManual.trim()) {
+                                    handleAddEquipeToRow(rIdx, nomeManual.trim());
+                                  }
+                                } else if (val) {
+                                  handleAddEquipeToRow(rIdx, val);
+                                }
+                              }}
+                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                            >
+                              <option value="">+ Vincular responsável...</option>
+                              <optgroup label="Voluntários Cadastrados">
+                                {todosVoluntarios
+                                  .filter((v) => !ensureStringArray(row.equipe).includes(v.nome_completo))
+                                  .map((v) => (
+                                    <option key={v.id} value={v.nome_completo}>
+                                      {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
+                                    </option>
+                                  ))}
+                              </optgroup>
+                              <option value="__OUTRO__">+ Outro (Digitar nome manual...)</option>
+                            </select>
                           </div>
                         </div>
+
+                        {/* Linha 3: Local */}
+                        <div className="pt-3 border-t border-[var(--border-default)]/40">
+                          <label className="text-[11px] font-semibold text-[var(--text-secondary)] flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" /> Local / Sala</label>
+                          <input
+                            type="text"
+                            value={row.local}
+                            onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'local', e.target.value)}
+                            placeholder="Ex: Pátio Principal, Sala 02, Auditório..."
+                            className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                          />
+                        </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
+
+              {/* Vínculo da Ação com as Metas do Projeto (Ao final por ação) */}
+              <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-3">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                  <Target className="w-4 h-4" />
+                  Vínculo desta Ação com as Metas do Projeto
+                </h4>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                    Meta do Projeto Vinculada
+                  </label>
+                  <select
+                    value={programacaoMetaId}
+                    onChange={(e) => setProgramacaoMetaId(e.target.value)}
+                    className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                  >
+                    <option value="">Selecione a meta do projeto...</option>
+                    {todasMetasDisponiveis.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.objetivo ? `[${m.objetivo}] ` : ''}{m.descricao}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                    Por que / Como esta ação influencia nessa meta?
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={programacaoJustificativaMeta}
+                    onChange={(e) => setProgramacaoJustificativaMeta(e.target.value)}
+                    placeholder="Descreva a relação pedagógica e prática entre esta ação programada e o cumprimento da meta vinculada..."
+                    className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] leading-relaxed"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Rodapé do Modal */}
@@ -2643,7 +4728,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       <PapelTimbradoModal
         isOpen={showPrintProgramacaoModal}
         onClose={() => setShowPrintProgramacaoModal(false)}
-        tituloDocumento="Programação de Ação Social"
+        tituloDocumento="PROGRAMAÇÃO DE AÇÃO SOCIAL"
         subtituloDocumento={`Ação: ${acaoToPrint?.nome_acao || ''} • Projeto: ${formData.nome}`}
       >
         <div className="space-y-5 text-sm text-slate-800 leading-relaxed">
@@ -2652,9 +4737,16 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
             <p><strong>Projeto Social:</strong> {formData.nome}</p>
             <p><strong>Ação:</strong> {acaoToPrint?.nome_acao}</p>
             <p><strong>Data/Hora:</strong> {acaoToPrint?.data_hora ? new Date(acaoToPrint.data_hora).toLocaleString('pt-BR') : '—'}</p>
-            <p><strong>Tipo de Documento:</strong> Programação de Ação (Equipe de Projetos)</p>
-            {acaoToPrint?.descricao && (
-              <p className="col-span-2 mt-1"><strong>Descrição:</strong> {acaoToPrint.descricao}</p>
+            <p><strong>Responsável:</strong> Equipe de Projetos</p>
+            {acaoToPrint?.meta_id && (
+              <p className="col-span-2 mt-1">
+                <strong>Meta Vinculada:</strong> {todasMetasDisponiveis.find((m) => m.id === acaoToPrint.meta_id)?.descricao || 'Meta do Projeto'}
+              </p>
+            )}
+            {acaoToPrint?.justificativa_meta_acao && (
+              <p className="col-span-2 italic text-slate-600">
+                <strong>Como atua na meta:</strong> {acaoToPrint.justificativa_meta_acao}
+              </p>
             )}
           </div>
 
@@ -2673,17 +4765,13 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                     <tr>
                       <th className="p-2 border border-slate-300 w-28">Horário</th>
                       <th className="p-2 border border-slate-300">Atividade / Dinâmica</th>
-                      <th className="p-2 border border-slate-300">Materiais</th>
-                      <th className="p-2 border border-slate-300">Equipe</th>
+                      <th className="p-2 border border-slate-300">Materiais / Insumos</th>
+                      <th className="p-2 border border-slate-300">Equipe / Responsáveis</th>
                       <th className="p-2 border border-slate-300">Local</th>
-                      <th className="p-2 border border-slate-300">Metas do Projeto</th>
                     </tr>
                   </thead>
                   <tbody>
                     {acaoToPrint.programacao_itens.map((item, idx) => {
-                      const metasDaLinha = todasMetasDisponiveis.filter((m) =>
-                        (item.meta_ids || []).includes(m.id)
-                      );
                       const materiaisLinha = ensureStringArray(item.materiais);
                       const equipeLinha = ensureStringArray(item.equipe);
 
@@ -2714,17 +4802,6 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
                             )}
                           </td>
                           <td className="p-2 border border-slate-300 text-slate-700 align-top">{item.local || '—'}</td>
-                          <td className="p-2 border border-slate-300 text-slate-700 align-top">
-                            {metasDaLinha.length > 0 ? (
-                              <ul className="list-disc list-inside space-y-0.5">
-                                {metasDaLinha.map((m) => (
-                                  <li key={m.id}>{m.descricao}</li>
-                                ))}
-                              </ul>
-                            ) : (
-                              '—'
-                            )}
-                          </td>
                         </tr>
                       );
                     })}

@@ -378,7 +378,7 @@ CREATE TABLE IF NOT EXISTS public.webhook_logs (
 );
 
 -- --------------------------------------------------------
--- 18. RELATÓRIOS DE MONITORAMENTO
+-- 18. RELATÓRIOS DE MONITORAMENTO E AVALIAÇÃO (MROSC)
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.relatorios_monitoramento (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -387,6 +387,24 @@ CREATE TABLE IF NOT EXISTS public.relatorios_monitoramento (
     resumo_avanco TEXT,
     metas_atingidas TEXT,
     dificuldades_encontradas TEXT,
+    numero_processo TEXT,
+    numero_instrumento TEXT,
+    tipo_instrumento TEXT DEFAULT 'Termo de Fomento',
+    periodo_inicio DATE,
+    periodo_fim DATE,
+    gestor_monitoramento_id UUID REFERENCES public.voluntarios(id),
+    gestor_nome_externo TEXT,
+    documentos_avaliados JSONB DEFAULT '[]'::jsonb,
+    introducao_texto TEXT,
+    avaliacao_acoes JSONB DEFAULT '[]'::jsonb,
+    avaliacao_metas JSONB DEFAULT '[]'::jsonb,
+    status_transparencia TEXT DEFAULT 'conforme',
+    justificativa_transparencia TEXT,
+    parecer_conclusao TEXT DEFAULT 'continuidade_regular',
+    ressalvas_conclusao JSONB DEFAULT '[]'::jsonb,
+    justificativa_conclusao TEXT,
+    valor_desembolsado NUMERIC(10,2) DEFAULT 0.00,
+    local_data_emissao TEXT DEFAULT 'São Luís - MA',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

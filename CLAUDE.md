@@ -54,6 +54,36 @@
 
 ## Changelog
 
+### 2026-08-17 — `[RECURSO] & [REFACTOR]` 🔴 CRÍTICO
+
+**Execução, Monitoramento e Relatórios Técnicos de Projetos Sociais (`/dashboard/projetos/[id]`)**
+
+1. **Registros de Ações do Projeto (Layout Minimalista & Filtros)**:
+   - Layout redesenhado em formato minimalista e de alta legibilidade, eliminando poluição visual.
+   - **Filtro Padrão por Mês Vigente**: Exibição automática das ações do mês atual (`YYYY-MM`), com seletor de histórico de meses disponíveis, atalho para retorno ao mês vigente e opção "Todos os Meses".
+   - **Segmented Control de Responsabilidade**: Filtro rápido por equipe (*Todos*, *Equipe de Projetos*, *Equipe de Pedagogia*).
+   - **Busca Instantânea**: Campo de filtro em tempo real por título da ação ou meta vinculada.
+   - Associação de metas pactuadas diretamente por ação (com justificativa de impacto) e badges institucionais (`FolderKanban` para Projetos e `GraduationCap` para Pedagogia).
+
+2. **Relatórios Técnicos de Monitoramento & Avaliação (Padrão MROSC / Ádapo)**:
+   - Wizard estruturado em 5 etapas com integração de IA para redação automática da Introdução Sumária e Conclusão Técnica.
+   - **Simplificação da Etapa 2 (Introdução)**: Removido o checklist desnecessário de "Documentos & Evidências Avaliadas", concentrando o fluxo na contextualização e no gerador assistido por IA.
+   - Avaliação qualitativa de atividades e dinâmicas com suporte a múltiplos planos de ação com prazo.
+   - Frequência de beneficiários categorizada em 4 faixas (100%, 90-75%, 75-50%, 50-0%) e módulos de análise socioemocional e pesquisa de satisfação.
+   - Avaliação de transparência ativa e prestação de contas institucional.
+
+3. **Etapa 4: Avaliação do Cumprimento de Metas do Projeto**:
+   - Hierarquia visual reformulada: destaque superior para o **Objetivo Estratégico** com badge e ícone `Compass`, e descrição em destaque da **Meta Pactuada**.
+   - Chips informativos para Procedimento & Forma de Coleta (`FileText`) e Responsável Técnico (`Users`).
+   - Seletor moderno de status (*Não Iniciada*, *Iniciada*, *Concluída*) através de botões segmentados com ícones Lucide (`XCircle`, `Clock`, `CheckCircle2`).
+   - Card integrado de justificativa e plano de ação corretivo com prazo para metas não concluídas.
+
+4. **Padronização Visual & Remoção Completa de Emojis**:
+   - Varredura e eliminação de 100% dos emojis em toda a página de projetos, modais de programação, seleção e no **PapelTimbradoModal**, substituídos por ícones semânticos da biblioteca **Lucide React**.
+   - Correção e alinhamento do timbrado institucional para evitar quebras inadequadas e manter cabeçalho/rodapé fixos.
+
+---
+
 ### 2026-08-12 — `[RECURSO] & [SEGURANÇA]` 🔴 CRÍTICO
 
 **Fluxo de Acesso Individual de Voluntários, Seção Configurações e Temas Dinâmicos**
@@ -140,4 +170,4 @@
 
 ---
 
-*Última atualização: 2026-08-11 por Antigravity IDE*
+*Última atualização: 2026-08-17 por Antigravity IDE*
