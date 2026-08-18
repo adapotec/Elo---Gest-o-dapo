@@ -115,7 +115,7 @@ export default function PedagogiaPage() {
             obj.metas.forEach((m: any) => {
               metasFormatadas.push({
                 id: m.id || crypto.randomUUID(),
-                descricao: m.descricao || m.texto || 'Meta sem descrição',
+                descricao: m.descricao_meta || m.descricao || m.texto || 'Meta sem descrição',
                 indicador: m.indicador,
                 meta_quantitativa: m.meta_quantitativa,
               });

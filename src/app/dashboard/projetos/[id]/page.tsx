@@ -169,10 +169,16 @@ export interface ItemProgramacaoAcao {
   id: string;
   horario: string;
   atividade: string;
+  descricao?: string;
   materiais: string[] | string;
   equipe: string[] | string;
   is_custom_equipe?: boolean;
   local: string;
+}
+
+export interface MetaVinculadaAcao {
+  meta_id: string;
+  justificativa: string;
 }
 
 export interface AcaoExecucao {
@@ -185,6 +191,7 @@ export interface AcaoExecucao {
   responsavel_estrutura?: 'Projetos' | 'Pedagogia';
   meta_id?: string;
   justificativa_meta_acao?: string;
+  metas_vinculadas?: MetaVinculadaAcao[];
   programacao_itens?: ItemProgramacaoAcao[];
   created_at?: string;
 }
@@ -415,16 +422,19 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     data_hora: '',
     nome_acao: '',
     descricao: '',
-    responsavel_estrutura: 'Projetos' as 'Projetos' | 'Pedagogia',
-    meta_id: '',
-    justificativa_meta_acao: '',
   });
+
+  // Planos de Aula da Pedagogia vinculados às ações
+  const [planosPedagogia, setPlanosPedagogia] = useState<any[]>([]);
+  const [planoPedagogiaToPrint, setPlanoPedagogiaToPrint] = useState<any | null>(null);
+  const [showPrintPlanoPedagogiaModal, setShowPrintPlanoPedagogiaModal] = useState<boolean>(false);
 
   // Programação de Ação (Planilha & Exportação)
   const [selectedAcaoForProgramacao, setSelectedAcaoForProgramacao] = useState<AcaoExecucao | null>(null);
   const [programacaoRows, setProgramacaoRows] = useState<ItemProgramacaoAcao[]>([]);
   const [programacaoMetaId, setProgramacaoMetaId] = useState<string>('');
   const [programacaoJustificativaMeta, setProgramacaoJustificativaMeta] = useState<string>('');
+  const [programacaoMetasVinculadas, setProgramacaoMetasVinculadas] = useState<{ meta_id: string; justificativa: string }[]>([]);
   const [savingProgramacao, setSavingProgramacao] = useState(false);
   const [showPrintProgramacaoModal, setShowPrintProgramacaoModal] = useState(false);
   const [acaoToPrint, setAcaoToPrint] = useState<AcaoExecucao | null>(null);
@@ -454,7 +464,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   // Filtros de Ações do Cronograma (Default: Mês Vigente)
   const currentMonthStr = new Date().toISOString().slice(0, 7); // Ex: "2026-08"
   const [filtroMesAcoes, setFiltroMesAcoes] = useState<string>(currentMonthStr);
-  const [filtroResponsavelAcoes, setFiltroResponsavelAcoes] = useState<'todos' | 'Projetos' | 'Pedagogia'>('todos');
+
   const [buscaAcaoTexto, setBuscaAcaoTexto] = useState<string>('');
 
   // Ações filtradas com base no mês vigente, responsável e busca
@@ -465,11 +475,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
         return false;
       }
     }
-    // Filtro por responsável
-    const resp = (acao.responsavel_estrutura || (acao.documento_estruturador === 'Plano de Aula' ? 'Pedagogia' : 'Projetos')) as 'Projetos' | 'Pedagogia';
-    if (filtroResponsavelAcoes !== 'todos' && resp !== filtroResponsavelAcoes) {
-      return false;
-    }
+
     // Filtro por busca de texto
     if (buscaAcaoTexto.trim()) {
       const q = buscaAcaoTexto.toLowerCase();
@@ -611,14 +617,33 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       setDadosInstituto(instData);
     }
 
-    // 3. Execução & Monitoramento
-    const [{ data: acData }, { data: relData }] = await Promise.all([
+    // 3. Execução & Monitoramento & Pedagogia
+    const [{ data: acData }, { data: relData }, { data: plData }] = await Promise.all([
       supabase.from('acoes_projeto').select('*').eq('projeto_id', id).order('data_hora', { ascending: true }),
       supabase.from('relatorios_monitoramento').select('*').eq('projeto_id', id).order('mes_referencia', { ascending: false }),
+      supabase.from('planos_oficina').select('*').eq('projeto_id', id),
     ]);
 
     setAcoes(acData || []);
     setRelatorios(relData || []);
+
+    if (plData) {
+      const parsed = plData.map((item: any) => {
+        let ativs = [];
+        try {
+          if (item.atividades_dirigidas && (item.atividades_dirigidas.startsWith('[') || item.atividades_dirigidas.startsWith('{'))) {
+            const res = JSON.parse(item.atividades_dirigidas);
+            if (Array.isArray(res)) ativs = res;
+          }
+        } catch {}
+        return {
+          ...item,
+          atividades: ativs,
+          observacoes_gerais: item.avaliacao_encontro || item.observacoes_gerais || '',
+        };
+      });
+      setPlanosPedagogia(parsed);
+    }
 
     // 4. Inscrições & Alocações
     const [{ data: inscData }, { data: alocData }, { data: bData }, { data: vData }] = await Promise.all([
@@ -816,20 +841,21 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   // =========================================================================
 
   const handleAddAcao = async () => {
-    if (!newAcao.nome_acao || !newAcao.data_hora) return;
+    if (!newAcao.nome_acao.trim() || !newAcao.data_hora) return;
     const supabase = createClient();
 
     const payload = {
       projeto_id: id,
-      nome_acao: newAcao.nome_acao,
+      nome_acao: newAcao.nome_acao.trim(),
       data_hora: newAcao.data_hora,
-      descricao: newAcao.descricao || null,
-      documento_estruturador: newAcao.responsavel_estrutura,
+      descricao: newAcao.descricao?.trim() || null,
+      documento_estruturador: 'Plano de Aula',
       programacao_itens: [
         {
           id: crypto.randomUUID(),
           horario: '08:30 - 09:30',
-          atividade: newAcao.nome_acao,
+          atividade: newAcao.nome_acao.trim(),
+          descricao: newAcao.descricao?.trim() || '',
           materiais: [],
           equipe: [],
           local: 'Sede / Espaço do Projeto',
@@ -837,30 +863,19 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       ],
     };
 
-    // Tenta salvar com meta_id e justificativa_meta_acao se colunas existirem
-    const { error: insErr } = await supabase.from('acoes_projeto').insert([
-      {
-        ...payload,
-        meta_id: newAcao.meta_id || null,
-        justificativa_meta_acao: newAcao.justificativa_meta_acao || '',
-      },
-    ]);
+    const { error: insErr } = await supabase.from('acoes_projeto').insert([payload]);
 
     if (insErr) {
-      // Fallback para schema base caso as colunas novas estejam pendentes
-      await supabase.from('acoes_projeto').insert([payload]);
+      alert('Erro ao cadastrar ação: ' + insErr.message);
+    } else {
+      setShowAddAcaoModal(false);
+      setNewAcao({
+        data_hora: '',
+        nome_acao: '',
+        descricao: '',
+      });
+      loadData();
     }
-
-    setShowAddAcaoModal(false);
-    setNewAcao({
-      data_hora: '',
-      nome_acao: '',
-      descricao: '',
-      responsavel_estrutura: 'Projetos',
-      meta_id: '',
-      justificativa_meta_acao: '',
-    });
-    loadData();
   };
 
   const handleRemoveAcao = async (acaoId: string) => {
@@ -1167,6 +1182,25 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
     setProgramacaoMetaId(acao.meta_id || '');
     setProgramacaoJustificativaMeta(acao.justificativa_meta_acao || '');
 
+    // Inicializar metas vinculadas (múltiplas)
+    let metasIniciais: { meta_id: string; justificativa: string }[] = [];
+    if (Array.isArray(acao.metas_vinculadas) && acao.metas_vinculadas.length > 0) {
+      metasIniciais = acao.metas_vinculadas;
+    } else if (acao.meta_id) {
+      metasIniciais = [{ meta_id: acao.meta_id, justificativa: acao.justificativa_meta_acao || '' }];
+    } else {
+      // Verificar se há plano de aula da pedagogia com metas nas atividades
+      const planoVinculado = planosPedagogia.find((p) => p.acao_id === acao.id);
+      if (planoVinculado && Array.isArray(planoVinculado.atividades)) {
+        const metasEncontradas = Array.from(new Set(planoVinculado.atividades.map((a: any) => a.meta_id).filter(Boolean))) as string[];
+        metasIniciais = metasEncontradas.map((mId) => ({
+          meta_id: mId,
+          justificativa: `Meta trabalhada nas atividades pedagógicas do encontro "${planoVinculado.titulo}".`,
+        }));
+      }
+    }
+    setProgramacaoMetasVinculadas(metasIniciais);
+
     const existing = acao.programacao_itens;
     if (!existing || existing.length === 0) {
       setProgramacaoRows([
@@ -1174,15 +1208,17 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
           id: crypto.randomUUID(),
           horario: '08:30 - 09:30',
           atividade: acao.nome_acao,
+          descricao: acao.descricao || '',
           materiais: [],
           equipe: [],
-          local: 'Sede / Polo',
+          local: 'Sede / Espaço do Projeto',
         },
       ]);
     } else {
       setProgramacaoRows(
         existing.map((row) => ({
           ...row,
+          descricao: row.descricao || '',
           materiais: ensureStringArray(row.materiais),
           equipe: ensureStringArray(row.equipe),
         }))
@@ -1197,6 +1233,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
         id: crypto.randomUUID(),
         horario: '',
         atividade: '',
+        descricao: '',
         materiais: [],
         equipe: [],
         local: '',
@@ -1254,6 +1291,89 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
     setProgramacaoRows(programacaoRows.filter((_, i) => i !== idx));
   };
 
+  // Importar atividade cadastrada pela pedagogia para a linha de programação
+  const handleImportarAtividadePedagogica = (rowIdx: number, ativ: any) => {
+    if (!ativ) return;
+    const row = programacaoRows[rowIdx];
+    const equipeAtual = ensureStringArray(row.equipe);
+    const materiaisAtuais = ensureStringArray(row.materiais);
+
+    let novaEquipe = [...equipeAtual];
+    if (ativ.mediador && ativ.mediador.trim() && !novaEquipe.includes(ativ.mediador.trim())) {
+      novaEquipe.push(ativ.mediador.trim());
+    }
+
+    let novosMateriais = [...materiaisAtuais];
+    if (ativ.materiais && typeof ativ.materiais === 'string' && ativ.materiais.trim()) {
+      const splitMats = ativ.materiais.split(/[,;\n]/).map((m: string) => m.trim()).filter(Boolean);
+      splitMats.forEach((m: string) => {
+        if (!novosMateriais.includes(m)) novosMateriais.push(m);
+      });
+    }
+
+    const updated = [...programacaoRows];
+    updated[rowIdx] = {
+      ...updated[rowIdx],
+      atividade: ativ.titulo || updated[rowIdx].atividade,
+      descricao: ativ.descricao || updated[rowIdx].descricao || '',
+      equipe: novaEquipe,
+      materiais: novosMateriais,
+    };
+    setProgramacaoRows(updated);
+  };
+
+  // Toggle de seleção de meta vinculada
+  const handleToggleMetaVinculada = (metaId: string) => {
+    const exists = programacaoMetasVinculadas.find((m) => m.meta_id === metaId);
+    if (exists) {
+      setProgramacaoMetasVinculadas(programacaoMetasVinculadas.filter((m) => m.meta_id !== metaId));
+    } else {
+      setProgramacaoMetasVinculadas([
+        ...programacaoMetasVinculadas,
+        { meta_id: metaId, justificativa: '' },
+      ]);
+    }
+  };
+
+  const handleUpdateJustificativaMeta = (metaId: string, justificativa: string) => {
+    setProgramacaoMetasVinculadas((prev) =>
+      prev.map((item) => (item.meta_id === metaId ? { ...item, justificativa } : item))
+    );
+  };
+
+  // Importar metas do plano de aula vinculado
+  const handleImportarMetasPedagogia = (planoVinculado: any) => {
+    if (!planoVinculado || !Array.isArray(planoVinculado.atividades)) return;
+    const metasIds = Array.from(new Set(planoVinculado.atividades.map((a: any) => a.meta_id).filter(Boolean))) as string[];
+    if (metasIds.length === 0) {
+      alert('O plano de aula vinculado não possui metas selecionadas em suas atividades.');
+      return;
+    }
+
+    const novasMetas = metasIds.map((mId) => {
+      const existing = programacaoMetasVinculadas.find((m) => m.meta_id === mId);
+      return (
+        existing || {
+          meta_id: mId,
+          justificativa: `Meta definida no plano de aula pedagógico "${planoVinculado.titulo}".`,
+        }
+      );
+    });
+
+    setProgramacaoMetasVinculadas(novasMetas);
+  };
+
+  // Visualizar plano de aula pedagógico vinculado em papel timbrado
+  const handleVisualizarPlanoPedagogico = (acaoId: string) => {
+    const plano = planosPedagogia.find((p) => p.acao_id === acaoId);
+    if (!plano) {
+      alert('Nenhum Plano de Aula cadastrado pela equipe de Pedagogia para esta ação ainda.');
+      return;
+    }
+    setPlanoPedagogiaToPrint(plano);
+    setShowPrintPlanoPedagogiaModal(true);
+  };
+
   const handleSaveProgramacao = async () => {
     if (!selectedAcaoForProgramacao) return;
     setSavingProgramacao(true);
@@ -1263,39 +1383,31 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
       programacao_itens: programacaoRows,
     };
 
-    // Tentar atualizar meta_id e justificativa_meta_acao se colunas existirem
     const { error: saveErr } = await supabase
       .from('acoes_projeto')
-      .update({
-        ...payload,
-        meta_id: programacaoMetaId || null,
-        justificativa_meta_acao: programacaoJustificativaMeta || '',
-      })
+      .update(payload)
       .eq('id', selectedAcaoForProgramacao.id);
 
     if (saveErr) {
-      // Fallback
-      await supabase
-        .from('acoes_projeto')
-        .update(payload)
-        .eq('id', selectedAcaoForProgramacao.id);
+      alert('Erro ao salvar programação: ' + saveErr.message);
+    } else {
+      setAcoes((prev) =>
+        prev.map((a) =>
+          a.id === selectedAcaoForProgramacao.id
+            ? {
+                ...a,
+                programacao_itens: programacaoRows,
+                metas_vinculadas: programacaoMetasVinculadas,
+                meta_id: programacaoMetasVinculadas[0]?.meta_id || '',
+                justificativa_meta_acao: programacaoMetasVinculadas[0]?.justificativa || '',
+              }
+            : a
+        )
+      );
+      setSelectedAcaoForProgramacao(null);
+      loadData();
     }
-
-    setAcoes((prev) =>
-      prev.map((a) =>
-        a.id === selectedAcaoForProgramacao.id
-          ? {
-            ...a,
-            programacao_itens: programacaoRows,
-            meta_id: programacaoMetaId,
-            justificativa_meta_acao: programacaoJustificativaMeta,
-          }
-          : a
-      )
-    );
-    setSelectedAcaoForProgramacao(null);
     setSavingProgramacao(false);
-    loadData();
   };
 
   const handleOpenPrintProgramacao = (acao: AcaoExecucao) => {
@@ -2259,26 +2371,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                         )}
                       </div>
 
-                      {/* Segmented Control por Responsável */}
-                      <div className="flex items-center gap-1 bg-[var(--bg-elevated)] p-1 rounded-lg border border-[var(--border-default)]">
-                        {[
-                          { id: 'todos', label: 'Todos' },
-                          { id: 'Projetos', label: 'Projetos' },
-                          { id: 'Pedagogia', label: 'Pedagogia' },
-                        ].map((tab) => (
-                          <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setFiltroResponsavelAcoes(tab.id as any)}
-                            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${filtroResponsavelAcoes === tab.id
-                              ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                              }`}
-                          >
-                            {tab.label}
-                          </button>
-                        ))}
-                      </div>
+
 
                       {/* Campo de Busca Rápida */}
                       <div className="relative flex-1 min-w-[180px] max-w-xs">
@@ -2313,12 +2406,11 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                         )}
                       </span>
 
-                      {(filtroMesAcoes !== 'todos' || filtroResponsavelAcoes !== 'todos' || buscaAcaoTexto) && (
+                      {(filtroMesAcoes !== 'todos' || buscaAcaoTexto) && (
                         <button
                           type="button"
                           onClick={() => {
                             setFiltroMesAcoes('todos');
-                            setFiltroResponsavelAcoes('todos');
                             setBuscaAcaoTexto('');
                           }}
                           className="text-[var(--color-primary)] font-semibold hover:underline"
@@ -2339,7 +2431,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                           </p>
                         </div>
                         <div className="flex items-center justify-center gap-2 pt-1">
-                          <Button size="sm" variant="secondary" onClick={() => { setFiltroMesAcoes('todos'); setFiltroResponsavelAcoes('todos'); setBuscaAcaoTexto(''); }}>
+                          <Button size="sm" variant="secondary" onClick={() => { setFiltroMesAcoes('todos'); setBuscaAcaoTexto(''); }}>
                             Ver Todas as Ações
                           </Button>
                           <Button size="sm" variant="primary" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => setShowAddAcaoModal(true)}>
@@ -2350,10 +2442,8 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         {acoesFiltradas.map((acao) => {
-                          const resp = (acao.responsavel_estrutura || (acao.documento_estruturador === 'Plano de Aula' ? 'Pedagogia' : 'Projetos')) as 'Projetos' | 'Pedagogia';
-                          const isPedagogia = resp === 'Pedagogia';
                           const qtdItens = Array.isArray(acao.programacao_itens) ? acao.programacao_itens.length : 0;
-                          const metaVinculada = todasMetasDisponiveis.find((m) => m.id === acao.meta_id);
+                          const temPlanoAula = planosPedagogia.some((p: any) => p.acao_id === acao.id);
 
                           return (
                             <div
@@ -2361,7 +2451,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                               className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40 transition-all flex flex-col justify-between space-y-3 shadow-sm hover:shadow-md"
                             >
                               <div className="space-y-2.5">
-                                {/* Header do Card Minimalista */}
+                                {/* Header do Card */}
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="space-y-1 min-w-0">
                                     <h4 className="font-bold text-xs text-[var(--text-primary)] leading-tight truncate" title={acao.nome_acao}>
@@ -2380,12 +2470,14 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                     </div>
                                   </div>
 
-                                  <Badge variant={isPedagogia ? 'purple' : 'primary'}>
-                                    <span className="flex items-center gap-1 text-[10px]">
-                                      {isPedagogia ? <GraduationCap className="w-3 h-3" /> : <FolderKanban className="w-3 h-3" />}
-                                      {isPedagogia ? 'Pedagogia' : 'Projetos'}
-                                    </span>
-                                  </Badge>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    {temPlanoAula && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#93368F]/10 text-[#93368F] border border-[#93368F]/20">
+                                        <BookOpen className="w-3 h-3" />
+                                        Plano de Aula
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
 
                                 {acao.descricao && (
@@ -2394,34 +2486,12 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                   </p>
                                 )}
 
-                                {/* Meta Vinculada */}
-                                {metaVinculada && (
-                                  <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)]/60 border border-[var(--border-default)] text-[11px] space-y-1">
-                                    <div className="flex items-center gap-1.5 font-bold text-[var(--color-primary)]">
-                                      <Target className="w-3 h-3 shrink-0" />
-                                      <span className="truncate">Meta: {metaVinculada.descricao}</span>
-                                    </div>
-                                    {acao.justificativa_meta_acao && (
-                                      <p className="text-[10px] text-[var(--text-secondary)] italic line-clamp-2">
-                                        "{acao.justificativa_meta_acao}"
-                                      </p>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Indicador de Estruturação */}
-                                <div className="text-[10px] text-[var(--text-muted)] font-medium flex items-center justify-between pt-1">
-                                  {isPedagogia ? (
-                                    <span className="flex items-center gap-1 text-[#93368F]">
-                                      <GraduationCap className="w-3 h-3" />
-                                      Roteiro e plano de aula no módulo de Pedagogia
-                                    </span>
-                                  ) : (
-                                    <span className="flex items-center gap-1 text-[var(--text-secondary)]">
-                                      <Layers className="w-3 h-3 text-[var(--color-primary)]" />
-                                      {qtdItens > 0 ? `${qtdItens} dinâmicas programadas na grade` : 'Grade operacional não programada'}
-                                    </span>
-                                  )}
+                                {/* Indicador de Programação */}
+                                <div className="text-[10px] text-[var(--text-muted)] font-medium flex items-center pt-1">
+                                  <span className="flex items-center gap-1 text-[var(--text-secondary)]">
+                                    <Layers className="w-3 h-3 text-[var(--color-primary)]" />
+                                    {qtdItens > 0 ? `${qtdItens} dinâmicas programadas na grade` : 'Grade operacional não programada'}
+                                  </span>
                                 </div>
                               </div>
 
@@ -2437,35 +2507,25 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                 </button>
 
                                 <div className="flex items-center gap-1.5">
-                                  {isPedagogia ? (
-                                    <Link href="/dashboard/pedagogia">
-                                      <Button size="sm" variant="secondary" icon={<ExternalLink className="w-3 h-3" />}>
-                                        Pedagogia
-                                      </Button>
-                                    </Link>
-                                  ) : (
-                                    <>
-                                      {qtdItens > 0 && (
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          icon={<Download className="w-3 h-3" />}
-                                          onClick={() => handleOpenPrintProgramacao(acao)}
-                                          title="Exportar PDF Timbrado"
-                                        >
-                                          PDF
-                                        </Button>
-                                      )}
-                                      <Button
-                                        size="sm"
-                                        variant="primary"
-                                        icon={<Edit3 className="w-3 h-3" />}
-                                        onClick={() => handleOpenProgramacaoEditor(acao)}
-                                      >
-                                        Programação
-                                      </Button>
-                                    </>
+                                  {qtdItens > 0 && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      icon={<Download className="w-3 h-3" />}
+                                      onClick={() => handleOpenPrintProgramacao(acao)}
+                                      title="Exportar PDF Timbrado"
+                                    >
+                                      PDF
+                                    </Button>
                                   )}
+                                  <Button
+                                    size="sm"
+                                    variant="primary"
+                                    icon={<Edit3 className="w-3 h-3" />}
+                                    onClick={() => handleOpenProgramacaoEditor(acao)}
+                                  >
+                                    Programação{qtdItens > 0 ? ` (${qtdItens})` : ''}
+                                  </Button>
                                 </div>
                               </div>
                             </div>
@@ -2995,86 +3055,56 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
         </div>
       </div>
 
-      {/* MODAL CADASTRAR AÇÃO NO CRONOGRAMA (PROJETOS / PEDAGOGIA) */}
+      {/* MODAL CADASTRAR AÇÃO NO CRONOGRAMA */}
       {showAddAcaoModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="w-full max-w-lg bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-default)] shadow-2xl space-y-4 my-auto">
+          <div className="w-full max-w-md bg-[var(--bg-elevated)] p-6 rounded-2xl border border-[var(--border-default)] shadow-2xl space-y-4 my-auto">
             <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
               <div className="space-y-0.5">
                 <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Cadastrar Ação no Cronograma</h3>
                 <p className="text-xs text-[var(--text-muted)]">Planejamento de oficinas, encontros e dinâmicas do projeto</p>
               </div>
-              <button onClick={() => setShowAddAcaoModal(false)}><X className="w-4 h-4 text-[var(--text-muted)]" /></button>
+              <button onClick={() => setShowAddAcaoModal(false)}>
+                <X className="w-4 h-4 text-[var(--text-muted)]" />
+              </button>
             </div>
 
-            <Input label="Nome da Ação / Oficina *" value={newAcao.nome_acao} onChange={(e) => setNewAcao({ ...newAcao, nome_acao: e.target.value })} placeholder="Ex: Oficina 01 - Introdução ao Tema e Acolhida" required />
-            <Input label="Data e Horário *" type="datetime-local" value={newAcao.data_hora} onChange={(e) => setNewAcao({ ...newAcao, data_hora: e.target.value })} required />
+            <Input
+              label="Nome da Ação / Oficina *"
+              value={newAcao.nome_acao}
+              onChange={(e) => setNewAcao({ ...newAcao, nome_acao: e.target.value })}
+              placeholder="Ex: Oficina 01 - Introdução ao Tema e Acolhida"
+              required
+            />
 
-            {/* Quem é o responsável pela estrutura dessa ação? */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[var(--text-secondary)]">Quem é o responsável pela estrutura dessa ação? *</label>
-              <div className="grid grid-cols-2 gap-2.5">
-                <label className={`p-3 rounded-xl border text-xs font-bold flex flex-col gap-1 cursor-pointer transition-all ${newAcao.responsavel_estrutura === 'Projetos' ? 'border-[#F2632D] bg-[#F2632D]/10 text-[#F2632D]' : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[#F2632D]/40'}`}>
-                  <div className="flex items-center gap-2">
-                    <input type="radio" name="responsavel_estrutura" checked={newAcao.responsavel_estrutura === 'Projetos'} onChange={() => setNewAcao({ ...newAcao, responsavel_estrutura: 'Projetos' })} className="hidden" />
-                    <FolderKanban className="w-4 h-4" />
-                    <span>Equipe de Projetos</span>
-                  </div>
-                  <span className="text-[10px] font-normal text-[var(--text-muted)]">Editada na grade de programação desta página</span>
-                </label>
-
-                <label className={`p-3 rounded-xl border text-xs font-bold flex flex-col gap-1 cursor-pointer transition-all ${newAcao.responsavel_estrutura === 'Pedagogia' ? 'border-[#93368F] bg-[#93368F]/10 text-[#93368F]' : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[#93368F]/40'}`}>
-                  <div className="flex items-center gap-2">
-                    <input type="radio" name="responsavel_estrutura" checked={newAcao.responsavel_estrutura === 'Pedagogia'} onChange={() => setNewAcao({ ...newAcao, responsavel_estrutura: 'Pedagogia' })} className="hidden" />
-                    <GraduationCap className="w-4 h-4" />
-                    <span>Equipe de Pedagogia</span>
-                  </div>
-                  <span className="text-[10px] font-normal text-[var(--text-muted)]">Estruturada no módulo de Pedagogia</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Vínculo de Meta do Projeto */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[var(--text-secondary)]">Vincular a uma Meta do Projeto</label>
-              <select
-                value={newAcao.meta_id}
-                onChange={(e) => setNewAcao({ ...newAcao, meta_id: e.target.value })}
-                className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
-              >
-                <option value="">Selecione uma meta do projeto (opcional)...</option>
-                {todasMetasDisponiveis.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.objetivo ? `[${m.objetivo}] ` : ''}{m.descricao}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Por que essa ação influencia nessa meta? */}
-            {newAcao.meta_id && (
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-[var(--text-secondary)]">
-                  Por que / Como esta ação influencia nessa meta?
-                </label>
-                <textarea
-                  value={newAcao.justificativa_meta_acao}
-                  onChange={(e) => setNewAcao({ ...newAcao, justificativa_meta_acao: e.target.value })}
-                  placeholder="Explique como as dinâmicas e conteúdos desta ação contribuem diretamente para o alcance desta meta..."
-                  className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
-                  rows={2}
-                />
-              </div>
-            )}
+            <Input
+              label="Data e Horário *"
+              type="datetime-local"
+              value={newAcao.data_hora}
+              onChange={(e) => setNewAcao({ ...newAcao, data_hora: e.target.value })}
+              required
+            />
 
             <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Descrição Simples / Observações</label>
-              <textarea value={newAcao.descricao} onChange={(e) => setNewAcao({ ...newAcao, descricao: e.target.value })} placeholder="Breve descrição da atividade..." className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" rows={2} />
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">
+                Descrição Simples / Observações
+              </label>
+              <textarea
+                value={newAcao.descricao}
+                onChange={(e) => setNewAcao({ ...newAcao, descricao: e.target.value })}
+                placeholder="Breve descrição dos objetivos ou tema central da atividade..."
+                className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                rows={3}
+              />
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border-default)]">
-              <Button variant="secondary" size="sm" onClick={() => setShowAddAcaoModal(false)}>Cancelar</Button>
-              <Button size="sm" onClick={handleAddAcao} disabled={!newAcao.nome_acao || !newAcao.data_hora}>Cadastrar Ação</Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowAddAcaoModal(false)}>
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={handleAddAcao} disabled={!newAcao.nome_acao.trim() || !newAcao.data_hora}>
+                Cadastrar Ação
+              </Button>
             </div>
           </div>
         </div>
@@ -4473,13 +4503,28 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
 
             {/* Corpo da Tabela / Planilha */}
             <div className="flex-1 overflow-y-auto space-y-5 pr-1">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <p className="text-xs font-semibold text-[var(--text-secondary)]">
                   Preencha a grade de horários, dinâmica/atividade, materiais, equipe e local da ação:
                 </p>
-                <Button size="sm" variant="secondary" icon={<Plus className="w-4 h-4" />} onClick={handleAddProgramacaoRow}>
-                  Adicionar Linha de Atividade
-                </Button>
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const planoVinculado = planosPedagogia.find((p) => p.acao_id === selectedAcaoForProgramacao.id);
+                    return (
+                      <Button
+                        size="sm"
+                        variant={planoVinculado ? 'primary' : 'secondary'}
+                        icon={<BookOpen className="w-3.5 h-3.5" />}
+                        onClick={() => handleVisualizarPlanoPedagogico(selectedAcaoForProgramacao.id)}
+                      >
+                        Visualizar Plano de Aula {planoVinculado ? '(Timbrado)' : ''}
+                      </Button>
+                    );
+                  })()}
+                  <Button size="sm" variant="secondary" icon={<Plus className="w-4 h-4" />} onClick={handleAddProgramacaoRow}>
+                    Adicionar Linha de Atividade
+                  </Button>
+                </div>
               </div>
 
               {programacaoRows.length === 0 ? (
@@ -4488,221 +4533,316 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {programacaoRows.map((row, rIdx) => (
-                    <div
-                      key={row.id}
-                      className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/60 overflow-hidden"
-                    >
-                      <div className="flex items-center justify-between px-4 py-2 bg-[var(--bg-secondary)] border-b border-[var(--border-default)]/60">
-                        <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                          Atividade {rIdx + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveProgramacaoRow(rIdx)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors"
-                          title="Remover atividade"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          Remover
-                        </button>
-                      </div>
+                  {programacaoRows.map((row, rIdx) => {
+                    const planoVinculado = planosPedagogia.find((p) => p.acao_id === selectedAcaoForProgramacao.id);
 
-                      <div className="p-4 space-y-4 text-xs">
-                        {/* Linha 1: Horário + Atividade */}
-                        <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-3">
-                          <div>
-                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Horário</label>
-                            <input
-                              type="text"
-                              value={row.horario}
-                              onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'horario', e.target.value)}
-                              placeholder="Ex: 08:30 - 09:15"
-                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Atividade / Dinâmica</label>
-                            <textarea
-                              value={row.atividade}
-                              onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'atividade', e.target.value)}
-                              placeholder="Ex: Acolhimento, oficina prática, lanche..."
-                              rows={2}
-                              className="w-full px-3 py-1.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium resize-none"
-                            />
-                          </div>
+                    return (
+                      <div
+                        key={row.id}
+                        className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/60 overflow-hidden"
+                      >
+                        <div className="flex items-center justify-between px-4 py-2 bg-[var(--bg-secondary)] border-b border-[var(--border-default)]/60">
+                          <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                            Atividade {rIdx + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveProgramacaoRow(rIdx)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors"
+                            title="Remover atividade"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Remover
+                          </button>
                         </div>
 
-                        {/* Linha 2: Materiais + Equipe */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[var(--border-default)]/40">
-                          {/* Materiais */}
-                          <div className="space-y-2">
-                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                              <span className="flex items-center gap-1"><Package className="w-3 h-3" /> Materiais / Insumos</span> {ensureStringArray(row.materiais).length > 0 && <span className="text-[var(--color-primary)]">({ensureStringArray(row.materiais).length})</span>}
-                            </label>
-
-                            {ensureStringArray(row.materiais).length > 0 && (
-                              <div className="flex flex-wrap gap-1.5">
-                                {ensureStringArray(row.materiais).map((mat, mIdx) => (
-                                  <span
-                                    key={mIdx}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)]"
-                                  >
-                                    {mat}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveMaterialFromRow(rIdx, mIdx)}
-                                      className="text-[var(--text-muted)] hover:text-[var(--color-danger)] ml-0.5"
-                                      title="Remover material"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-
-                            <div className="flex items-center gap-1.5">
+                        <div className="p-4 space-y-4 text-xs">
+                          {/* Linha 1: Horário + Título */}
+                          <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-3">
+                            <div>
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Horário</label>
                               <input
                                 type="text"
-                                id={`input-mat-${row.id}`}
-                                placeholder="Digitar material e pressionar Enter..."
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    handleAddMaterialToRow(rIdx, e.currentTarget.value);
-                                    e.currentTarget.value = '';
-                                  }
-                                }}
-                                className="flex-1 px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                                value={row.horario}
+                                onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'horario', e.target.value)}
+                                placeholder="Ex: 08:30 - 09:15"
+                                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
                               />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const input = document.getElementById(`input-mat-${row.id}`) as HTMLInputElement;
-                                  if (input && input.value) {
-                                    handleAddMaterialToRow(rIdx, input.value);
-                                    input.value = '';
-                                  }
-                                }}
-                                className="px-2.5 py-2 rounded-lg text-xs font-medium bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--color-primary)] hover:text-white hover:border-[var(--color-primary)] transition-colors"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
+                            </div>
+
+                            <div>
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Título da Atividade / Dinâmica</label>
+                              <input
+                                type="text"
+                                value={row.atividade}
+                                onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'atividade', e.target.value)}
+                                placeholder="Ex: Acolhimento, oficina prática, dinâmica de integração..."
+                                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+                              />
                             </div>
                           </div>
 
-                          {/* Equipe / Responsáveis */}
-                          <div className="space-y-2">
-                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                              <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Equipe / Responsáveis</span> {ensureStringArray(row.equipe).length > 0 && <span className="text-[var(--color-primary)]">({ensureStringArray(row.equipe).length})</span>}
-                            </label>
+                          {/* Linha 1.5: Descrição da Atividade + Opção de Importar da Pedagogia */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                                Descrição Detalhada da Atividade
+                              </label>
 
-                            {ensureStringArray(row.equipe).length > 0 && (
-                              <div className="flex flex-wrap gap-1.5">
-                                {ensureStringArray(row.equipe).map((membro, eqIdx) => (
-                                  <span
-                                    key={eqIdx}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20"
-                                  >
-                                    {membro}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveEquipeFromRow(rIdx, eqIdx)}
-                                      className="text-[var(--color-primary)] hover:text-[var(--color-danger)] ml-0.5"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
+                              {planoVinculado && Array.isArray(planoVinculado.atividades) && planoVinculado.atividades.length > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] text-[var(--text-muted)] font-medium">
+                                    Importar da Pedagogia:
                                   </span>
-                                ))}
-                              </div>
-                            )}
+                                  <select
+                                    value=""
+                                    onChange={(e) => {
+                                      const ativ = planoVinculado.atividades.find((a: any) => a.id === e.target.value);
+                                      if (ativ) handleImportarAtividadePedagogica(rIdx, ativ);
+                                    }}
+                                    className="text-[11px] font-semibold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded-lg border border-[var(--color-primary)]/20 cursor-pointer focus:outline-none"
+                                  >
+                                    <option value="">+ Selecionar atividade...</option>
+                                    {planoVinculado.atividades.map((ativ: any, aIdx: number) => (
+                                      <option key={ativ.id || aIdx} value={ativ.id}>
+                                        {aIdx + 1}. {ativ.titulo} {ativ.mediador ? `(${ativ.mediador})` : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+                            </div>
 
-                            <select
-                              value=""
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === '__OUTRO__') {
-                                  const nomeManual = prompt('Digite o nome do responsável ou equipe externa:');
-                                  if (nomeManual && nomeManual.trim()) {
-                                    handleAddEquipeToRow(rIdx, nomeManual.trim());
-                                  }
-                                } else if (val) {
-                                  handleAddEquipeToRow(rIdx, val);
-                                }
-                              }}
-                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
-                            >
-                              <option value="">+ Vincular responsável...</option>
-                              <optgroup label="Voluntários Cadastrados">
-                                {todosVoluntarios
-                                  .filter((v) => !ensureStringArray(row.equipe).includes(v.nome_completo))
-                                  .map((v) => (
-                                    <option key={v.id} value={v.nome_completo}>
-                                      {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
-                                    </option>
+                            <textarea
+                              value={row.descricao || ''}
+                              onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'descricao', e.target.value)}
+                              placeholder="Descreva o passo a passo da dinâmica ou selecione acima para importar da pedagogia..."
+                              rows={2}
+                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-normal resize-none leading-relaxed"
+                            />
+                          </div>
+
+                          {/* Linha 2: Materiais + Equipe */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[var(--border-default)]/40">
+                            {/* Materiais */}
+                            <div className="space-y-2">
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                                <span className="flex items-center gap-1"><Package className="w-3 h-3" /> Materiais / Insumos</span> {ensureStringArray(row.materiais).length > 0 && <span className="text-[var(--color-primary)]">({ensureStringArray(row.materiais).length})</span>}
+                              </label>
+
+                              {ensureStringArray(row.materiais).length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {ensureStringArray(row.materiais).map((mat, mIdx) => (
+                                    <span
+                                      key={mIdx}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)]"
+                                    >
+                                      {mat}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveMaterialFromRow(rIdx, mIdx)}
+                                        className="text-[var(--text-muted)] hover:text-[var(--color-danger)] ml-0.5"
+                                        title="Remover material"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
                                   ))}
-                              </optgroup>
-                              <option value="__OUTRO__">+ Outro (Digitar nome manual...)</option>
-                            </select>
+                                </div>
+                              )}
+
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  id={`input-mat-${row.id}`}
+                                  placeholder="Digitar material e pressionar Enter..."
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleAddMaterialToRow(rIdx, e.currentTarget.value);
+                                      e.currentTarget.value = '';
+                                    }
+                                  }}
+                                  className="flex-1 px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const input = document.getElementById(`input-mat-${row.id}`) as HTMLInputElement;
+                                    if (input && input.value) {
+                                      handleAddMaterialToRow(rIdx, input.value);
+                                      input.value = '';
+                                    }
+                                  }}
+                                  className="px-2.5 py-2 rounded-lg text-xs font-medium bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--color-primary)] hover:text-white hover:border-[var(--color-primary)] transition-colors"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Equipe / Responsáveis */}
+                            <div className="space-y-2">
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                                <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Equipe / Responsáveis</span> {ensureStringArray(row.equipe).length > 0 && <span className="text-[var(--color-primary)]">({ensureStringArray(row.equipe).length})</span>}
+                              </label>
+
+                              {ensureStringArray(row.equipe).length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {ensureStringArray(row.equipe).map((membro, eqIdx) => (
+                                    <span
+                                      key={eqIdx}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20"
+                                    >
+                                      {membro}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveEquipeFromRow(rIdx, eqIdx)}
+                                        className="text-[var(--color-primary)] hover:text-[var(--color-danger)] ml-0.5"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              <select
+                                value=""
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === '__OUTRO__') {
+                                    const nomeManual = prompt('Digite o nome do responsável ou equipe externa:');
+                                    if (nomeManual && nomeManual.trim()) {
+                                      handleAddEquipeToRow(rIdx, nomeManual.trim());
+                                    }
+                                  } else if (val) {
+                                    handleAddEquipeToRow(rIdx, val);
+                                  }
+                                }}
+                                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                              >
+                                <option value="">+ Vincular responsável...</option>
+                                <optgroup label="Voluntários Cadastrados">
+                                  {todosVoluntarios
+                                    .filter((v) => !ensureStringArray(row.equipe).includes(v.nome_completo))
+                                    .map((v) => (
+                                      <option key={v.id} value={v.nome_completo}>
+                                        {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
+                                      </option>
+                                    ))}
+                                </optgroup>
+                                <option value="__OUTRO__">+ Outro (Digitar nome manual...)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Linha 3: Local */}
+                          <div className="pt-3 border-t border-[var(--border-default)]/40">
+                            <label className="text-[11px] font-semibold text-[var(--text-secondary)] flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" /> Local / Sala</label>
+                            <input
+                              type="text"
+                              value={row.local}
+                              onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'local', e.target.value)}
+                              placeholder="Ex: Pátio Principal, Sala 02, Auditório..."
+                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                            />
                           </div>
                         </div>
-
-                        {/* Linha 3: Local */}
-                        <div className="pt-3 border-t border-[var(--border-default)]/40">
-                          <label className="text-[11px] font-semibold text-[var(--text-secondary)] flex items-center gap-1 mb-1"><MapPin className="w-3 h-3" /> Local / Sala</label>
-                          <input
-                            type="text"
-                            value={row.local}
-                            onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'local', e.target.value)}
-                            placeholder="Ex: Pátio Principal, Sala 02, Auditório..."
-                            className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
-                          />
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
-              {/* Vínculo da Ação com as Metas do Projeto (Ao final por ação) */}
-              <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-3">
-                <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
-                  <Target className="w-4 h-4" />
-                  Vínculo desta Ação com as Metas do Projeto
-                </h4>
+              {/* Seção de Vínculo de Metas do Projeto (Múltiplas Metas com Justificativa) */}
+              <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-default)] pb-2.5">
+                  <div>
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                      <Target className="w-4 h-4" />
+                      Vínculo desta Ação com as Metas do Projeto ({programacaoMetasVinculadas.length} selecionada(s))
+                    </h4>
+                    <p className="text-[11px] text-[var(--text-muted)]">
+                      Selecione uma ou mais metas do projeto e explique como esta ação e suas dinâmicas contribuem para o alcance de cada uma
+                    </p>
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                    Meta do Projeto Vinculada
-                  </label>
-                  <select
-                    value={programacaoMetaId}
-                    onChange={(e) => setProgramacaoMetaId(e.target.value)}
-                    className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
-                  >
-                    <option value="">Selecione a meta do projeto...</option>
-                    {todasMetasDisponiveis.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.objetivo ? `[${m.objetivo}] ` : ''}{m.descricao}
-                      </option>
-                    ))}
-                  </select>
+                  {(() => {
+                    const planoVinculado = planosPedagogia.find((p) => p.acao_id === selectedAcaoForProgramacao.id);
+                    if (planoVinculado && Array.isArray(planoVinculado.atividades) && planoVinculado.atividades.some((a: any) => a.meta_id)) {
+                      return (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />}
+                          onClick={() => handleImportarMetasPedagogia(planoVinculado)}
+                        >
+                          Importar Metas da Pedagogia
+                        </Button>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                    Por que / Como esta ação influencia nessa meta?
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={programacaoJustificativaMeta}
-                    onChange={(e) => setProgramacaoJustificativaMeta(e.target.value)}
-                    placeholder="Descreva a relação pedagógica e prática entre esta ação programada e o cumprimento da meta vinculada..."
-                    className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] leading-relaxed"
-                  />
-                </div>
+                {todasMetasDisponiveis.length === 0 ? (
+                  <p className="text-xs text-[var(--text-muted)] italic">
+                    Nenhuma meta cadastrada no Plano de Trabalho deste projeto.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {todasMetasDisponiveis.map((meta) => {
+                      const vinculada = programacaoMetasVinculadas.find((m) => m.meta_id === meta.id);
+                      const isSelected = !!vinculada;
+
+                      return (
+                        <div
+                          key={meta.id}
+                          className={`p-3.5 rounded-xl border transition-all space-y-2.5 ${
+                            isSelected
+                              ? 'bg-[var(--bg-elevated)] border-[var(--color-primary)] shadow-sm'
+                              : 'bg-[var(--bg-elevated)]/40 border-[var(--border-default)] opacity-85 hover:opacity-100'
+                          }`}
+                        >
+                          <label className="flex items-start gap-2.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleMetaVinculada(meta.id)}
+                              className="mt-0.5 w-4 h-4 rounded text-[var(--color-primary)]"
+                            />
+                            <div className="min-w-0 flex-1">
+                              {meta.objetivo && (
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)] block">
+                                  [{meta.objetivo}]
+                                </span>
+                              )}
+                              <span className="font-semibold text-xs text-[var(--text-primary)] block">
+                                {meta.descricao}
+                              </span>
+                            </div>
+                          </label>
+
+                          {isSelected && (
+                            <div className="pl-6 pt-1 border-t border-[var(--border-default)]/60 space-y-1">
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                                Por que / Como esta ação influencia diretamente nesta meta?
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={vinculada?.justificativa || ''}
+                                onChange={(e) => handleUpdateJustificativaMeta(meta.id, e.target.value)}
+                                placeholder="Explique a contribuição das oficinas e dinâmicas desta ação para esta meta específica..."
+                                className="w-full p-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -4724,6 +4864,132 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
         </div>
       )}
 
+      {/* MODAL: EXPORTAR PLANO DE AULA DA PEDAGOGIA EM PAPEL TIMBRADO (VISUALIZADOR INSTITUCIONAL) */}
+      {showPrintPlanoPedagogiaModal && planoPedagogiaToPrint && (
+        <PapelTimbradoModal
+          isOpen={showPrintPlanoPedagogiaModal}
+          onClose={() => {
+            setShowPrintPlanoPedagogiaModal(false);
+            setPlanoPedagogiaToPrint(null);
+          }}
+          tituloDocumento="PLANO DE AULA & DIRETRIZ PEDAGÓGICA"
+          subtituloDocumento={`Projeto Social: ${formData.nome}`}
+        >
+          <div className="space-y-5 text-slate-800 text-xs leading-relaxed">
+            {/* Header com Metadados */}
+            <div className="p-3.5 rounded-xl border border-slate-300 bg-slate-50 space-y-2 text-xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="font-bold text-slate-900 block">Título do Encontro:</span>
+                  <span className="text-slate-700">{planoPedagogiaToPrint.titulo}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-slate-900 block">Data do Encontro:</span>
+                  <span className="text-slate-700">
+                    {planoPedagogiaToPrint.data_oficina
+                      ? new Date(planoPedagogiaToPrint.data_oficina + 'T00:00:00').toLocaleDateString('pt-BR')
+                      : 'Não informada'}
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
+                <div>
+                  <span className="font-bold text-slate-900 block">Educador / Responsável:</span>
+                  <span className="text-slate-700">{planoPedagogiaToPrint.oficineiro}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-slate-900 block">Ação Vinculada no Cronograma:</span>
+                  <span className="text-slate-700">
+                    {acoes.find((a) => a.id === planoPedagogiaToPrint.acao_id)?.nome_acao || selectedAcaoForProgramacao?.nome_acao || 'Encontro Geral'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 1. Descrição Geral / Objetivos */}
+            {planoPedagogiaToPrint.descricao && (
+              <div className="space-y-1">
+                <h4 className="font-bold text-slate-900 uppercase text-[11px] border-b border-slate-300 pb-1">
+                  1. Descrição Geral do Encontro & Proposta Socioeducativa
+                </h4>
+                <p className="text-slate-700 whitespace-pre-wrap">{planoPedagogiaToPrint.descricao}</p>
+              </div>
+            )}
+
+            {/* 2. Grade de Atividades Pedagógicas */}
+            <div className="space-y-2">
+              <h4 className="font-bold text-slate-900 uppercase text-[11px] border-b border-slate-300 pb-1">
+                2. Atividades Pedagógicas, Metodologia e Vinculação às Metas
+              </h4>
+
+              {Array.isArray(planoPedagogiaToPrint.atividades) && planoPedagogiaToPrint.atividades.length > 0 ? (
+                <div className="space-y-3">
+                  {planoPedagogiaToPrint.atividades.map((ativ: any, idx: number) => {
+                    const metaObj = todasMetasDisponiveis.find((m) => m.id === ativ.meta_id);
+                    return (
+                      <div
+                        key={ativ.id || idx}
+                        className="p-3 rounded-lg border border-slate-300 bg-white space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                          <span className="font-bold text-slate-900">
+                            Atividade {idx + 1}: {ativ.titulo}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-600">
+                            Mediador: {ativ.mediador || 'Não informado'}
+                          </span>
+                        </div>
+
+                        {ativ.descricao && (
+                          <div className="text-slate-700 whitespace-pre-wrap text-[11.5px]">
+                            {ativ.descricao}
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-slate-100 text-[11px]">
+                          <div>
+                            <span className="font-bold text-slate-800">Materiais: </span>
+                            <span className="text-slate-600">{ativ.materiais || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-800">Meta Vinculada: </span>
+                            <span className="text-slate-600">{metaObj?.descricao || '—'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-slate-500 italic">Nenhuma atividade detalhada cadastrada.</p>
+              )}
+            </div>
+
+            {/* 3. Observações Gerais */}
+            {planoPedagogiaToPrint.observacoes_gerais && (
+              <div className="space-y-1">
+                <h4 className="font-bold text-slate-900 uppercase text-[11px] border-b border-slate-300 pb-1">
+                  3. Observações Gerais & Avaliação
+                </h4>
+                <p className="text-slate-700 whitespace-pre-wrap">{planoPedagogiaToPrint.observacoes_gerais}</p>
+              </div>
+            )}
+
+            {/* Bloco de Assinatura */}
+            <div className="pt-8 grid grid-cols-2 gap-8 text-center text-xs">
+              <div className="border-t border-slate-400 pt-2 space-y-0.5">
+                <p className="font-bold text-slate-900">{planoPedagogiaToPrint.oficineiro || 'Educador(a) Social'}</p>
+                <p className="text-slate-500 text-[11px]">Responsável pela Mediação Pedagógica</p>
+              </div>
+              <div className="border-t border-slate-400 pt-2 space-y-0.5">
+                <p className="font-bold text-slate-900">Coordenação Pedagógica</p>
+                <p className="text-slate-500 text-[11px]">Instituto Ádapo</p>
+              </div>
+            </div>
+          </div>
+        </PapelTimbradoModal>
+      )}
+
       {/* MODAL: EXPORTAR PROGRAMAÇÃO EM PAPEL TIMBRADO */}
       <PapelTimbradoModal
         isOpen={showPrintProgramacaoModal}
@@ -4733,21 +4999,48 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
       >
         <div className="space-y-5 text-sm text-slate-800 leading-relaxed">
           {/* Metadados da Ação */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs border-b border-slate-200 pb-3 timbrado-avoid-break">
-            <p><strong>Projeto Social:</strong> {formData.nome}</p>
-            <p><strong>Ação:</strong> {acaoToPrint?.nome_acao}</p>
-            <p><strong>Data/Hora:</strong> {acaoToPrint?.data_hora ? new Date(acaoToPrint.data_hora).toLocaleString('pt-BR') : '—'}</p>
-            <p><strong>Responsável:</strong> Equipe de Projetos</p>
-            {acaoToPrint?.meta_id && (
-              <p className="col-span-2 mt-1">
-                <strong>Meta Vinculada:</strong> {todasMetasDisponiveis.find((m) => m.id === acaoToPrint.meta_id)?.descricao || 'Meta do Projeto'}
-              </p>
-            )}
-            {acaoToPrint?.justificativa_meta_acao && (
-              <p className="col-span-2 italic text-slate-600">
-                <strong>Como atua na meta:</strong> {acaoToPrint.justificativa_meta_acao}
-              </p>
-            )}
+          <div className="space-y-2 text-xs border-b border-slate-200 pb-3 timbrado-avoid-break">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1">
+              <p><strong>Projeto Social:</strong> {formData.nome}</p>
+              <p><strong>Ação / Encontro:</strong> {acaoToPrint?.nome_acao}</p>
+              <p><strong>Data/Hora:</strong> {acaoToPrint?.data_hora ? new Date(acaoToPrint.data_hora).toLocaleString('pt-BR') : '—'}</p>
+              <p><strong>Responsável:</strong> Equipe de Projetos</p>
+            </div>
+
+            {/* Metas Vinculadas */}
+            {Array.isArray(acaoToPrint?.metas_vinculadas) && acaoToPrint.metas_vinculadas.length > 0 ? (
+              <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                <p className="font-bold text-slate-900">Metas do Projeto Vinculadas ({acaoToPrint.metas_vinculadas.length}):</p>
+                <div className="space-y-1 pl-2">
+                  {acaoToPrint.metas_vinculadas.map((mv, mvIdx) => {
+                    const metaObj = todasMetasDisponiveis.find((m) => m.id === mv.meta_id);
+                    return (
+                      <div key={mvIdx} className="text-[11.5px] bg-slate-50 p-2 rounded border border-slate-200">
+                        <span className="font-semibold text-slate-900 block">
+                          • {metaObj ? `${metaObj.objetivo ? `[${metaObj.objetivo}] ` : ''}${metaObj.descricao}` : 'Meta do Projeto'}
+                        </span>
+                        {mv.justificativa && (
+                          <span className="text-slate-600 italic block mt-0.5 pl-2">
+                            Impacto: {mv.justificativa}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : acaoToPrint?.meta_id ? (
+              <div className="pt-1 border-t border-slate-100">
+                <p>
+                  <strong>Meta Vinculada:</strong> {todasMetasDisponiveis.find((m) => m.id === acaoToPrint.meta_id)?.descricao || 'Meta do Projeto'}
+                </p>
+                {acaoToPrint.justificativa_meta_acao && (
+                  <p className="italic text-slate-600 mt-0.5">
+                    <strong>Como atua na meta:</strong> {acaoToPrint.justificativa_meta_acao}
+                  </p>
+                )}
+              </div>
+            ) : null}
           </div>
 
           {/* Grade de Atividades */}
@@ -4763,11 +5056,11 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                 <table className="w-full text-xs text-left border-collapse border border-slate-300">
                   <thead className="bg-slate-100 text-slate-900 font-bold border-b border-slate-300">
                     <tr>
-                      <th className="p-2 border border-slate-300 w-28">Horário</th>
+                      <th className="p-2 border border-slate-300 w-24">Horário</th>
                       <th className="p-2 border border-slate-300">Atividade / Dinâmica</th>
                       <th className="p-2 border border-slate-300">Materiais / Insumos</th>
                       <th className="p-2 border border-slate-300">Equipe / Responsáveis</th>
-                      <th className="p-2 border border-slate-300">Local</th>
+                      <th className="p-2 border border-slate-300 w-28">Local</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4778,7 +5071,14 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                       return (
                         <tr key={item.id || idx} className="border-b border-slate-200 timbrado-avoid-break">
                           <td className="p-2 border border-slate-300 font-bold text-slate-900 align-top">{item.horario || '—'}</td>
-                          <td className="p-2 border border-slate-300 font-medium text-slate-800 align-top">{item.atividade || '—'}</td>
+                          <td className="p-2 border border-slate-300 align-top space-y-1">
+                            <span className="font-bold text-slate-800 block">{item.atividade || '—'}</span>
+                            {item.descricao && (
+                              <span className="text-[11px] text-slate-600 whitespace-pre-wrap block leading-relaxed">
+                                {item.descricao}
+                              </span>
+                            )}
+                          </td>
                           <td className="p-2 border border-slate-300 text-slate-700 align-top">
                             {materiaisLinha.length > 0 ? (
                               <ul className="list-disc list-inside space-y-0.5">

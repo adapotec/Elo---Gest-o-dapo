@@ -56,6 +56,48 @@
 
 ## Changelog
 
+### 2026-08-18 — `[RECURSO] & [UX/UI] & [REFACTOR]` 🔴 CRÍTICO
+
+**Centralização da Gestão de Ações em Projetos e Visualização Integral de Metas em Planos de Aula**
+
+1. **Centralização da Gestão de Ações na Equipe de Gestão de Projetos**:
+   - Removida a segmentação/categorização "Pedagogia" vs "Projetos" e o filtro segmented control da barra de ações em `/dashboard/projetos/[id]`.
+   - Todas as ações cadastradas no cronograma agora são tratadas como pertencentes ao fluxo unificado de gestão do projeto.
+   - Removido o botão de redirecionamento para o módulo de Pedagogia nos cards de ação.
+   - Todos os cards agora contam com o botão universal **"Programação"** (com indicador de quantidade de dinâmicas programadas) e opção de exportação em PDF timbrado.
+   - Ações que possuem plano de aula vinculado na pedagogia recebem badge informativa sutil `Plano de Aula`.
+
+2. **Visualização Completa e Sem Truncamento de Metas nos Planos de Aula (`PedagogiaPlanosAula.tsx`)**:
+   - Substituído o elemento `<select>` nativo do HTML (que cortava as descrições das metas com reticências) por um seletor visual customizado com dropdown expansível.
+   - Tanto no estado fechado quanto nas opções disponíveis para escolha, o texto completo de cada meta é exibido em múltiplas linhas (`whitespace-normal`), permitindo leitura 100% integral dos objetivos pactuados.
+
+---
+
+### 2026-08-18 — `[RECURSO] & [BUGFIX] & [INTEGRAÇÃO]` 🔴 CRÍTICO
+
+**Simplificação de Cadastro de Ações, Integração de Planos de Aula Pedagógicos e Sincronização com Programação de Projetos**
+
+1. **Simplificação do Modal de Cadastro de Ação no Cronograma (Fix Erro HTTP 400)**:
+   - Form em `/dashboard/projetos/[id]` reduzido estritamente para 3 campos: **Nome da Ação**, **Data e Horário** e **Descrição**.
+   - Removido o envio indevido de `meta_id` e `justificativa_meta_acao` no payload raiz do insert REST da tabela `acoes_projeto` (que causava o erro 400 Bad Request devido à ausência dessas colunas na tabela).
+   - Validação executada via MCP/Node.js confirmando retorno `201 Created` no Supabase.
+
+2. **Reestruturação Completa de Planos de Aula no Módulo de Pedagogia (`PedagogiaPlanosAula.tsx`)**:
+   - Vínculo direto e dinâmico com as ações cadastradas em `acoes_projeto`.
+   - Estrutura completa de atividades socioeducativas: **Título**, **Mediador / Oficineiro** (seletor de voluntários cadastrados + opção personalizada), **Descrição em texto corrido**, **Materiais Necessários** e **Meta do Projeto Vinculada**.
+   - Campo de Observações Gerais e Avaliação do Encontro.
+   - Exportação e visualização em **Papel Timbrado Oficial do Instituto Ádapo** sem nenhum emoji (apenas ícones Lucide).
+
+3. **Sincronização de Pedagogia com a Grade de Programação de Projetos**:
+   - Botão **"Visualizar Plano de Aula"** posicionado na barra da grade de programação, abrindo o modal com o **Papel Timbrado do Plano de Aula** da pedagogia vinculado àquela ação.
+   - Em cada linha da grade: inclusão de campo de descrição detalhada e menu **"Importar da Pedagogia"** que preenche automaticamente título, descrição, materiais e mediadores.
+   - **Vínculo Múltiplo de Metas**: O gestor agora pode vincular múltiplas metas a uma ação, com campos individuais de justificativa e botão **"Importar Metas da Pedagogia"** para pré-carregar as metas trabalhadas nas atividades pedagógicas.
+
+4. **Correção de Leitura de Metas**:
+   - `Pedagogia` e `Projetos` padronizados para resolver metas priorizando `descricao_meta || descricao || texto`.
+
+---
+
 ### 2026-08-18 — `[RECURSO] & [MIGRAÇÃO] & [BUGFIX]` 🔴 CRÍTICO
 
 **Módulo Pedagógico Unificado, Importação de Beneficiários (Crianças), RLS Fix & Filtros Avançados**
