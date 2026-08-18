@@ -553,7 +553,7 @@ CREATE POLICY "Acesso total a planos_aula para autenticados" ON public.planos_au
 CREATE POLICY "Acesso total a programacoes_acao para autenticados" ON public.programacoes_acao FOR ALL TO authenticated USING (true);
 
 -- --------------------------------------------------------
--- 23. ACOMPANHAMENTO SOCIOEMOCIONAL & PSICOSSOCIAL
+-- 23. ACOMPANHAMENTO SOCIOEMOCIONAL (4 EIXOS ÁDAPO)
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.acompanhamento_socioemocional (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -561,7 +561,22 @@ CREATE TABLE IF NOT EXISTS public.acompanhamento_socioemocional (
     projeto_id UUID NOT NULL REFERENCES public.projetos_sociais(id) ON DELETE CASCADE,
     data_registro DATE NOT NULL DEFAULT CURRENT_DATE,
     mes_referencia TEXT,
+    responsavel_preenchimento TEXT,
+    idade_referencia INTEGER,
     tipo_registro TEXT DEFAULT 'monitoramento_mensal',
+    eixo1_expressao_opinioes TEXT,
+    eixo1_enfrentamento_desafios TEXT,
+    eixo1_autoimagem TEXT,
+    eixo2_resolucao_conflitos TEXT,
+    eixo2_trabalho_equipe TEXT,
+    eixo2_cuidado_espaco TEXT,
+    eixo3_respeito_tempo_ritmo TEXT,
+    eixo3_escuta_ativa TEXT,
+    eixo3_apoio_mutuo TEXT,
+    eixo4_evolucao_observada TEXT,
+    eixo4_pontos_atencao TEXT,
+    eixo4_intervencao_proposta TEXT,
+    ficha_detalhada JSONB DEFAULT '{}'::jsonb,
     autoestima_expressao TEXT,
     regulacao_emocional TEXT,
     vinculos_afetivos TEXT,
@@ -641,6 +656,50 @@ CREATE TABLE IF NOT EXISTS public.parceiros_projeto (
 
 ALTER TABLE public.parceiros_projeto ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Acesso total parceiros_projeto para autenticados" ON public.parceiros_projeto FOR ALL TO authenticated USING (true);
+
+-- --------------------------------------------------------
+-- 27. FREQUÊNCIAS POR AÇÃO / ENCONTRO (CHAMADA)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.frequencias_acao (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    acao_id UUID NOT NULL REFERENCES public.acoes_projeto(id) ON DELETE CASCADE,
+    projeto_id UUID NOT NULL REFERENCES public.projetos_sociais(id) ON DELETE CASCADE,
+    beneficiario_id UUID NOT NULL REFERENCES public.beneficiarios(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'presente' CHECK (status IN ('presente', 'falta', 'justificada')),
+    justificativa TEXT,
+    observacao TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_acao_beneficiario UNIQUE (acao_id, beneficiario_id)
+);
+
+ALTER TABLE public.frequencias_acao ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Acesso total frequencias_acao para autenticados" ON public.frequencias_acao FOR ALL TO authenticated USING (true);
+
+-- --------------------------------------------------------
+-- 28. PLANOS DE OFICINA (CLUBE DAS PIPAS)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.planos_oficina (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    projeto_id UUID NOT NULL REFERENCES public.projetos_sociais(id) ON DELETE CASCADE,
+    acao_id UUID REFERENCES public.acoes_projeto(id) ON DELETE SET NULL,
+    titulo TEXT NOT NULL,
+    oficineiro TEXT NOT NULL,
+    data_oficina DATE DEFAULT CURRENT_DATE,
+    descricao TEXT,
+    objetivos TEXT,
+    meta_projeto_id TEXT,
+    atividades_dirigidas TEXT,
+    brincadeiras_livres TEXT,
+    recursos_materiais TEXT,
+    avaliacao_encontro TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+ALTER TABLE public.planos_oficina ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Acesso total planos_oficina para autenticados" ON public.planos_oficina FOR ALL TO authenticated USING (true);
 
 
 
