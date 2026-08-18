@@ -507,18 +507,18 @@ CREATE POLICY "Atualização própria de profile" ON public.profiles FOR UPDATE 
 -- Permissões operacionais internas
 CREATE POLICY "Acesso total beneficiarios" ON public.beneficiarios FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso total voluntarios" ON public.voluntarios FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total projetos" ON public.projetos_sociais FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total acoes_projeto" ON public.acoes_projeto FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total inscricoes" ON public.inscricoes FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total alocacoes" ON public.alocacoes_voluntarios FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total fornecedores" ON public.fornecedores FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total estoque_itens" ON public.estoque_itens FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total estoque_movimentacoes" ON public.estoque_movimentacoes FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total programas_captacao" ON public.programas_captacao FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total doacoes" ON public.doacoes FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total relatorios_monitoramento" ON public.relatorios_monitoramento FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total dados_instituto" ON public.dados_instituto FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Acesso total requisicoes_material" ON public.requisicoes_material FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total projetos" ON public.projetos_sociais FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total acoes_projeto" ON public.acoes_projeto FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total inscricoes" ON public.inscricoes FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total alocacoes" ON public.alocacoes_voluntarios FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total fornecedores" ON public.fornecedores FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total estoque_itens" ON public.estoque_itens FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total estoque_movimentacoes" ON public.estoque_movimentacoes FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total programas_captacao" ON public.programas_captacao FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total doacoes" ON public.doacoes FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total relatorios_monitoramento" ON public.relatorios_monitoramento FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total dados_instituto" ON public.dados_instituto FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total requisicoes_material" ON public.requisicoes_material FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso total recessos" ON public.recessos_voluntarios FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "Acesso total config_recesso" ON public.configuracoes_recesso FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 
@@ -567,8 +567,8 @@ CREATE TABLE IF NOT EXISTS public.programacoes_acao (
 ALTER TABLE public.planos_aula ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.programacoes_acao ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Acesso total a planos_aula para autenticados" ON public.planos_aula FOR ALL TO authenticated USING (true);
-CREATE POLICY "Acesso total a programacoes_acao para autenticados" ON public.programacoes_acao FOR ALL TO authenticated USING (true);
+CREATE POLICY "Acesso total a planos_aula" ON public.planos_aula FOR ALL TO anon, authenticated USING (true);
+CREATE POLICY "Acesso total a programacoes_acao" ON public.programacoes_acao FOR ALL TO anon, authenticated USING (true);
 
 -- --------------------------------------------------------
 -- 23. ACOMPANHAMENTO SOCIOEMOCIONAL (4 EIXOS ÁDAPO)
@@ -673,7 +673,7 @@ CREATE TABLE IF NOT EXISTS public.parceiros_projeto (
 );
 
 ALTER TABLE public.parceiros_projeto ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Acesso total parceiros_projeto para autenticados" ON public.parceiros_projeto FOR ALL TO authenticated USING (true);
+CREATE POLICY "Acesso total parceiros_projeto" ON public.parceiros_projeto FOR ALL TO anon, authenticated USING (true);
 
 -- --------------------------------------------------------
 -- 27. FREQUÊNCIAS POR AÇÃO / ENCONTRO (CHAMADA)
@@ -692,7 +692,7 @@ CREATE TABLE IF NOT EXISTS public.frequencias_acao (
 );
 
 ALTER TABLE public.frequencias_acao ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Acesso total frequencias_acao para autenticados" ON public.frequencias_acao FOR ALL TO authenticated USING (true);
+CREATE POLICY "Acesso total frequencias_acao" ON public.frequencias_acao FOR ALL TO anon, authenticated USING (true);
 
 -- --------------------------------------------------------
 -- 28. PLANOS DE OFICINA (CLUBE DAS PIPAS)
@@ -717,7 +717,7 @@ CREATE TABLE IF NOT EXISTS public.planos_oficina (
 );
 
 ALTER TABLE public.planos_oficina ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Acesso total planos_oficina para autenticados" ON public.planos_oficina FOR ALL TO authenticated USING (true);
+CREATE POLICY "Acesso total planos_oficina" ON public.planos_oficina FOR ALL TO anon, authenticated USING (true);
 
 
 

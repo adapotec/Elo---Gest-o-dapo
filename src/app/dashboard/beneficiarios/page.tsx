@@ -81,47 +81,96 @@ export default function BeneficiariosPage() {
     return matchNome || matchComunidade || matchResp || matchCpf;
   });
 
+  const getResponsavelInfo = (item: Beneficiario) => {
+    if (item.nome_responsavel && item.nome_responsavel !== 'Não informado') {
+      return {
+        nome: item.nome_responsavel,
+        telefone: item.telefone_responsavel || item.telefone || 'Sem contato',
+      };
+    }
+    if (item.observacoes) {
+      const matchResp = item.observacoes.match(/Responsável:\s*([^|]+)/i);
+      const matchTel = item.observacoes.match(/Tel:\s*([^|]+)/i);
+      if (matchResp && matchResp[1].trim() !== 'Não informado') {
+        return {
+          nome: matchResp[1].trim(),
+          telefone: matchTel ? matchTel[1].trim() : (item.telefone || 'Sem contato'),
+        };
+      }
+    }
+    return {
+      nome: 'Não informado',
+      telefone: item.telefone && item.telefone !== '98900000000' ? item.telefone : 'Sem contato',
+    };
+  };
+
+  const getGeneroInfo = (item: Beneficiario) => {
+    if (item.genero && item.genero !== 'Não informado') return item.genero;
+    if (item.observacoes) {
+      const match = item.observacoes.match(/Gênero:\s*([^|]+)/i);
+      if (match && match[1].trim() !== 'Não informado') return match[1].trim();
+    }
+    return null;
+  };
+
   const columns: Column<Beneficiario>[] = [
     {
       key: 'nome_completo',
       header: 'Criança / Beneficiário',
       render: (item) => {
-        const idade = calcularIdade(item.data_nascimento);
+        const genero = getGeneroInfo(item);
         return (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[var(--color-primary)]/15 text-[var(--color-primary)] font-bold flex items-center justify-center text-xs shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-[var(--color-primary)]/15 text-[var(--color-primary)] font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
               {item.nome_completo.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
               <p className="font-semibold text-xs text-[var(--text-primary)] truncate">{item.nome_completo}</p>
-              <p className="text-[11px] text-[var(--text-muted)]">
-                {idade !== null ? `${idade} anos` : 'Idade não inf.'} {item.genero ? `• ${item.genero}` : ''}
-              </p>
+              {genero && (
+                <p className="text-[10px] text-[var(--text-muted)]">{genero}</p>
+              )}
             </div>
           </div>
         );
       },
     },
     {
-      key: 'comunidade',
-      header: 'Comunidade / Território',
-      render: (item) => (
-        <span className="text-xs font-medium text-[var(--text-secondary)]">
-          {item.comunidade || item.bairro || 'São Luís/MA'}
-        </span>
-      ),
+      key: 'data_nascimento',
+      header: 'Idade',
+      render: (item) => {
+        const idade = calcularIdade(item.data_nascimento);
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)]">
+            {idade !== null ? `${idade} anos` : '—'}
+          </span>
+        );
+      },
     },
     {
       key: 'nome_responsavel',
       header: 'Responsável & Contato',
+      render: (item) => {
+        const resp = getResponsavelInfo(item);
+        return (
+          <div className="text-xs min-w-0 space-y-0.5">
+            <p className="font-medium text-[var(--text-primary)] truncate">
+              {resp.nome}
+            </p>
+            <p className="text-[11px] font-mono-data text-[var(--color-primary)] font-semibold flex items-center gap-1">
+              <Phone className="w-3 h-3 shrink-0 opacity-70" />
+              {resp.telefone}
+            </p>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'comunidade',
+      header: 'Região / Comunidade',
       render: (item) => (
-        <div className="text-xs min-w-0">
-          <p className="font-medium text-[var(--text-primary)] truncate">
-            {item.nome_responsavel || '—'}
-          </p>
-          <p className="text-[11px] font-mono-data text-[var(--text-muted)]">
-            {item.telefone_responsavel || item.telefone || 'Sem contato'}
-          </p>
+        <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+          <MapPin className="w-3 h-3 text-[var(--color-primary)] shrink-0 opacity-75" />
+          <span className="font-medium">{item.comunidade || item.bairro || 'São Luís/MA'}</span>
         </div>
       ),
     },
@@ -262,7 +311,7 @@ export default function BeneficiariosPage() {
                 <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)]">
                   <span className="text-[10px] text-[var(--text-muted)] block">Gênero</span>
                   <span className="font-semibold text-[var(--text-primary)]">
-                    {selectedBeneficiario.genero || 'Não informado'}
+                    {getGeneroInfo(selectedBeneficiario) || 'Não informado'}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)]">
@@ -281,14 +330,21 @@ export default function BeneficiariosPage() {
                 Responsável Legal
               </h4>
               <div className="p-3 rounded-lg bg-[var(--bg-secondary)] space-y-1">
-                <p className="font-semibold text-[var(--text-primary)]">
-                  {selectedBeneficiario.nome_responsavel || 'Nome não informado'}
-                  {selectedBeneficiario.parentesco_responsavel ? ` (${selectedBeneficiario.parentesco_responsavel})` : ''}
-                </p>
-                <p className="text-[11px] font-mono-data text-[var(--text-muted)] flex items-center gap-1">
-                  <Phone className="w-3 h-3 text-[var(--color-primary)]" />
-                  {selectedBeneficiario.telefone_responsavel || selectedBeneficiario.telefone || 'Sem telefone'}
-                </p>
+                {(() => {
+                  const resp = getResponsavelInfo(selectedBeneficiario);
+                  return (
+                    <>
+                      <p className="font-semibold text-[var(--text-primary)]">
+                        {resp.nome}
+                        {selectedBeneficiario.parentesco_responsavel ? ` (${selectedBeneficiario.parentesco_responsavel})` : ''}
+                      </p>
+                      <p className="text-[11px] font-mono-data text-[var(--color-primary)] font-semibold flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-[var(--color-primary)]" />
+                        {resp.telefone}
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
