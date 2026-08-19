@@ -473,17 +473,21 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   const [showPrintMroscModal, setShowPrintMroscModal] = useState(false);
   const [relatorioToPrint, setRelatorioToPrint] = useState<RelatorioMonitoramento | null>(null);
 
-  // Metas disponíveis normalizadas para vinculações e avaliações
-  const todasMetasDisponiveis = objetivosEspecificos.flatMap((obj) =>
-    (obj.metas || []).map((m) => ({
-      id: m.id,
-      descricao: m.descricao_meta,
-      objetivo: obj.titulo_objetivo,
-      procedimento_coleta: m.procedimento_coleta,
-      forma_coleta: m.forma_coleta,
-      responsavel_coleta: m.responsavel_coleta,
-    }))
-  );
+  // Metas disponíveis normalizadas e deduplicadas para vinculações e avaliações
+  const todasMetasDisponiveis = objetivosEspecificos
+    .flatMap((obj, objIdx) =>
+      (obj.metas || []).map((m, mIdx) => ({
+        id: m.id || `meta-${objIdx}-${mIdx}`,
+        descricao: m.descricao_meta || obj.titulo_objetivo || 'Meta do Projeto',
+        objetivo: obj.titulo_objetivo || `Objetivo ${objIdx + 1}`,
+        procedimento_coleta: m.procedimento_coleta,
+        forma_coleta: m.forma_coleta,
+        responsavel_coleta: m.responsavel_coleta,
+      }))
+    )
+    .filter((meta, index, self) =>
+      index === self.findIndex((t) => (meta.id && t.id === meta.id) || (t.descricao && meta.descricao && t.descricao.trim().toLowerCase() === meta.descricao.trim().toLowerCase()))
+    );
 
   // Filtros de Ações do Cronograma (Default: Mês Vigente)
   const currentMonthStr = new Date().toISOString().slice(0, 7); // Ex: "2026-08"
@@ -1356,7 +1360,11 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
         }));
       }
     }
-    setProgramacaoMetasVinculadas(metasIniciais);
+    // Deduplicar metas iniciais por meta_id
+    const metasIniciaisUnicas = metasIniciais.filter(
+      (m, idx, self) => idx === self.findIndex((t) => t.meta_id === m.meta_id)
+    );
+    setProgramacaoMetasVinculadas(metasIniciaisUnicas);
 
     const existing = acao.programacao_itens;
     if (!existing || existing.length === 0) {
@@ -5434,33 +5442,36 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                   : 'bg-[var(--bg-elevated)]/40 border-[var(--border-default)] hover:border-[var(--border-default)]/80'
                               }`}
                             >
-                              <label className="flex items-center gap-2.5 p-2.5 cursor-pointer">
+                              <label className="flex items-start gap-2.5 p-3 cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => handleToggleMetaVinculada(meta.id)}
-                                  className="w-3.5 h-3.5 rounded text-[var(--color-primary)] shrink-0"
+                                  className="mt-0.5 w-4 h-4 rounded text-[var(--color-primary)] shrink-0 cursor-pointer"
                                 />
-                                <div className="min-w-0 flex-1 flex items-center gap-2">
-                                  {meta.objetivo && (
-                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded shrink-0">
-                                      {meta.objetivo}
+                                <div className="min-w-0 flex-1 space-y-0.5">
+                                  {meta.objetivo && meta.objetivo !== meta.descricao && (
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)] block">
+                                      {meta.objetivo.length > 50 ? `${meta.objetivo.slice(0, 48)}...` : meta.objetivo}
                                     </span>
                                   )}
-                                  <span className={`text-xs truncate ${isSelected ? 'font-semibold text-[var(--text-primary)]' : 'font-medium text-[var(--text-secondary)]'}`}>
+                                  <p className={`text-xs leading-relaxed ${isSelected ? 'font-semibold text-[var(--text-primary)]' : 'font-normal text-[var(--text-secondary)]'}`}>
                                     {meta.descricao}
-                                  </span>
+                                  </p>
                                 </div>
                               </label>
 
                               {isSelected && (
-                                <div className="px-2.5 pb-2.5 pt-0">
+                                <div className="px-3 pb-3 pt-1 border-t border-[var(--border-default)]/40 space-y-1 mt-0.5">
+                                  <label className="text-[11px] font-medium text-[var(--text-secondary)] block">
+                                    Impacto / Contribuição desta ação para a meta:
+                                  </label>
                                   <textarea
-                                    rows={1}
+                                    rows={2}
                                     value={vinculada?.justificativa || ''}
                                     onChange={(e) => handleUpdateJustificativaMeta(meta.id, e.target.value)}
-                                    placeholder="Como esta ação contribui para esta meta? (opcional)"
-                                    className="w-full p-2 rounded-lg text-[11px] bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors resize-none"
+                                    placeholder="Explique como as atividades e dinâmicas desta ação contribuem para esta meta..."
+                                    className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors resize-none leading-relaxed"
                                   />
                                 </div>
                               )}
