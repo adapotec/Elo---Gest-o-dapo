@@ -25,7 +25,7 @@ const BG_STYLE_STORAGE_KEY = 'elo-bg-style';
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<ThemeMode>('light');
   const [palette, setPaletteState] = useState<ThemePalette>('laranja');
-  const [bgStyle, setBgStyleState] = useState<BgStyleMode>('sutil');
+  const [bgStyle, setBgStyleState] = useState<BgStyleMode>('imersivo');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const initialPalette = savedPalette || 'laranja';
 
     const savedBgStyle = localStorage.getItem(BG_STYLE_STORAGE_KEY) as BgStyleMode | null;
-    const initialBgStyle = savedBgStyle || 'sutil';
+    const initialBgStyle = savedBgStyle || 'imersivo';
 
     setTheme(initialTheme);
     setPaletteState(initialPalette);
@@ -64,7 +64,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             // Se a preferência contiver ambos separados por vírgula (ex: "laranja,imersivo")
             const parts = profile.theme_preference.split(',');
             const userPalette = (parts[0] || 'laranja') as ThemePalette;
-            const userBgStyle = (parts[1] || 'sutil') as BgStyleMode;
+            const userBgStyle = (parts[1] || 'imersivo') as BgStyleMode;
 
             setPaletteState(userPalette);
             setBgStyleState(userBgStyle);

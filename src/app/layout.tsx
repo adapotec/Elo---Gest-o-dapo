@@ -42,6 +42,8 @@ export default function RootLayout({
     <html
       lang="pt-BR"
       data-theme="light"
+      data-palette="laranja"
+      data-bg-style="imersivo"
       className={`${inter.variable} ${plusJakartaSans.variable} ${ibmPlexMono.variable}`}
       suppressHydrationWarning
     >

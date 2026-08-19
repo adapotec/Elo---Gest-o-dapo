@@ -18,6 +18,7 @@
 ### R1 — Design System
 - Cor primária: `#F2632D` (laranja institucional). **Nunca usar roxo como cor primária de ação.**
 - Regra 60-30-10: Fundo claro → Estrutura → Ação (laranja)
+- **Estilo de Fundo Padrão**: **Estilo Trello (`data-bg-style="imersivo"`)** é o tema inicial padrão do sistema para novos usuários/sessões, com fundo vibrante e cards em relevo.
 - Ícones: **Lucide React** exclusivamente. Nunca usar emojis em controles de UI.
 - Fontes: Inter (corpo), Plus Jakarta Sans (display), IBM Plex Mono (dados)
 - Dark mode obrigatório via `data-theme="dark"` com tokens semânticos
