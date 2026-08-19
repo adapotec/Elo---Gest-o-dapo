@@ -1343,28 +1343,52 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
     setProgramacaoMetaId(acao.meta_id || '');
     setProgramacaoJustificativaMeta(acao.justificativa_meta_acao || '');
 
-    // Inicializar metas vinculadas (múltiplas)
-    let metasIniciais: { meta_id: string; justificativa: string }[] = [];
-    if (Array.isArray(acao.metas_vinculadas) && acao.metas_vinculadas.length > 0) {
-      metasIniciais = acao.metas_vinculadas;
-    } else if (acao.meta_id) {
-      metasIniciais = [{ meta_id: acao.meta_id, justificativa: acao.justificativa_meta_acao || '' }];
-    } else {
-      // Verificar se há plano de aula da pedagogia com metas nas atividades
-      const planoVinculado = planosPedagogia.find((p) => p.acao_id === acao.id);
-      if (planoVinculado && Array.isArray(planoVinculado.atividades)) {
-        const metasEncontradas = Array.from(new Set(planoVinculado.atividades.map((a: any) => a.meta_id).filter(Boolean))) as string[];
-        metasIniciais = metasEncontradas.map((mId) => ({
-          meta_id: mId,
-          justificativa: `Meta trabalhada nas atividades pedagógicas do encontro "${planoVinculado.titulo}".`,
-        }));
+    // 1. Extrair todas as metas cadastradas pela pedagogia no plano de aula desta ação
+    const planoVinculado = planosPedagogia.find((p) => p.acao_id === acao.id);
+    const metasPedagogiaIds: string[] = [];
+    if (planoVinculado) {
+      if (planoVinculado.meta_projeto_id) {
+        metasPedagogiaIds.push(planoVinculado.meta_projeto_id);
+      }
+      if (Array.isArray(planoVinculado.atividades)) {
+        planoVinculado.atividades.forEach((a: any) => {
+          if (a.meta_id) metasPedagogiaIds.push(a.meta_id);
+        });
       }
     }
+    const metasPedagogiaUnicas = Array.from(new Set(metasPedagogiaIds.filter(Boolean)));
+
+    // 2. Inicializar metas vinculadas pré-selecionando as metas da pedagogia
+    let metasIniciais: { meta_id: string; justificativa: string }[] = [];
+    if (Array.isArray(acao.metas_vinculadas) && acao.metas_vinculadas.length > 0) {
+      metasIniciais = [...acao.metas_vinculadas];
+      metasPedagogiaUnicas.forEach((mId) => {
+        if (!metasIniciais.some((m) => m.meta_id === mId)) {
+          metasIniciais.push({
+            meta_id: mId,
+            justificativa: planoVinculado?.titulo
+              ? `Meta vinculada às atividades pedagógicas do encontro "${planoVinculado.titulo}".`
+              : '',
+          });
+        }
+      });
+    } else if (metasPedagogiaUnicas.length > 0) {
+      metasIniciais = metasPedagogiaUnicas.map((mId) => ({
+        meta_id: mId,
+        justificativa: planoVinculado?.titulo
+          ? `Meta vinculada às atividades pedagógicas do encontro "${planoVinculado.titulo}".`
+          : '',
+      }));
+    } else if (acao.meta_id) {
+      metasIniciais = [{ meta_id: acao.meta_id, justificativa: acao.justificativa_meta_acao || '' }];
+    }
+
     // Deduplicar metas iniciais por meta_id
     const metasIniciaisUnicas = metasIniciais.filter(
       (m, idx, self) => idx === self.findIndex((t) => t.meta_id === m.meta_id)
     );
     setProgramacaoMetasVinculadas(metasIniciaisUnicas);
+    setShowMetasSection(metasIniciaisUnicas.length > 0);
 
     const existing = acao.programacao_itens;
     if (!existing || existing.length === 0) {
