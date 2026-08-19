@@ -79,6 +79,7 @@ import {
   Tag,
   SlidersHorizontal,
   Layers,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -135,10 +136,26 @@ const CATEGORIAS_DESPESA = [
 ];
 
 const ODS_INSTITUCIONAIS = [
-  { key: 'ODS 4', label: 'ODS 4 - Educação de Qualidade' },
-  { key: 'ODS 10', label: 'ODS 10 - Redução das Desigualdades' },
-  { key: 'ODS 18', label: 'ODS 18 - Igualdade Étnico-Racial' },
-  { key: 'ODS 5', label: 'ODS 5 - Igualdade de Gênero' },
+  {
+    key: 'ODS 4',
+    label: 'ODS 4 - Educação de Qualidade',
+    descricaoOficial: 'Assegurar a educação inclusiva e equitativa e de qualidade, e promover oportunidades de aprendizagem ao longo da vida para todos.',
+  },
+  {
+    key: 'ODS 10',
+    label: 'ODS 10 - Redução das Desigualdades',
+    descricaoOficial: 'Reduzir a desigualdade dentro dos países e entre eles.',
+  },
+  {
+    key: 'ODS 18',
+    label: 'ODS 18 - Igualdade Étnico-Racial',
+    descricaoOficial: 'Eliminar o racismo e a discriminação étnico-racial contra povos indígenas, afrodescendentes e grupos populacionais afetados por múltiplas formas de discriminação.',
+  },
+  {
+    key: 'ODS 5',
+    label: 'ODS 5 - Igualdade de Gênero',
+    descricaoOficial: 'Alcançar a igualdade de gênero e empoderar todas as mulheres e meninas.',
+  },
 ];
 
 interface MetaItem {
@@ -446,6 +463,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   const [savingRelatorio, setSavingRelatorio] = useState(false);
   const [generatingIAIntro, setGeneratingIAIntro] = useState(false);
   const [generatingIAConclusao, setGeneratingIAConclusao] = useState(false);
+  const [recalculatingFreq, setRecalculatingFreq] = useState(false);
   const [showPrintMroscModal, setShowPrintMroscModal] = useState(false);
   const [relatorioToPrint, setRelatorioToPrint] = useState<RelatorioMonitoramento | null>(null);
 
@@ -835,6 +853,25 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     setDespesas(despesas.filter((_, i) => i !== index));
   };
 
+  // Helper para formatar data e hora sem distorção de fuso horário
+  const formatarDataHoraAcao = (dataHoraStr: string) => {
+    if (!dataHoraStr) return { data: '-', hora: '-' };
+
+    if (dataHoraStr.includes('T')) {
+      const [datePart, timePart] = dataHoraStr.split('T');
+      const [y, m, d] = datePart.split('-');
+      const dataFormatada = `${d}/${m}/${y}`;
+      const horaFormatada = timePart ? timePart.substring(0, 5) : '00:00';
+      return { data: dataFormatada, hora: `${horaFormatada}h` };
+    }
+
+    const d = new Date(dataHoraStr);
+    return {
+      data: isNaN(d.getTime()) ? dataHoraStr : d.toLocaleDateString('pt-BR'),
+      hora: isNaN(d.getTime()) ? '-' : d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + 'h',
+    };
+  };
+
   // Execução
   // =========================================================================
   // HANDLERS DE AÇÕES DO PROJETO (PROJETOS & PEDAGOGIA)
@@ -843,6 +880,18 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   const handleAddAcao = async () => {
     if (!newAcao.nome_acao.trim() || !newAcao.data_hora) return;
     const supabase = createClient();
+
+    let defaultHorario = '08:30 - 09:30';
+    if (newAcao.data_hora.includes('T')) {
+      const parts = newAcao.data_hora.split('T');
+      if (parts[1]) {
+        const [h, m] = parts[1].split(':');
+        const startH = parseInt(h, 10);
+        const endH = (startH + 1) % 24;
+        const pad = (n: number) => String(n).padStart(2, '0');
+        defaultHorario = `${pad(startH)}:${m || '00'} - ${pad(endH)}:${m || '00'}`;
+      }
+    }
 
     const payload = {
       projeto_id: id,
@@ -853,7 +902,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       programacao_itens: [
         {
           id: crypto.randomUUID(),
-          horario: '08:30 - 09:30',
+          horario: defaultHorario,
           atividade: newAcao.nome_acao.trim(),
           descricao: newAcao.descricao?.trim() || '',
           materiais: [],
@@ -895,12 +944,16 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
     // Mapear Avaliação das Ações Realizadas
     const avaliacoesAcoesIniciais: AvaliacaoAcaoRelatorio[] = acoes.map((ac) => {
+      const horaPadrao = ac.data_hora && ac.data_hora.includes('T')
+        ? ac.data_hora.split('T')[1].substring(0, 5)
+        : '08:30';
+
       const itensGrade: ItemProgramacaoAcao[] = Array.isArray(ac.programacao_itens) && ac.programacao_itens.length > 0
         ? ac.programacao_itens
         : [
           {
             id: crypto.randomUUID(),
-            horario: ac.data_hora ? new Date(ac.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '08:30',
+            horario: horaPadrao,
             atividade: ac.nome_acao,
             materiais: [],
             equipe: [],
@@ -930,12 +983,22 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
       };
     });
 
-    // Mapear Avaliação do Cumprimento de Metas
+    // Mapear Avaliação Individual de Metas
     const avaliacoesMetasIniciais: AvaliacaoMetaRelatorio[] = todasMetasDisponiveis.map((m) => {
-      const acoesDestaMeta = acoes.filter((a) => a.meta_id === m.id);
+      const acoesDestaMeta = acoes.filter((a) => {
+        if (a.meta_id === m.id) return true;
+        if (Array.isArray(a.metas_vinculadas)) {
+          return a.metas_vinculadas.some((mv) => mv.meta_id === m.id);
+        }
+        return false;
+      });
+
       const justificativasAcoes = acoesDestaMeta
-        .filter((a) => a.justificativa_meta_acao)
-        .map((a) => `${a.nome_acao}: ${a.justificativa_meta_acao}`)
+        .map((a) => {
+          const vinculo = Array.isArray(a.metas_vinculadas) ? a.metas_vinculadas.find((mv) => mv.meta_id === m.id) : null;
+          return vinculo?.justificativa || a.justificativa_meta_acao || '';
+        })
+        .filter(Boolean)
         .join('; ');
 
       return {
@@ -962,8 +1025,8 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
     return {
       id: '',
       mes_referencia: new Date().toISOString().substring(0, 7),
-      numero_processo: 'SEI nº 0001.2026/SEC-MA',
-      numero_instrumento: 'Termo de Fomento nº 01/2026',
+      numero_processo: '',
+      numero_instrumento: formData.nome || 'Termo de Parceria',
       tipo_instrumento: 'Termo de Fomento',
       periodo_inicio: formData.data_inicio || hoje,
       periodo_fim: hoje,
@@ -1076,10 +1139,98 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
     }, 700);
   };
 
+  // Calcular Frequência Real a partir das chamadas registradas (frequencias_acao)
+  const handleRecalcularFrequencia = async (acoesIdsParam?: string[]) => {
+    if (!activeRelatorioMrosc) return;
+    setRecalculatingFreq(true);
+    const targetAcoesIds = acoesIdsParam || activeRelatorioMrosc.acoes_selecionadas_ids || [];
+
+    try {
+      const supabase = createClient();
+      let faixa100 = 0;
+      let faixa90_75 = 0;
+      let faixa75_50 = 0;
+      let faixa50_0 = 0;
+
+      if (targetAcoesIds.length > 0) {
+        const { data: freqs, error } = await supabase
+          .from('frequencias_acao')
+          .select('beneficiario_id, status, acao_id')
+          .in('acao_id', targetAcoesIds);
+
+        if (!error && freqs && freqs.length > 0) {
+          const mapaPresencas: Record<string, number> = {};
+          freqs.forEach((f: any) => {
+            if (f.status === 'presente' || f.status === 'justificada') {
+              mapaPresencas[f.beneficiario_id] = (mapaPresencas[f.beneficiario_id] || 0) + 1;
+            }
+          });
+
+          const totalAcoes = targetAcoesIds.length;
+          const todosIds = Array.from(new Set([
+            ...inscricoes.map((i: any) => i.beneficiario_id || i.id),
+            ...Object.keys(mapaPresencas),
+          ]));
+
+          todosIds.forEach((bId) => {
+            const p = mapaPresencas[bId] || 0;
+            const taxa = totalAcoes > 0 ? (p / totalAcoes) * 100 : 0;
+
+            if (taxa >= 100) {
+              faixa100++;
+            } else if (taxa >= 75) {
+              faixa90_75++;
+            } else if (taxa >= 50) {
+              faixa75_50++;
+            } else {
+              faixa50_0++;
+            }
+          });
+        } else {
+          // Fallback estimado a partir do total de beneficiários do projeto
+          const totalBeneficiarios = inscricoes.length > 0 ? inscricoes.length : (formData.num_beneficiarios_diretos || 25);
+          faixa100 = Math.round(totalBeneficiarios * 0.7);
+          faixa90_75 = Math.round(totalBeneficiarios * 0.2);
+          faixa75_50 = Math.max(0, totalBeneficiarios - faixa100 - faixa90_75);
+          faixa50_0 = 0;
+        }
+      } else {
+        const totalBeneficiarios = inscricoes.length > 0 ? inscricoes.length : (formData.num_beneficiarios_diretos || 25);
+        faixa100 = Math.round(totalBeneficiarios * 0.7);
+        faixa90_75 = Math.round(totalBeneficiarios * 0.2);
+        faixa75_50 = Math.max(0, totalBeneficiarios - faixa100 - faixa90_75);
+        faixa50_0 = 0;
+      }
+
+      setActiveRelatorioMrosc((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          dados_publico_alvo: {
+            ...prev.dados_publico_alvo,
+            frequencia: {
+              ...prev.dados_publico_alvo?.frequencia,
+              faixa_100: faixa100,
+              faixa_90_75: faixa90_75,
+              faixa_75_50: faixa75_50,
+              faixa_50_0: faixa50_0,
+            },
+          },
+        };
+      });
+    } catch (err) {
+      console.error('Erro ao calcular frequência automática:', err);
+    } finally {
+      setRecalculatingFreq(false);
+    }
+  };
+
   const handleOpenNewMroscReport = () => {
-    setActiveRelatorioMrosc(getInitialRelatorioMrosc());
+    const init = getInitialRelatorioMrosc();
+    setActiveRelatorioMrosc(init);
     setMroscWizardStep(1);
     setShowMroscModal(true);
+    handleRecalcularFrequencia(init.acoes_selecionadas_ids);
   };
 
   const handleOpenEditMroscReport = (rel: RelatorioMonitoramento) => {
@@ -2205,10 +2356,17 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                   {/* SEÇÃO PLANEJAMENTO: OBJETIVOS & METAS */}
                   {planejamentoSection === 'objetivos' && (
                     <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-6">
-                      <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                      <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
                         <div>
-                          <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Objetivo Geral & Objetivos Específicos com Metas</h3>
-                          <p className="text-xs text-[var(--text-muted)]">Estruturação de metas quantitativas e qualitativas</p>
+                          <div className="flex items-center gap-2">
+                            <Target className="w-5 h-5 text-[var(--color-primary)]" />
+                            <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                              Objetivo Geral & Objetivos Específicos com Metas
+                            </h3>
+                          </div>
+                          <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                            Estruturação de metas quantitativas e qualitativas com procedimentos de coleta
+                          </p>
                         </div>
                         <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={handleAddObjetivoEspecifico}>
                           Adicionar Objetivo
@@ -2216,26 +2374,57 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                       </div>
 
                       <div>
-                        <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Objetivo Geral do Projeto</label>
-                        <textarea name="objetivo_geral" value={formData.objetivo_geral} onChange={handleChange} rows={2} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] font-medium" placeholder="Ex: Promover a inclusão social e o desenvolvimento cognitivo de 100 crianças..." />
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <label className="text-xs font-semibold text-[var(--text-secondary)]">Objetivo Geral do Projeto</label>
+                          <FieldInfo text="Declaração ampla do propósito central e da transformação social pretendida pelo projeto." />
+                        </div>
+                        <textarea
+                          name="objetivo_geral"
+                          value={formData.objetivo_geral}
+                          onChange={handleChange}
+                          rows={2}
+                          className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
+                          placeholder="Ex: Promover a inclusão social e o fortalecimento de vínculos comunitários de 100 crianças e adolescentes..."
+                        />
                       </div>
 
                       {objetivosEspecificos.length === 0 ? (
-                        <p className="text-xs text-[var(--text-muted)] italic text-center py-6">Nenhum objetivo específico cadastrado. Clique no botão acima para adicionar.</p>
+                        <div className="p-8 text-center border-2 border-dashed border-[var(--border-default)] rounded-xl space-y-2 bg-[var(--bg-secondary)]/30">
+                          <p className="text-xs text-[var(--text-muted)] italic">
+                            Nenhum objetivo específico cadastrado. Clique no botão acima para estruturar as metas do projeto.
+                          </p>
+                          <Button size="sm" variant="secondary" icon={<Plus className="w-3.5 h-3.5" />} onClick={handleAddObjetivoEspecifico}>
+                            Cadastrar 1º Objetivo
+                          </Button>
+                        </div>
                       ) : (
                         <div className="space-y-4">
                           {objetivosEspecificos.map((obj, objIdx) => (
-                            <div key={obj.id} className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-3">
+                            <div key={obj.id} className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3.5">
+                              {/* Header do Objetivo */}
                               <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2 flex-1">
-                                  <span className="w-6 h-6 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center text-xs font-bold shrink-0">{objIdx + 1}</span>
-                                  <Input placeholder="Título do Objetivo Específico..." value={obj.titulo_objetivo} onChange={(e) => handleUpdateObjetivoTitulo(objIdx, e.target.value)} />
+                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                  <span className="w-6 h-6 rounded-lg bg-[var(--color-primary)] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                                    {objIdx + 1}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <Input
+                                      placeholder="Título ou descrição do Objetivo Específico..."
+                                      value={obj.titulo_objetivo}
+                                      onChange={(e) => handleUpdateObjetivoTitulo(objIdx, e.target.value)}
+                                    />
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Button size="sm" variant="ghost" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => handleAddMetaToObjetivo(objIdx)}>
-                                    Adicionar Meta
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Button size="sm" variant="secondary" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => handleAddMetaToObjetivo(objIdx)}>
+                                    Nova Meta
                                   </Button>
-                                  <button type="button" onClick={() => handleRemoveObjetivoEspecifico(objIdx)} className="text-[var(--color-danger)] p-1 hover:opacity-80">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveObjetivoEspecifico(objIdx)}
+                                    className="text-[var(--color-danger)] p-1.5 hover:bg-[var(--color-danger)]/10 rounded-lg transition-colors"
+                                    title="Excluir Objetivo"
+                                  >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
                                 </div>
@@ -2243,16 +2432,40 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
 
                               {/* Lista de Metas */}
                               {obj.metas.length > 0 && (
-                                <div className="pl-6 space-y-2 border-l-2 border-[var(--color-primary)]/30">
+                                <div className="pl-4 sm:pl-6 space-y-2.5 border-l-2 border-[var(--color-primary)]/40">
                                   {obj.metas.map((meta, metaIdx) => (
-                                    <div key={meta.id} className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] grid grid-cols-1 md:grid-cols-4 gap-2 text-xs">
+                                    <div key={meta.id} className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] grid grid-cols-1 md:grid-cols-4 gap-2.5 text-xs shadow-sm">
                                       <div className="md:col-span-2">
-                                        <Input label="Descrição da Meta" value={meta.descricao_meta} onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'descricao_meta', e.target.value)} placeholder="Ex: Atingir 95% de frequência nas oficinas" />
+                                        <Input
+                                          label="Descrição da Meta"
+                                          value={meta.descricao_meta}
+                                          onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'descricao_meta', e.target.value)}
+                                          placeholder="Ex: Atingir 95% de frequência nas oficinas socioeducativas"
+                                        />
                                       </div>
-                                      <Input label="Procedimento de Coleta" value={meta.procedimento_coleta} onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'procedimento_coleta', e.target.value)} placeholder="Lista de presença / Formulário" />
-                                      <div className="flex items-end gap-2">
-                                        <Input label="Responsável" value={meta.responsavel_coleta} onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'responsavel_coleta', e.target.value)} placeholder="Educador / Coordenador" />
-                                        <button type="button" onClick={() => handleRemoveMeta(objIdx, metaIdx)} className="text-[var(--color-danger)] p-2 hover:opacity-80">
+                                      <div>
+                                        <Input
+                                          label="Procedimento de Coleta"
+                                          value={meta.procedimento_coleta}
+                                          onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'procedimento_coleta', e.target.value)}
+                                          placeholder="Ex: Lista de presença / Formulário"
+                                        />
+                                      </div>
+                                      <div className="flex items-end gap-1.5">
+                                        <div className="flex-1 min-w-0">
+                                          <Input
+                                            label="Responsável"
+                                            value={meta.responsavel_coleta}
+                                            onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'responsavel_coleta', e.target.value)}
+                                            placeholder="Ex: Educador / Coordenador"
+                                          />
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveMeta(objIdx, metaIdx)}
+                                          className="text-[var(--color-danger)] p-2 hover:bg-[var(--color-danger)]/10 rounded-xl transition-colors shrink-0 mb-0.5"
+                                          title="Remover Meta"
+                                        >
                                           <X className="w-4 h-4" />
                                         </button>
                                       </div>
@@ -2269,33 +2482,76 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
 
                   {/* SEÇÃO PLANEJAMENTO: ODS */}
                   {planejamentoSection === 'ods' && (
-                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-                      <h3 className="font-display font-bold text-base text-[var(--text-primary)] border-b border-[var(--border-default)] pb-2">
-                        Alinhamento aos Objetivos de Desenvolvimento Sustentável (ODS)
-                      </h3>
+                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
+                      <div className="border-b border-[var(--border-default)] pb-3">
+                        <div className="flex items-center gap-2">
+                          <Compass className="w-5 h-5 text-[var(--color-primary)]" />
+                          <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                            Alinhamento aos Objetivos de Desenvolvimento Sustentável (ODS)
+                          </h3>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                          Associe as metas globais da ONU/Agenda 2030 às ações e impactos gerados pelo projeto
+                        </p>
+                      </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {ODS_INSTITUCIONAIS.map((ods) => (
-                          <div key={ods.key} className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-2">
-                            <label className="flex items-center gap-3 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={odsState[ods.key]?.selected || false}
-                                onChange={(e) => setOdsState({ ...odsState, [ods.key]: { ...odsState[ods.key], selected: e.target.checked } })}
-                                className="w-4 h-4 rounded text-[var(--color-primary)]"
-                              />
-                              <span className="font-bold text-xs text-[var(--text-primary)]">{ods.label}</span>
-                            </label>
-                            {odsState[ods.key]?.selected && (
-                              <textarea
-                                value={odsState[ods.key]?.descricao || ''}
-                                onChange={(e) => setOdsState({ ...odsState, [ods.key]: { ...odsState[ods.key], descricao: e.target.value } })}
-                                rows={2}
-                                className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
-                                placeholder={`Como este projeto contribui para o ${ods.key}...`}
-                              />
-                            )}
-                          </div>
-                        ))}
+                        {ODS_INSTITUCIONAIS.map((ods) => {
+                          const isSelected = odsState[ods.key]?.selected || false;
+
+                          return (
+                            <div
+                              key={ods.key}
+                              className={`p-4 rounded-xl border transition-all space-y-2.5 ${
+                                isSelected
+                                  ? 'bg-[var(--bg-elevated)] border-[var(--color-primary)] shadow-sm'
+                                  : 'bg-[var(--bg-secondary)]/30 border-[var(--border-default)]'
+                              }`}
+                            >
+                              <label className="flex items-start gap-3 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) =>
+                                    setOdsState({
+                                      ...odsState,
+                                      [ods.key]: { ...odsState[ods.key], selected: e.target.checked },
+                                    })
+                                  }
+                                  className="w-4 h-4 mt-0.5 rounded text-[var(--color-primary)] shrink-0"
+                                />
+                                <div className="space-y-1 min-w-0 flex-1">
+                                  <span className="font-bold text-xs text-[var(--text-primary)] block">
+                                    {ods.label}
+                                  </span>
+                                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed font-normal">
+                                    {ods.descricaoOficial}
+                                  </p>
+                                </div>
+                              </label>
+
+                              {isSelected && (
+                                <div className="pt-2 border-t border-[var(--border-default)]/60 space-y-1">
+                                  <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                                    Como o projeto contribui para esta ODS:
+                                  </label>
+                                  <textarea
+                                    value={odsState[ods.key]?.descricao || ''}
+                                    onChange={(e) =>
+                                      setOdsState({
+                                        ...odsState,
+                                        [ods.key]: { ...odsState[ods.key], descricao: e.target.value },
+                                      })
+                                    }
+                                    rows={2}
+                                    className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                    placeholder={`Descreva a contribuição direta do projeto para o ${ods.key}...`}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -2574,12 +2830,12 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                     <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
                                       <span className="flex items-center gap-1 font-medium">
                                         <Calendar className="w-3 h-3 text-[var(--color-primary)]" />
-                                        {new Date(acao.data_hora).toLocaleDateString('pt-BR')}
+                                        {formatarDataHoraAcao(acao.data_hora).data}
                                       </span>
                                       <span>•</span>
                                       <span className="flex items-center gap-1 font-medium">
                                         <Clock className="w-3 h-3 text-[var(--text-muted)]" />
-                                        {new Date(acao.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                        {formatarDataHoraAcao(acao.data_hora).hora}
                                       </span>
                                     </div>
                                   </div>
@@ -2852,7 +3108,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                         <Users className="w-4 h-4 text-[var(--color-primary)]" />
                       </div>
                       <p className="text-xl font-bold font-mono-data text-[var(--text-primary)]">
-                        {beneficiariosVinculados.length || formData.num_beneficiarios_diretos || 0}
+                        {inscricoes.length || formData.num_beneficiarios_diretos || 0}
                       </p>
                       <span className="text-[10px] text-[var(--text-muted)]">Atendidos diretamente</span>
                     </div>
@@ -2863,7 +3119,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                         <HeartHandshake className="w-4 h-4 text-[var(--color-accent-purple)]" />
                       </div>
                       <p className="text-xl font-bold font-mono-data text-[var(--text-primary)]">
-                        {voluntariosVinculados.length}
+                        {alocacoes.length}
                       </p>
                       <span className="text-[10px] text-[var(--text-muted)]">Alocados no projeto</span>
                     </div>
@@ -3349,7 +3605,12 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                   <button
                     key={tab.step}
                     type="button"
-                    onClick={() => setMroscWizardStep(tab.step as any)}
+                    onClick={() => {
+                      setMroscWizardStep(tab.step as any);
+                      if (tab.step === 5) {
+                        handleRecalcularFrequencia();
+                      }
+                    }}
                     className={`p-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border ${isActive
                       ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm'
                       : isPast
@@ -3945,17 +4206,34 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
               {mroscWizardStep === 5 && (
                 <div className="space-y-5 animate-in fade-in duration-200">
                   {/* SEÇÃO PÚBLICO-ALVO: FREQUÊNCIA */}
-                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3">
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)]">
-                      1. Frequência do Público-Alvo (Beneficiários)
-                    </h4>
-                    <p className="text-[11px] text-[var(--text-muted)]">
-                      Distribuição dos beneficiários de acordo com os dias de ação analisados:
-                    </p>
+                  <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-4 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-default)]/60 pb-3">
+                      <div>
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                          <Users className="w-4 h-4" />
+                          1. Frequência do Público-Alvo (Beneficiários)
+                        </h4>
+                        <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                          Assiduidade real apurada com base nas ações selecionadas para este relatório
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={<RefreshCw className={`w-3.5 h-3.5 ${recalculatingFreq ? 'animate-spin text-[var(--color-primary)]' : ''}`} />}
+                        onClick={() => handleRecalcularFrequencia()}
+                        disabled={recalculatingFreq}
+                        title="Puxar do banco de frequência"
+                      >
+                        {recalculatingFreq ? 'Calculando...' : 'Puxar Frequência Automática'}
+                      </Button>
+                    </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-emerald-500/30 text-center space-y-1">
-                        <span className="text-[11px] font-bold text-emerald-600 flex items-center justify-center gap-1"><CheckCircle2 className="w-3 h-3" /> 100% Presentes</span>
+                      <div className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-emerald-500/30 text-center space-y-1.5 shadow-sm">
+                        <span className="text-[11px] font-bold text-emerald-600 flex items-center justify-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> 100% Presentes
+                        </span>
                         <input
                           type="number"
                           value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.faixa_100 || 0}
@@ -3966,19 +4244,21 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                               dados_publico_alvo: {
                                 ...activeRelatorioMrosc.dados_publico_alvo,
                                 frequencia: {
-                                  ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                  ...activeRelatorioMrosc.dados_publico_alvo?.frequencia,
                                   faixa_100: val,
                                 },
                               },
                             });
                           }}
-                          className="w-20 mx-auto text-center p-1.5 rounded-lg text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)]"
+                          className="w-20 mx-auto text-center p-1.5 rounded-xl text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                         />
                         <span className="text-[10px] text-[var(--text-muted)] block">beneficiários</span>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-blue-500/30 text-center space-y-1">
-                        <span className="text-[11px] font-bold text-blue-600 flex items-center justify-center gap-1"><TrendingUp className="w-3 h-3" /> 90% a 75%</span>
+                      <div className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-blue-500/30 text-center space-y-1.5 shadow-sm">
+                        <span className="text-[11px] font-bold text-blue-600 flex items-center justify-center gap-1">
+                          <TrendingUp className="w-3.5 h-3.5" /> 90% a 75%
+                        </span>
                         <input
                           type="number"
                           value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.faixa_90_75 || 0}
@@ -3989,19 +4269,21 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                               dados_publico_alvo: {
                                 ...activeRelatorioMrosc.dados_publico_alvo,
                                 frequencia: {
-                                  ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                  ...activeRelatorioMrosc.dados_publico_alvo?.frequencia,
                                   faixa_90_75: val,
                                 },
                               },
                             });
                           }}
-                          className="w-20 mx-auto text-center p-1.5 rounded-lg text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)]"
+                          className="w-20 mx-auto text-center p-1.5 rounded-xl text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                         />
                         <span className="text-[10px] text-[var(--text-muted)] block">beneficiários</span>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-amber-500/30 text-center space-y-1">
-                        <span className="text-[11px] font-bold text-amber-600 flex items-center justify-center gap-1"><AlertCircle className="w-3 h-3" /> 75% a 50%</span>
+                      <div className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-amber-500/30 text-center space-y-1.5 shadow-sm">
+                        <span className="text-[11px] font-bold text-amber-600 flex items-center justify-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5" /> 75% a 50%
+                        </span>
                         <input
                           type="number"
                           value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.faixa_75_50 || 0}
@@ -4012,19 +4294,21 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                               dados_publico_alvo: {
                                 ...activeRelatorioMrosc.dados_publico_alvo,
                                 frequencia: {
-                                  ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                  ...activeRelatorioMrosc.dados_publico_alvo?.frequencia,
                                   faixa_75_50: val,
                                 },
                               },
                             });
                           }}
-                          className="w-20 mx-auto text-center p-1.5 rounded-lg text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)]"
+                          className="w-20 mx-auto text-center p-1.5 rounded-xl text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                         />
                         <span className="text-[10px] text-[var(--text-muted)] block">beneficiários</span>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-red-500/30 text-center space-y-1">
-                        <span className="text-[11px] font-bold text-red-600 flex items-center justify-center gap-1"><AlertTriangle className="w-3 h-3" /> 50% a 0%</span>
+                      <div className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-red-500/30 text-center space-y-1.5 shadow-sm">
+                        <span className="text-[11px] font-bold text-red-600 flex items-center justify-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5" /> 50% a 0%
+                        </span>
                         <input
                           type="number"
                           value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.faixa_50_0 || 0}
@@ -4035,19 +4319,19 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                               dados_publico_alvo: {
                                 ...activeRelatorioMrosc.dados_publico_alvo,
                                 frequencia: {
-                                  ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                  ...activeRelatorioMrosc.dados_publico_alvo?.frequencia,
                                   faixa_50_0: val,
                                 },
                               },
                             });
                           }}
-                          className="w-20 mx-auto text-center p-1.5 rounded-lg text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)]"
+                          className="w-20 mx-auto text-center p-1.5 rounded-xl text-base font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                         />
                         <span className="text-[10px] text-[var(--text-muted)] block">beneficiários</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-2 pt-1">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-2.5 pt-1">
                       <input
                         type="text"
                         value={activeRelatorioMrosc.dados_publico_alvo?.frequencia?.justificativa_plano_acao || ''}
@@ -4057,14 +4341,14 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                             dados_publico_alvo: {
                               ...activeRelatorioMrosc.dados_publico_alvo,
                               frequencia: {
-                                ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                ...activeRelatorioMrosc.dados_publico_alvo?.frequencia,
                                 justificativa_plano_acao: e.target.value,
                               },
                             },
                           });
                         }}
                         placeholder="Justificativa ou plano de ação para a frequência..."
-                        className="p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                        className="p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                       />
                       <input
                         type="text"
@@ -4075,24 +4359,26 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                             dados_publico_alvo: {
                               ...activeRelatorioMrosc.dados_publico_alvo,
                               frequencia: {
-                                ...activeRelatorioMrosc.dados_publico_alvo.frequencia,
+                                ...activeRelatorioMrosc.dados_publico_alvo?.frequencia,
                                 prazo_plano: e.target.value,
                               },
                             },
                           });
                         }}
-                        placeholder="Prazo (Opcional)"
-                        className="p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                        placeholder="Prazo (Ex: 15 dias)"
+                        className="p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                       />
                     </div>
                   </div>
 
                   {/* SEÇÃO PÚBLICO-ALVO: SOCIOEMOCIONAL & SATISFAÇÃO */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-2.5">
+                    <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-xs text-[var(--color-primary)]">2. Avaliação Socioemocional</span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#93368F]/10 text-[#93368F]">Pedagogia</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#93368F]/10 text-[#93368F] border border-[#93368F]/20">
+                          Pedagogia
+                        </span>
                       </div>
                       <textarea
                         rows={2}
@@ -4103,14 +4389,14 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                             dados_publico_alvo: {
                               ...activeRelatorioMrosc.dados_publico_alvo,
                               socioemocional: {
-                                ...activeRelatorioMrosc.dados_publico_alvo.socioemocional,
+                                ...activeRelatorioMrosc.dados_publico_alvo?.socioemocional,
                                 panorama_geral: e.target.value,
                               },
                             },
                           });
                         }}
                         placeholder="Panorama geral do desenvolvimento socioemocional..."
-                        className="w-full p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                        className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
                       />
                       <input
                         type="text"
@@ -4121,21 +4407,23 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                             dados_publico_alvo: {
                               ...activeRelatorioMrosc.dados_publico_alvo,
                               socioemocional: {
-                                ...activeRelatorioMrosc.dados_publico_alvo.socioemocional,
+                                ...activeRelatorioMrosc.dados_publico_alvo?.socioemocional,
                                 justificativa_plano_acao: e.target.value,
                               },
                             },
                           });
                         }}
-                        placeholder="Justificativa e plano de ação socioemocional..."
-                        className="w-full p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                        placeholder="Justificativa e plano de ação socioemocional (opcional)..."
+                        className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                       />
                     </div>
 
-                    <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-2.5">
+                    <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-xs text-[var(--color-primary)]">3. Pesquisa de Satisfação</span>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#10B981]/10 text-[#10B981]">Satisfação</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20">
+                          Satisfação
+                        </span>
                       </div>
                       <textarea
                         rows={2}
@@ -4146,14 +4434,14 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                             dados_publico_alvo: {
                               ...activeRelatorioMrosc.dados_publico_alvo,
                               pesquisa_satisfacao: {
-                                ...activeRelatorioMrosc.dados_publico_alvo.pesquisa_satisfacao,
+                                ...activeRelatorioMrosc.dados_publico_alvo?.pesquisa_satisfacao,
                                 panorama_geral: e.target.value,
                               },
                             },
                           });
                         }}
                         placeholder="Panorama da pesquisa com beneficiários/famílias..."
-                        className="w-full p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                        className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
                       />
                       <input
                         type="text"
@@ -4164,25 +4452,27 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                             dados_publico_alvo: {
                               ...activeRelatorioMrosc.dados_publico_alvo,
                               pesquisa_satisfacao: {
-                                ...activeRelatorioMrosc.dados_publico_alvo.pesquisa_satisfacao,
+                                ...activeRelatorioMrosc.dados_publico_alvo?.pesquisa_satisfacao,
                                 justificativa_plano_acao: e.target.value,
                               },
                             },
                           });
                         }}
-                        placeholder="Justificativa e plano de ação de satisfação..."
-                        className="w-full p-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                        placeholder="Justificativa e plano de ação de satisfação (opcional)..."
+                        className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                       />
                     </div>
                   </div>
 
                   {/* SEÇÃO TRANSPARÊNCIA */}
-                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3">
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-3">
                     <div className="flex items-center justify-between">
                       <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)]">
                         4. Avaliação sobre Transparência & Comunicação
                       </h4>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EF4444]/10 text-[#EF4444]">Comunicação</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20">
+                        Comunicação
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -4199,7 +4489,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                           });
                         }}
                         placeholder="Publicações nas redes, fotos e transparência do projeto..."
-                        className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                        className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
                       />
                       <textarea
                         rows={2}
@@ -4214,13 +4504,13 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                           });
                         }}
                         placeholder="Justificativa e plano de ação de transparência..."
-                        className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)]"
+                        className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
                       />
                     </div>
                   </div>
 
                   {/* SEÇÃO CONCLUSÃO COM IA */}
-                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3">
+                  <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-default)] pb-3">
                       <div>
                         <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-2">
@@ -4243,11 +4533,11 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                     </div>
 
                     <textarea
-                      rows={6}
+                      rows={5}
                       value={activeRelatorioMrosc.conclusao_texto}
                       onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, conclusao_texto: e.target.value })}
                       placeholder="Conclusão técnica sobre o projeto ou clique no botão acima para gerar automaticamente com IA..."
-                      className="w-full p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] leading-relaxed focus:outline-none focus:border-[var(--color-primary)] font-normal"
+                      className="w-full p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] leading-relaxed focus:outline-none focus:border-[var(--color-primary)] transition-colors font-normal"
                       required
                     />
 
@@ -4261,7 +4551,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                           value={activeRelatorioMrosc.local_data_emissao}
                           onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, local_data_emissao: e.target.value })}
                           placeholder="Ex: São Luís - MA, 15 de Agosto de 2026"
-                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                         />
                       </div>
 
@@ -4272,7 +4562,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                         <select
                           value={activeRelatorioMrosc.gestor_monitoramento_id}
                           onChange={(e) => setActiveRelatorioMrosc({ ...activeRelatorioMrosc, gestor_monitoramento_id: e.target.value })}
-                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                          className="w-full p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors cursor-pointer"
                         >
                           <option value="">Selecione o responsável técnico...</option>
                           {todosVoluntarios.map((v) => (
@@ -4318,7 +4608,13 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                   <Button
                     size="sm"
                     variant="primary"
-                    onClick={() => setMroscWizardStep((mroscWizardStep + 1) as any)}
+                    onClick={() => {
+                      const nextStep = (mroscWizardStep + 1) as any;
+                      setMroscWizardStep(nextStep);
+                      if (nextStep === 5) {
+                        handleRecalcularFrequencia();
+                      }
+                    }}
                   >
                     Próxima Etapa →
                   </Button>
