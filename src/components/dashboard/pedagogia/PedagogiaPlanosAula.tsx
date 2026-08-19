@@ -320,6 +320,13 @@ export function PedagogiaPlanosAula({
     setShowPrintModal(true);
   };
 
+  const [expandedPlanos, setExpandedPlanos] = useState<Record<string, boolean>>({});
+
+  const toggleExpandPlano = (id?: string) => {
+    if (!id) return;
+    setExpandedPlanos((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Topo: Resumo e Botão Novo Plano (Padrão Idêntico a Projetos) ── */}
@@ -348,15 +355,15 @@ export function PedagogiaPlanosAula({
         </div>
       </div>
 
-      {/* Feedback de Salvamento */}
+      {/* Feedback de Salvamento com Alto Contraste */}
       {saveSuccess && (
-        <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          Plano de Aula salvo com sucesso!
+        <div className="p-4 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center gap-2 shadow-lg animate-in fade-in slide-in-from-top-2">
+          <CheckCircle2 className="w-5 h-5 shrink-0 text-white" />
+          Plano de Aula e Atividades gravados com sucesso!
         </div>
       )}
 
-      {/* ── Grade de Planos de Aula ── */}
+      {/* ── Grade de Planos de Aula (Baixa Carga Cognitiva) ── */}
       {loading ? (
         <div className="p-12 text-center text-xs text-[var(--text-muted)]">Carregando planos de aula...</div>
       ) : planos.length === 0 ? (
@@ -368,12 +375,21 @@ export function PedagogiaPlanosAula({
           <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto">
             Clique no botão acima para vincular uma ação cadastrada, definir o encontro e estruturar atividades pedagógicas com mediadores e metas.
           </p>
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<Plus className="w-4 h-4" />}
+            onClick={handleNovoPlano}
+          >
+            Criar Primeiro Plano de Aula
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {planos.map((plano) => {
             const acaoObj = acoes.find((a) => a.id === plano.acao_id);
             const totalAtividades = Array.isArray(plano.atividades) ? plano.atividades.length : 1;
+            const isExpanded = !!(plano.id && expandedPlanos[plano.id]);
 
             return (
               <div
@@ -392,7 +408,7 @@ export function PedagogiaPlanosAula({
                           : 'Data não inf.'}
                       </Badge>
                       {acaoObj ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 border border-purple-500/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
                           <FolderKanban className="w-3 h-3" />
                           Ação: {acaoObj.nome_acao}
                         </span>
@@ -408,7 +424,7 @@ export function PedagogiaPlanosAula({
                       <button
                         type="button"
                         onClick={() => handleImprimirPlano(plano)}
-                        className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
+                        className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors cursor-pointer"
                         title="Visualizar / PDF Timbrado"
                       >
                         <Printer className="w-4 h-4" />
@@ -416,7 +432,7 @@ export function PedagogiaPlanosAula({
                       <button
                         type="button"
                         onClick={() => handleEditarPlano(plano)}
-                        className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
                         title="Editar Plano"
                       >
                         <Edit3 className="w-4 h-4" />
@@ -437,54 +453,64 @@ export function PedagogiaPlanosAula({
                     {plano.titulo}
                   </h4>
 
-                  {/* Descrição Geral */}
+                  {/* Descrição Geral Resumida */}
                   {plano.descricao && (
                     <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
                       {plano.descricao}
                     </p>
                   )}
 
-                  {/* Prévia das Atividades Cadastradas */}
+                  {/* Detalhes Expansíveis das Atividades (Accordion Inteligente) */}
                   {Array.isArray(plano.atividades) && plano.atividades.length > 0 && (
-                    <div className="space-y-2 pt-1.5">
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block">
-                        Atividades Programadas ({plano.atividades.length})
-                      </span>
-                      <div className="space-y-2">
-                        {plano.atividades.map((ativ, aIdx) => {
-                          const metaAtiv = metas.find((m) => m.id === ativ.meta_id);
-                          return (
-                            <div
-                              key={ativ.id || aIdx}
-                              className="p-3 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] text-xs space-y-1.5"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="font-semibold text-[var(--text-primary)] truncate block">
-                                  {aIdx + 1}. {ativ.titulo}
-                                </span>
-                                {ativ.mediador && (
-                                  <span className="text-[10px] font-medium text-[var(--text-muted)] shrink-0">
-                                    {ativ.mediador}
+                    <div className="space-y-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandPlano(plano.id)}
+                        className="text-[11px] font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        {isExpanded
+                          ? `Ocultar atividades (${plano.atividades.length}) ▲`
+                          : `Ver roteiro de atividades (${plano.atividades.length}) ▼`}
+                      </button>
+
+                      {isExpanded && (
+                        <div className="space-y-2 pt-1 animate-in fade-in duration-200">
+                          {plano.atividades.map((ativ, aIdx) => {
+                            const metaAtiv = metas.find((m) => m.id === ativ.meta_id);
+                            return (
+                              <div
+                                key={ativ.id || aIdx}
+                                className="p-3 rounded-xl bg-[var(--bg-secondary)]/60 border border-[var(--border-default)] text-xs space-y-1.5"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-semibold text-[var(--text-primary)] truncate block">
+                                    {aIdx + 1}. {ativ.titulo}
                                   </span>
+                                  {ativ.mediador && (
+                                    <span className="text-[10px] font-medium text-[var(--text-muted)] shrink-0">
+                                      {ativ.mediador}
+                                    </span>
+                                  )}
+                                </div>
+                                {ativ.descricao && (
+                                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                                    {ativ.descricao}
+                                  </p>
+                                )}
+                                {metaAtiv && (
+                                  <div className="pt-1 border-t border-[var(--border-default)]/40 flex items-start gap-1.5 text-[11px] text-[var(--color-primary)]">
+                                    <Target className="w-3 h-3 shrink-0 mt-0.5" />
+                                    <span className="leading-tight">
+                                      <strong>Meta:</strong> {metaAtiv.descricao}
+                                    </span>
+                                  </div>
                                 )}
                               </div>
-                              {ativ.descricao && (
-                                <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed line-clamp-2">
-                                  {ativ.descricao}
-                                </p>
-                              )}
-                              {metaAtiv && (
-                                <div className="pt-1 border-t border-[var(--border-default)]/40 flex items-start gap-1.5 text-[11px] text-[var(--color-primary)]">
-                                  <Target className="w-3 h-3 shrink-0 mt-0.5" />
-                                  <span className="leading-tight">
-                                    <strong>Meta:</strong> {metaAtiv.descricao}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

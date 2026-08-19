@@ -180,28 +180,29 @@ export default function PedagogiaPage() {
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  {projetos.length > 1 ? (
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={selectedProjetoId}
-                        onChange={(e) => setSelectedProjetoId(e.target.value)}
-                        className="font-display font-bold text-xl text-[var(--text-primary)] bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] border border-[var(--border-default)] px-3 py-1 rounded-xl focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all"
-                      >
-                        {projetos.map((p) => (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectedProjetoId}
+                      onChange={(e) => setSelectedProjetoId(e.target.value)}
+                      className="font-display font-bold text-lg sm:text-xl text-[var(--text-primary)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-secondary)]/80 border border-[var(--border-default)] px-3 py-1.5 rounded-xl focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all shadow-sm"
+                      aria-label="Selecionar Projeto Social Ativo"
+                    >
+                      {projetos.length === 0 ? (
+                        <option value="">Nenhum projeto encontrado</option>
+                      ) : (
+                        projetos.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.nome}
                           </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
-                    <h2 className="font-display font-bold text-xl text-[var(--text-primary)] truncate">
-                      {projetoAtivo?.nome || 'Carregando Projeto...'}
-                    </h2>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                  {projetoAtivo && (
+                    <Badge variant={projetoAtivo.status === 'ativo' ? 'success' : 'warning'}>
+                      {(projetoAtivo.status || 'ATIVO').toUpperCase()}
+                    </Badge>
                   )}
-                  <Badge variant={projetoAtivo?.status === 'ativo' ? 'success' : 'warning'}>
-                    {(projetoAtivo?.status || 'ATIVO').toUpperCase()}
-                  </Badge>
                 </div>
                 <p className="text-xs text-[var(--text-muted)]">
                   Inscritos: <strong className="text-[var(--text-secondary)] font-mono-data">{inscritos.length}</strong> • Encontros: <strong className="text-[var(--text-secondary)] font-mono-data">{acoes.length}</strong> • Metas: <strong className="text-[var(--text-secondary)] font-mono-data">{metas.length}</strong>

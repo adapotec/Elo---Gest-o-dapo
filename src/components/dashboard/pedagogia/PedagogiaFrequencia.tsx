@@ -243,11 +243,11 @@ export function PedagogiaFrequencia({
           </div>
         </div>
 
-        {/* Feedback de Salvamento */}
+        {/* Feedback de Salvamento com Alto Contraste */}
         {saveSuccess && (
-          <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            Chamada registrada com sucesso!
+          <div className="p-4 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center gap-2 shadow-lg animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="w-5 h-5 shrink-0 text-white" />
+            Chamada de frequência registrada com sucesso no sistema!
           </div>
         )}
 
