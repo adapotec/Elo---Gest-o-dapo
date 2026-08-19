@@ -5077,34 +5077,14 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                           </div>
 
                           {/* Bloco 3: Materiais + Equipe */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[var(--border-default)]/50">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[var(--border-default)]/50 items-start">
                             {/* Materiais */}
-                            <div className="space-y-2">
+                            <div className="space-y-2 flex flex-col justify-start">
                               <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                                <span className="flex items-center gap-1"><Package className="w-3 h-3" /> Materiais / Insumos</span> {ensureStringArray(row.materiais).length > 0 && <span className="text-[var(--color-primary)]">({ensureStringArray(row.materiais).length})</span>}
+                                <span className="flex items-center gap-1"><Package className="w-3 h-3" /> Materiais / Insumos</span> {ensureStringArray(row.materiais).length > 0 && <span className="text-[var(--color-primary)] font-bold">({ensureStringArray(row.materiais).length})</span>}
                               </label>
 
-                              {ensureStringArray(row.materiais).length > 0 && (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {ensureStringArray(row.materiais).map((mat, mIdx) => (
-                                    <span
-                                      key={mIdx}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)]"
-                                    >
-                                      {mat}
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveMaterialFromRow(rIdx, mIdx)}
-                                        className="text-[var(--text-muted)] hover:text-[var(--color-danger)] ml-0.5 transition-colors"
-                                        title="Remover material"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-
+                              {/* Input Fixo no Topo */}
                               <div className="flex items-center gap-1.5">
                                 <input
                                   type="text"
@@ -5133,26 +5113,21 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                   <Plus className="w-3.5 h-3.5" />
                                 </button>
                               </div>
-                            </div>
 
-                            {/* Equipe / Responsáveis */}
-                            <div className="space-y-2">
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                                <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Equipe / Responsáveis</span> {ensureStringArray(row.equipe).length > 0 && <span className="text-[var(--color-primary)]">({ensureStringArray(row.equipe).length})</span>}
-                              </label>
-
-                              {ensureStringArray(row.equipe).length > 0 && (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {ensureStringArray(row.equipe).map((membro, eqIdx) => (
+                              {/* Tags de Materiais Adicionados (Abaixo do Campo) */}
+                              {ensureStringArray(row.materiais).length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                  {ensureStringArray(row.materiais).map((mat, mIdx) => (
                                     <span
-                                      key={eqIdx}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20"
+                                      key={mIdx}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)] shadow-2xs"
                                     >
-                                      {membro}
+                                      {mat}
                                       <button
                                         type="button"
-                                        onClick={() => handleRemoveEquipeFromRow(rIdx, eqIdx)}
-                                        className="text-[var(--color-primary)] hover:text-[var(--color-danger)] ml-0.5 transition-colors"
+                                        onClick={() => handleRemoveMaterialFromRow(rIdx, mIdx)}
+                                        className="text-[var(--text-muted)] hover:text-[var(--color-danger)] ml-0.5 transition-colors"
+                                        title="Remover material"
                                       >
                                         <X className="w-3 h-3" />
                                       </button>
@@ -5160,7 +5135,15 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                   ))}
                                 </div>
                               )}
+                            </div>
 
+                            {/* Equipe / Responsáveis */}
+                            <div className="space-y-2 flex flex-col justify-start">
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                                <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Equipe / Responsáveis</span> {ensureStringArray(row.equipe).length > 0 && <span className="text-[var(--color-primary)] font-bold">({ensureStringArray(row.equipe).length})</span>}
+                              </label>
+
+                              {/* Select Fixo no Topo */}
                               <select
                                 value=""
                                 onChange={(e) => {
@@ -5188,6 +5171,27 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                 </optgroup>
                                 <option value="__OUTRO__">+ Outro (Digitar nome manual...)</option>
                               </select>
+
+                              {/* Tags de Membros Adicionados (Abaixo do Campo) */}
+                              {ensureStringArray(row.equipe).length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                  {ensureStringArray(row.equipe).map((membro, eqIdx) => (
+                                    <span
+                                      key={eqIdx}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20 shadow-2xs"
+                                    >
+                                      {membro}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveEquipeFromRow(rIdx, eqIdx)}
+                                        className="text-[var(--color-primary)] hover:text-[var(--color-danger)] ml-0.5 transition-colors"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
