@@ -5480,8 +5480,8 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                 />
                                 <div className="min-w-0 flex-1 space-y-0.5">
                                   {meta.objetivo && meta.objetivo !== meta.descricao && (
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)] block">
-                                      {meta.objetivo.length > 50 ? `${meta.objetivo.slice(0, 48)}...` : meta.objetivo}
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)] block leading-snug">
+                                      {meta.objetivo}
                                     </span>
                                   )}
                                   <p className={`text-xs leading-relaxed ${isSelected ? 'font-semibold text-[var(--text-primary)]' : 'font-normal text-[var(--text-secondary)]'}`}>
