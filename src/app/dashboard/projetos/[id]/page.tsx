@@ -5159,12 +5159,14 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
 
                         <div className="p-4 space-y-3.5 text-xs">
                           {/* Bloco 1: Horário + Título + Local */}
-                          <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_200px] gap-3">
-                            <div>
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1 flex items-center gap-1">
-                                <Clock className="w-3 h-3" /> Horário
-                              </label>
-                              <div className="flex items-center gap-1.5">
+                          <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_200px] gap-3 items-start">
+                            {/* Horários Início e Término (Vertical para visualização completa de horas e minutos) */}
+                            <div className="space-y-1.5">
+                              <div>
+                                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-0.5 flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-[var(--color-primary)]" />
+                                  Hora Início
+                                </label>
                                 <input
                                   type="time"
                                   value={row.horario?.split(' - ')[0]?.trim() || ''}
@@ -5172,10 +5174,16 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                     const fim = row.horario?.split(' - ')[1]?.trim() || '';
                                     handleUpdateProgramacaoRow(rIdx, 'horario', fim ? `${e.target.value} - ${fim}` : e.target.value);
                                   }}
-                                  className="flex-1 px-2 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-mono-data transition-colors min-w-0"
-                                  title="Horário de início"
+                                  className="w-full px-2.5 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-mono-data font-semibold transition-colors"
+                                  title="Horário de início (HH:MM)"
                                 />
-                                <span className="text-[10px] text-[var(--text-muted)] font-bold shrink-0">–</span>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-0.5 flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+                                  Hora Término
+                                </label>
                                 <input
                                   type="time"
                                   value={row.horario?.split(' - ')[1]?.trim() || ''}
@@ -5183,8 +5191,8 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                     const inicio = row.horario?.split(' - ')[0]?.trim() || '';
                                     handleUpdateProgramacaoRow(rIdx, 'horario', inicio ? `${inicio} - ${e.target.value}` : `- ${e.target.value}`);
                                   }}
-                                  className="flex-1 px-2 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-mono-data transition-colors min-w-0"
-                                  title="Horário de término"
+                                  className="w-full px-2.5 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-mono-data font-semibold transition-colors"
+                                  title="Horário de término (HH:MM)"
                                 />
                               </div>
                             </div>
