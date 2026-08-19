@@ -76,6 +76,11 @@
    - **Frequência & Presença (`PedagogiaFrequencia.tsx`)**:
      - Banners de feedback atualizados com contraste sólido e alta legibilidade.
 
+3. **Integração dos Dados Reais da Pedagogia na Aba `/dashboard/projetos/[id]`**:
+   - Removido o banner legado de "## Em Construção ##" e os componentes placeholder.
+   - Integrados os 4 componentes oficiais com dados vivos do projeto (`PedagogiaPlanosAula`, `PedagogiaSocioemocional`, `PedagogiaFrequencia` e `PedagogiaDossie`).
+   - Adicionada barra de navegação Bento interna com 4 sub-abas, cabeçalho temático com avatar do projeto e resumo em pílulas numéricas (`Inscritos`, `Encontros`, `Metas`, `Planos de Aula Vinculados`).
+
 ---
 
 ### 2026-08-19 — `[UI/UX] & [DESIGN SYSTEM] & [REFACTOR]` 🔴 CRÍTICO
