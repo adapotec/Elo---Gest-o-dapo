@@ -79,6 +79,19 @@ export default function DashboardPage() {
     doacoesCount: 0,
   });
 
+  // Real Next Activities List (acoes_projeto)
+  const [proximasAtividades, setProximasAtividades] = useState<any[]>([]);
+
+  // Real Operational Alerts
+  const [alertas, setAlertas] = useState({
+    requisicoesPendentes: 0,
+    fichasSocioemocionalMes: 0,
+    projetosPlanejados: 0,
+  });
+
+  // Real Recent Activities History
+  const [historicoRecente, setHistoricoRecente] = useState<any[]>([]);
+
   // Low Stock Items Alert List
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
 
@@ -118,7 +131,9 @@ export default function DashboardPage() {
           }
         }
 
-        // 2. Fetch Operational System Counts in Parallel
+        // 2. Fetch Operational System Counts & Real Activities in Parallel
+        const mesAtualStr = new Date().toISOString().substring(0, 7);
+
         const [
           { count: countBen },
           { count: countVol },
@@ -126,6 +141,13 @@ export default function DashboardPage() {
           { count: countEst },
           { data: lowStockData },
           { count: countDoac },
+          { data: acoesData },
+          { count: countReqPendentes },
+          { count: countFichasMes },
+          { count: countProjPlanejamento },
+          { data: recentBen },
+          { data: recentDoac },
+          { data: recentAcoes },
         ] = await Promise.all([
           supabase.from('beneficiarios').select('*', { count: 'exact', head: true }),
           supabase.from('voluntarios').select('*', { count: 'exact', head: true }),
@@ -133,6 +155,38 @@ export default function DashboardPage() {
           supabase.from('estoque_itens').select('*', { count: 'exact', head: true }),
           supabase.from('estoque_itens').select('*').lte('quantidade', 10).limit(5),
           supabase.from('doacoes').select('*', { count: 'exact', head: true }),
+          supabase
+            .from('acoes_projeto')
+            .select('id, nome_acao, data_hora, descricao, projeto_id, projetos_sociais(id, nome, cor_identificacao)')
+            .order('data_hora', { ascending: true })
+            .limit(6),
+          supabase
+            .from('requisicoes_material')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'pendente'),
+          supabase
+            .from('acompanhamento_socioemocional')
+            .select('*', { count: 'exact', head: true })
+            .eq('mes_referencia', mesAtualStr),
+          supabase
+            .from('projetos_sociais')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'planejado'),
+          supabase
+            .from('beneficiarios')
+            .select('id, nome_completo, created_at, comunidade, bairro')
+            .order('created_at', { ascending: false })
+            .limit(3),
+          supabase
+            .from('doacoes')
+            .select('id, tipo_doacao, descricao_itens, created_at, data_doacao, valor')
+            .order('created_at', { ascending: false })
+            .limit(3),
+          supabase
+            .from('acoes_projeto')
+            .select('id, nome_acao, created_at, data_hora, projetos_sociais(nome)')
+            .order('created_at', { ascending: false })
+            .limit(3),
         ]);
 
         setStats({
@@ -145,6 +199,59 @@ export default function DashboardPage() {
         });
 
         setLowStockItems(lowStockData || []);
+        setProximasAtividades(acoesData || []);
+        setAlertas({
+          requisicoesPendentes: countReqPendentes || 0,
+          fichasSocioemocionalMes: countFichasMes || 0,
+          projetosPlanejados: countProjPlanejamento || 0,
+        });
+
+        // Montar histórico unificado real
+        const histMerged: any[] = [];
+        if (recentBen) {
+          recentBen.forEach((b: any) => {
+            histMerged.push({
+              id: 'ben_' + b.id,
+              titulo: `Novo beneficiário cadastrado: ${b.nome_completo}`,
+              subtitulo: b.comunidade ? `Território: ${b.comunidade}` : 'Cadastro no prontuário social',
+              data: b.created_at || new Date().toISOString(),
+              tipo: 'beneficiario',
+              icon: Users,
+              color: '#93368F',
+              href: '/dashboard/beneficiarios',
+            });
+          });
+        }
+        if (recentDoac) {
+          recentDoac.forEach((d: any) => {
+            histMerged.push({
+              id: 'doac_' + d.id,
+              titulo: `Registro de doação: ${d.descricao_itens || d.tipo_doacao || 'Doação recebida'}`,
+              subtitulo: d.valor ? `Valor estimado: R$ ${d.valor}` : 'Entrada registrada no sistema',
+              data: d.created_at || d.data_doacao || new Date().toISOString(),
+              tipo: 'doacao',
+              icon: Gift,
+              color: '#1C9C82',
+              href: '/dashboard/doacoes',
+            });
+          });
+        }
+        if (recentAcoes) {
+          recentAcoes.forEach((a: any) => {
+            histMerged.push({
+              id: 'acao_' + a.id,
+              titulo: `Ação programada: ${a.nome_acao}`,
+              subtitulo: a.projetos_sociais?.nome ? `Projeto: ${a.projetos_sociais.nome}` : 'Ação de cronograma',
+              data: a.created_at || a.data_hora || new Date().toISOString(),
+              tipo: 'acao',
+              icon: FolderKanban,
+              color: '#F2632D',
+              href: '/dashboard/projetos',
+            });
+          });
+        }
+        histMerged.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+        setHistoricoRecente(histMerged);
       } catch (err) {
         console.error('Erro ao carregar dados do Dashboard:', err);
       } finally {
@@ -485,52 +592,66 @@ export default function DashboardPage() {
                   </Link>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold flex flex-col items-center justify-center text-xs shrink-0 border border-[var(--color-primary)]/20">
-                        <span className="text-[10px] uppercase font-semibold">SEG</span>
-                        <span>17</span>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-[var(--text-primary)]">Oficina de Acompanhamento Socioemocional</h4>
-                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">Projeto Ádapo Acolhe • 14:00 - 16:30</p>
-                        <p className="text-[11px] text-[var(--text-muted)] mt-1">Sala 02 - Sede do Instituto</p>
-                      </div>
+                {proximasAtividades.length === 0 ? (
+                  <div className="p-8 text-center rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-2">
+                    <Calendar className="w-8 h-8 mx-auto text-[var(--text-muted)] opacity-40" />
+                    <p className="text-xs font-semibold text-[var(--text-secondary)]">Nenhuma atividade ou oficina agendada no momento.</p>
+                    <p className="text-[11px] text-[var(--text-muted)]">Cadastre encontros no cronograma dos projetos sociais para acompanhá-los aqui e no calendário geral.</p>
+                    <div className="pt-2">
+                      <Link href="/dashboard/projetos">
+                        <Button size="sm" variant="secondary">Ir para Projetos Sociais</Button>
+                      </Link>
                     </div>
-                    <Badge variant="purple">Pedagogia</Badge>
                   </div>
+                ) : (
+                  <div className="space-y-3">
+                    {proximasAtividades.map((item) => {
+                      const dataValida = item.data_hora ? new Date(item.data_hora) : new Date();
+                      const diaSemana = isNaN(dataValida.getTime()) ? 'DIA' : dataValida.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase();
+                      const diaMes = isNaN(dataValida.getTime()) ? '--' : dataValida.getDate().toString().padStart(2, '0');
+                      const horaFormatada = isNaN(dataValida.getTime()) ? '' : dataValida.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                      const projetoNome = item.projetos_sociais?.nome || 'Projeto Social';
+                      const projetoCor = item.projetos_sociais?.cor_identificacao || '#93368F';
 
-                  <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 font-bold flex flex-col items-center justify-center text-xs shrink-0 border border-amber-500/20">
-                        <span className="text-[10px] uppercase font-semibold">QUA</span>
-                        <span>19</span>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-[var(--text-primary)]">Entrega de Cestas Básicas e Alimentos</h4>
-                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">Programa Doações • 09:00 - 12:00</p>
-                        <p className="text-[11px] text-[var(--text-muted)] mt-1">Almoxarifado Principal</p>
-                      </div>
-                    </div>
-                    <Badge variant="warning">Doações</Badge>
+                      return (
+                        <div
+                          key={item.id}
+                          className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] flex items-start justify-between gap-4 hover:border-[var(--color-primary)]/40 transition-colors"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className="w-10 h-10 rounded-xl font-bold flex flex-col items-center justify-center text-xs shrink-0 border"
+                              style={{
+                                backgroundColor: `${projetoCor}15`,
+                                color: projetoCor,
+                                borderColor: `${projetoCor}30`,
+                              }}
+                            >
+                              <span className="text-[10px] uppercase font-semibold">{diaSemana}</span>
+                              <span className="font-mono-data">{diaMes}</span>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-[var(--text-primary)]">{item.nome_acao}</h4>
+                              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                                {projetoNome} {horaFormatada ? `• ${horaFormatada}` : ''}
+                              </p>
+                              {item.descricao && (
+                                <p className="text-[11px] text-[var(--text-muted)] mt-1 line-clamp-1">
+                                  {item.descricao}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Link href={`/dashboard/projetos/${item.projeto_id}`}>
+                            <Badge variant="purple" style={{ borderColor: `${projetoCor}40`, color: projetoCor }}>
+                              {projetoNome}
+                            </Badge>
+                          </Link>
+                        </div>
+                      );
+                    })}
                   </div>
-
-                  <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 font-bold flex flex-col items-center justify-center text-xs shrink-0 border border-blue-500/20">
-                        <span className="text-[10px] uppercase font-semibold">SEX</span>
-                        <span>21</span>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-[var(--text-primary)]">Reunião Geral de Planejamento da Equipe</h4>
-                        <p className="text-xs text-[var(--text-secondary)] mt-0.5">Coordenação e Voluntários • 18:30 - 20:00</p>
-                        <p className="text-[11px] text-[var(--text-muted)] mt-1">Auditório Online (Google Meet)</p>
-                      </div>
-                    </div>
-                    <Badge variant="primary">Gestão</Badge>
-                  </div>
-                </div>
+                )}
               </Card>
             </div>
 
@@ -543,6 +664,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-3">
+                  {/* Alerta de Estoque */}
                   {stats.estoqueBaixoCount > 0 ? (
                     <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-200">
                       <div className="flex items-center gap-2 font-bold text-xs">
@@ -550,7 +672,7 @@ export default function DashboardPage() {
                         <span>Atenção: Estoque Baixo ({stats.estoqueBaixoCount} itens)</span>
                       </div>
                       <p className="text-[11px] mt-1 opacity-90 leading-relaxed">
-                        Existem itens no almoxarifado com quantidade inferior a 10 unidades.
+                        Existem itens no almoxarifado com quantidade inferior ou igual a 10 unidades.
                       </p>
                       <Link href="/dashboard/estoque" className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-2 block underline">
                         Verificar almoxarifado →
@@ -568,15 +690,63 @@ export default function DashboardPage() {
                     </div>
                   )}
 
+                  {/* Alerta de Requisições Pendentes */}
+                  {alertas.requisicoesPendentes > 0 ? (
+                    <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-800 dark:text-purple-200">
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span>Requisições de Material</span>
+                        <Badge variant="purple">{alertas.requisicoesPendentes} pendente(s)</Badge>
+                      </div>
+                      <p className="text-[11px] mt-1 opacity-90 leading-relaxed">
+                        Solicitações de materiais aguardando liberação da coordenação no estoque.
+                      </p>
+                      <Link href="/dashboard/estoque" className="text-[11px] font-bold text-purple-600 dark:text-purple-400 mt-2 block underline">
+                        Analisar requisições →
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
+                      <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-primary)]">
+                        <span>Requisições de Material</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">0 pendentes</span>
+                      </div>
+                      <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                        Nenhuma requisição de insumo pendente de liberação.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Alerta de Acompanhamento Socioemocional */}
                   <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
                     <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-primary)]">
-                      <span>Projetos com Frequência Pendente</span>
-                      <span className="text-[var(--color-primary)] font-bold">2</span>
+                      <span>Acompanhamento Socioemocional</span>
+                      <span className="text-[var(--color-primary)] font-bold font-mono-data">
+                        {alertas.fichasSocioemocionalMes} fichas
+                      </span>
                     </div>
                     <p className="text-[11px] text-[var(--text-muted)] mt-1">
-                      Aguardando confirmação de presença da última semana.
+                      Fichas dos 4 eixos registradas para o mês vigente.
                     </p>
+                    <Link href="/dashboard/pedagogia" className="text-[11px] font-bold text-[var(--color-primary)] mt-1.5 block underline">
+                      Abrir fichas pedagógicas →
+                    </Link>
                   </div>
+
+                  {/* Alerta de Projetos em Planejamento */}
+                  {alertas.projetosPlanejados > 0 && (
+                    <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-800 dark:text-blue-200">
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span>Projetos em Planejamento</span>
+                        <Badge variant="primary">{alertas.projetosPlanejados}</Badge>
+                      </div>
+                      <p className="text-[11px] mt-1 opacity-90 leading-relaxed">
+                        Projetos cadastrados que ainda estão em fase de estruturação e diagnóstico.
+                      </p>
+                      <Link href="/dashboard/projetos" className="text-[11px] font-bold text-blue-600 dark:text-blue-400 mt-2 block underline">
+                        Acessar projetos →
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </Card>
             </div>
@@ -644,40 +814,45 @@ export default function DashboardPage() {
               <h3 className="font-bold text-base text-[var(--text-primary)]">Histórico de Atividades & Alterações Recentes</h3>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
-                <div className="w-8 h-8 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold flex items-center justify-center text-xs shrink-0">
-                  <Users className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[var(--text-primary)]">Novo cadastro de beneficiário realizado</p>
-                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Cadastrado por Coordenação Social</p>
-                  <span className="text-[10px] text-[var(--text-muted)] font-mono-data mt-1 block">Hoje às 10:15</span>
-                </div>
+            {historicoRecente.length === 0 ? (
+              <div className="p-8 text-center rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-2">
+                <Clock className="w-8 h-8 mx-auto text-[var(--text-muted)] opacity-40" />
+                <p className="text-xs font-semibold text-[var(--text-secondary)]">Nenhuma atividade recente registrada no sistema.</p>
               </div>
+            ) : (
+              <div className="space-y-3">
+                {historicoRecente.map((hist) => {
+                  const IconComponent = hist.icon;
+                  const dateObj = new Date(hist.data);
+                  const dataFormatada = isNaN(dateObj.getTime())
+                    ? 'Recentemente'
+                    : dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-              <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
-                <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 font-bold flex items-center justify-center text-xs shrink-0">
-                  <Gift className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[var(--text-primary)]">Doação de mantimentos cadastrada no estoque</p>
-                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Entrada de 50kg de alimentos não perecíveis</p>
-                  <span className="text-[10px] text-[var(--text-muted)] font-mono-data mt-1 block">Ontem às 16:40</span>
-                </div>
+                  return (
+                    <Link
+                      key={hist.id}
+                      href={hist.href}
+                      className="flex items-start gap-4 p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] hover:border-[var(--color-primary)]/40 transition-colors group"
+                    >
+                      <div
+                        className="w-8 h-8 rounded-full font-bold flex items-center justify-center text-xs shrink-0"
+                        style={{ backgroundColor: `${hist.color}20`, color: hist.color }}
+                      >
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--color-primary)] transition-colors">
+                          {hist.titulo}
+                        </p>
+                        <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{hist.subtitulo}</p>
+                        <span className="text-[10px] text-[var(--text-muted)] font-mono-data mt-1 block">{dataFormatada}</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--color-primary)] transition-colors self-center" />
+                    </Link>
+                  );
+                })}
               </div>
-
-              <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
-                <div className="w-8 h-8 rounded-full bg-purple-500/10 text-purple-600 font-bold flex items-center justify-center text-xs shrink-0">
-                  <FolderKanban className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[var(--text-primary)]">Projeto Oficina de Leitura atualizado</p>
-                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Novos voluntários vinculados como monitores</p>
-                  <span className="text-[10px] text-[var(--text-muted)] font-mono-data mt-1 block">Há 2 dias</span>
-                </div>
-              </div>
-            </div>
+            )}
           </Card>
         </div>
       )}
