@@ -133,6 +133,9 @@ export default function DashboardPage() {
 
         // 2. Fetch Operational System Counts & Real Activities in Parallel
         const mesAtualStr = new Date().toISOString().substring(0, 7);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0];
 
         const [
           { count: countBen },
@@ -158,6 +161,7 @@ export default function DashboardPage() {
           supabase
             .from('acoes_projeto')
             .select('id, nome_acao, data_hora, descricao, projeto_id, projetos_sociais(id, nome, cor_identificacao)')
+            .gte('data_hora', todayStr)
             .order('data_hora', { ascending: true })
             .limit(6),
           supabase
@@ -613,6 +617,17 @@ export default function DashboardPage() {
                       const projetoNome = item.projetos_sociais?.nome || 'Projeto Social';
                       const projetoCor = item.projetos_sociais?.cor_identificacao || '#93368F';
 
+                      // Proximidade temporal
+                      const hojeCheck = new Date();
+                      hojeCheck.setHours(0, 0, 0, 0);
+                      const amanhaCheck = new Date(hojeCheck);
+                      amanhaCheck.setDate(amanhaCheck.getDate() + 1);
+                      const dataAcaoCheck = new Date(dataValida);
+                      dataAcaoCheck.setHours(0, 0, 0, 0);
+
+                      const isHoje = dataAcaoCheck.getTime() === hojeCheck.getTime();
+                      const isAmanha = dataAcaoCheck.getTime() === amanhaCheck.getTime();
+
                       return (
                         <div
                           key={item.id}
@@ -631,7 +646,19 @@ export default function DashboardPage() {
                               <span className="font-mono-data">{diaMes}</span>
                             </div>
                             <div>
-                              <h4 className="text-sm font-bold text-[var(--text-primary)]">{item.nome_acao}</h4>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="text-sm font-bold text-[var(--text-primary)]">{item.nome_acao}</h4>
+                                {isHoje && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500 text-white animate-pulse">
+                                    HOJE
+                                  </span>
+                                )}
+                                {isAmanha && (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-amber-500 text-white">
+                                    AMANHÃ
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                                 {projetoNome} {horaFormatada ? `• ${horaFormatada}` : ''}
                               </p>
