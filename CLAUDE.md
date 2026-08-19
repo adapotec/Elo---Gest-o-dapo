@@ -82,12 +82,19 @@
    - **Frequência & Presença (`PedagogiaFrequencia.tsx`)**:
      - Banners de feedback atualizados com contraste sólido e alta legibilidade.
 
-3. **Integração dos Dados Reais da Pedagogia na Aba `/dashboard/projetos/[id]`**:
+3. **Aprimoramentos em Execução & Monitoramento > Programação da Ação (`/dashboard/projetos/[id]`)**:
+   - **Padronização de Horário com Inputs Numéricos (`type="time"`)**: O campo de horário agora é composto por dois seletores de tempo (Início e Fim), decompondo e persistindo no formato estruturado `"HH:MM - HH:MM"` sem aceitar textos aleatórios.
+   - **Sistema de Templates Reutilizáveis de Programação**: Gestores podem salvar a grade de atividades atual como modelo reutilizável (`Salvar Template`) e carregar templates salvos via dropdown com 1 clique (persistidos no `localStorage`).
+   - **Correção de Fuso Horário no PDF Exportado**: Substituído `new Date().toLocaleString()` que convertia UTC -3h (exibindo 11h para ações das 14h) por `formatarDataHoraAcao()` com parsing seguro da data e hora real cadastrada.
+   - **Correção de Layout nos Labels de Materiais e Equipe**: Ajustado o contador quantitativo `(N)` para exibição em linha (`whitespace-nowrap flex items-center gap-1`) com o ícone e título do campo, eliminando o deslocamento vertical dos inputs.
+   - **Redução de Carga Cognitiva no Vínculo com Metas**: Seção transformada em **Accordion Compacto colapsável**, exibindo metas não selecionadas em linhas limpas de 1 clique e expandindo justificativa de impacto apenas para metas marcadas.
+
+4. **Integração dos Dados Reais da Pedagogia na Aba `/dashboard/projetos/[id]`**:
    - Removido o banner legado de "## Em Construção ##" e os componentes placeholder.
    - Integrados os 4 componentes oficiais com dados vivos do projeto (`PedagogiaPlanosAula`, `PedagogiaSocioemocional`, `PedagogiaFrequencia` e `PedagogiaDossie`).
    - Adicionada barra de navegação Bento interna com 4 sub-abas, cabeçalho temático com avatar do projeto e resumo em pílulas numéricas (`Inscritos`, `Encontros`, `Metas`, `Planos de Aula Vinculados`).
 
-4. **Saneamento e Conexão de Dados Reais no Painel Inicial (`/dashboard`)**:
+5. **Saneamento e Conexão de Dados Reais no Painel Inicial (`/dashboard`)**:
    - **Próximas Atividades do Instituto**: Substituídos os cards estáticos/hardcoded por consulta real à tabela `acoes_projeto` com join em `projetos_sociais` (data, horário, nome da oficina e cor de identificação).
    - **Alertas Operacionais**: Conectados aos dados reais do banco (estoque crítico `<= 10`, requisições pendentes em `requisicoes_material`, volume de fichas socioemocionais do mês vigente e projetos em fase de planejamento).
    - **Histórico & Avisos Recentes**: Montagem dinâmica baseada nos últimos registros de `beneficiarios`, `doacoes` e `acoes_projeto`.

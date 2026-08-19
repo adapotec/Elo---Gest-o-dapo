@@ -460,6 +460,7 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   const [savingProgramacao, setSavingProgramacao] = useState(false);
   const [showPrintProgramacaoModal, setShowPrintProgramacaoModal] = useState(false);
   const [acaoToPrint, setAcaoToPrint] = useState<AcaoExecucao | null>(null);
+  const [showMetasSection, setShowMetasSection] = useState(false);
 
   // Relatórios de Monitoramento e Avaliação
   const [showMroscModal, setShowMroscModal] = useState(false);
@@ -1445,6 +1446,49 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
 
   const handleRemoveProgramacaoRow = (idx: number) => {
     setProgramacaoRows(programacaoRows.filter((_, i) => i !== idx));
+  };
+
+  // Templates de Programação (localStorage)
+  const TEMPLATE_KEY = `programacao-templates-${id}`;
+
+  const getSavedTemplates = (): { nome: string; rows: ItemProgramacaoAcao[] }[] => {
+    try {
+      const raw = localStorage.getItem(TEMPLATE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  };
+
+  const handleSalvarTemplate = () => {
+    if (programacaoRows.length === 0) {
+      alert('Adicione pelo menos uma atividade antes de salvar como template.');
+      return;
+    }
+    const nome = prompt('Nome do template (ex: "Estrutura Padrão de Oficina"):');
+    if (!nome || !nome.trim()) return;
+    const templates = getSavedTemplates();
+    const existente = templates.findIndex((t) => t.nome === nome.trim());
+    if (existente >= 0) {
+      if (!confirm(`Já existe um template "${nome.trim()}". Deseja substituir?`)) return;
+      templates[existente].rows = programacaoRows.map((r) => ({ ...r, id: r.id }));
+    } else {
+      templates.push({ nome: nome.trim(), rows: programacaoRows.map((r) => ({ ...r })) });
+    }
+    localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates));
+    alert(`Template "${nome.trim()}" salvo com sucesso!`);
+  };
+
+  const handleCarregarTemplate = (templateNome: string) => {
+    const templates = getSavedTemplates();
+    const tpl = templates.find((t) => t.nome === templateNome);
+    if (!tpl) return;
+    if (programacaoRows.length > 0 && !confirm('Isso substituirá as atividades atuais. Continuar?')) return;
+    setProgramacaoRows(tpl.rows.map((r) => ({ ...r, id: crypto.randomUUID() })));
+  };
+
+  const handleRemoverTemplate = (templateNome: string) => {
+    if (!confirm(`Excluir o template "${templateNome}"?`)) return;
+    const templates = getSavedTemplates().filter((t) => t.nome !== templateNome);
+    localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates));
   };
 
   // Importar atividade cadastrada pela pedagogia para a linha de programação
@@ -5016,6 +5060,61 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                     Adicionar Linha de Atividade
                   </Button>
                 </div>
+
+                {/* Template Actions */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleSalvarTemplate}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[var(--text-secondary)] bg-[var(--bg-elevated)] border border-[var(--border-default)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
+                    title="Salvar a estrutura atual como template reutilizável"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    Salvar Template
+                  </button>
+
+                  {(() => {
+                    const templates = getSavedTemplates();
+                    if (templates.length === 0) return null;
+                    return (
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-[var(--color-primary)] bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer"
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                          Carregar Template ({templates.length})
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                        <div className="absolute top-full right-0 mt-1 w-64 bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-xl shadow-xl z-50 hidden group-hover:block group-focus-within:block">
+                          <div className="p-1.5 space-y-0.5 max-h-48 overflow-y-auto">
+                            {templates.map((tpl) => (
+                              <div key={tpl.nome} className="flex items-center justify-between gap-1 px-2.5 py-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCarregarTemplate(tpl.nome)}
+                                  className="flex-1 text-left text-xs font-medium text-[var(--text-primary)] cursor-pointer truncate"
+                                  title={`Carregar: ${tpl.nome} (${tpl.rows.length} atividades)`}
+                                >
+                                  {tpl.nome}
+                                  <span className="text-[10px] text-[var(--text-muted)] ml-1">({tpl.rows.length})</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleRemoverTemplate(tpl.nome); }}
+                                  className="p-0.5 text-[var(--text-muted)] hover:text-[var(--color-danger)] transition-colors shrink-0 cursor-pointer"
+                                  title="Excluir template"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
 
               {programacaoRows.length === 0 ? (
@@ -5054,16 +5153,32 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                           {/* Bloco 1: Horário + Título + Local */}
                           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_200px] gap-3">
                             <div>
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
-                                Horário
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1 flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> Horário
                               </label>
-                              <input
-                                type="text"
-                                value={row.horario}
-                                onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'horario', e.target.value)}
-                                placeholder="Ex: 08:30 - 09:15"
-                                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium transition-colors"
-                              />
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="time"
+                                  value={row.horario?.split(' - ')[0]?.trim() || ''}
+                                  onChange={(e) => {
+                                    const fim = row.horario?.split(' - ')[1]?.trim() || '';
+                                    handleUpdateProgramacaoRow(rIdx, 'horario', fim ? `${e.target.value} - ${fim}` : e.target.value);
+                                  }}
+                                  className="flex-1 px-2 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-mono-data transition-colors min-w-0"
+                                  title="Horário de início"
+                                />
+                                <span className="text-[10px] text-[var(--text-muted)] font-bold shrink-0">–</span>
+                                <input
+                                  type="time"
+                                  value={row.horario?.split(' - ')[1]?.trim() || ''}
+                                  onChange={(e) => {
+                                    const inicio = row.horario?.split(' - ')[0]?.trim() || '';
+                                    handleUpdateProgramacaoRow(rIdx, 'horario', inicio ? `${inicio} - ${e.target.value}` : `- ${e.target.value}`);
+                                  }}
+                                  className="flex-1 px-2 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-mono-data transition-colors min-w-0"
+                                  title="Horário de término"
+                                />
+                              </div>
                             </div>
 
                             <div>
@@ -5137,8 +5252,8 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-[var(--border-default)]/50 items-start">
                             {/* Materiais */}
                             <div className="space-y-2 flex flex-col justify-start">
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                                <span className="flex items-center gap-1"><Package className="w-3 h-3" /> Materiais / Insumos</span> {ensureStringArray(row.materiais).length > 0 && <span className="text-[var(--color-primary)] font-bold">({ensureStringArray(row.materiais).length})</span>}
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] flex items-center gap-1 whitespace-nowrap">
+                                <Package className="w-3 h-3 shrink-0" /> Materiais / Insumos {ensureStringArray(row.materiais).length > 0 && <span className="text-[var(--color-primary)] font-bold">({ensureStringArray(row.materiais).length})</span>}
                               </label>
 
                               {/* Input Fixo no Topo */}
@@ -5196,8 +5311,8 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
 
                             {/* Equipe / Responsáveis */}
                             <div className="space-y-2 flex flex-col justify-start">
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                                <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Equipe / Responsáveis</span> {ensureStringArray(row.equipe).length > 0 && <span className="text-[var(--color-primary)] font-bold">({ensureStringArray(row.equipe).length})</span>}
+                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] flex items-center gap-1 whitespace-nowrap">
+                                <Users className="w-3 h-3 shrink-0" /> Equipe / Responsáveis {ensureStringArray(row.equipe).length > 0 && <span className="text-[var(--color-primary)] font-bold">({ensureStringArray(row.equipe).length})</span>}
                               </label>
 
                               {/* Select Fixo no Topo */}
@@ -5258,92 +5373,102 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                 </div>
               )}
 
-              {/* Seção de Vínculo de Metas do Projeto (Múltiplas Metas com Justificativa) */}
-              <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-default)] pb-2.5">
-                  <div>
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
-                      <Target className="w-4 h-4" />
-                      Vínculo desta Ação com as Metas do Projeto ({programacaoMetasVinculadas.length} selecionada(s))
-                    </h4>
-                    <p className="text-[11px] text-[var(--text-muted)]">
-                      Selecione uma ou mais metas do projeto e explique como esta ação e suas dinâmicas contribuem para o alcance de cada uma
-                    </p>
+              {/* Seção de Vínculo de Metas do Projeto (Accordion Compacto) */}
+              <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 overflow-hidden">
+                {/* Header clicável do Accordion */}
+                <button
+                  type="button"
+                  onClick={() => setShowMetasSection(!showMetasSection)}
+                  className="w-full flex items-center justify-between p-3.5 hover:bg-[var(--bg-secondary)]/80 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Target className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
+                    <span className="font-bold text-xs uppercase tracking-wider text-[var(--color-primary)]">
+                      Vínculo com Metas do Projeto
+                    </span>
+                    {programacaoMetasVinculadas.length > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                        {programacaoMetasVinculadas.length} vinculada{programacaoMetasVinculadas.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {(() => {
+                      const planoVinculado = planosPedagogia.find((p) => p.acao_id === selectedAcaoForProgramacao.id);
+                      if (planoVinculado && Array.isArray(planoVinculado.atividades) && planoVinculado.atividades.some((a: any) => a.meta_id)) {
+                        return (
+                          <span
+                            onClick={(e) => { e.stopPropagation(); handleImportarMetasPedagogia(planoVinculado); }}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold text-amber-600 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            Importar da Pedagogia
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {showMetasSection ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
+                  </div>
+                </button>
 
-                  {(() => {
-                    const planoVinculado = planosPedagogia.find((p) => p.acao_id === selectedAcaoForProgramacao.id);
-                    if (planoVinculado && Array.isArray(planoVinculado.atividades) && planoVinculado.atividades.some((a: any) => a.meta_id)) {
-                      return (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          icon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />}
-                          onClick={() => handleImportarMetasPedagogia(planoVinculado)}
-                        >
-                          Importar Metas da Pedagogia
-                        </Button>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
+                {/* Conteúdo colapsável */}
+                {showMetasSection && (
+                  <div className="px-3.5 pb-3.5 space-y-2 border-t border-[var(--border-default)]/60 pt-3">
+                    {todasMetasDisponiveis.length === 0 ? (
+                      <p className="text-xs text-[var(--text-muted)] italic">
+                        Nenhuma meta cadastrada no Plano de Trabalho deste projeto.
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {todasMetasDisponiveis.map((meta) => {
+                          const vinculada = programacaoMetasVinculadas.find((m) => m.meta_id === meta.id);
+                          const isSelected = !!vinculada;
 
-                {todasMetasDisponiveis.length === 0 ? (
-                  <p className="text-xs text-[var(--text-muted)] italic">
-                    Nenhuma meta cadastrada no Plano de Trabalho deste projeto.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {todasMetasDisponiveis.map((meta) => {
-                      const vinculada = programacaoMetasVinculadas.find((m) => m.meta_id === meta.id);
-                      const isSelected = !!vinculada;
-
-                      return (
-                        <div
-                          key={meta.id}
-                          className={`p-3.5 rounded-xl border transition-all space-y-2.5 ${
-                            isSelected
-                              ? 'bg-[var(--bg-elevated)] border-[var(--color-primary)] shadow-sm'
-                              : 'bg-[var(--bg-elevated)]/40 border-[var(--border-default)] opacity-85 hover:opacity-100'
-                          }`}
-                        >
-                          <label className="flex items-start gap-2.5 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => handleToggleMetaVinculada(meta.id)}
-                              className="mt-0.5 w-4 h-4 rounded text-[var(--color-primary)]"
-                            />
-                            <div className="min-w-0 flex-1">
-                              {meta.objetivo && (
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)] block">
-                                  [{meta.objetivo}]
-                                </span>
-                              )}
-                              <span className="font-semibold text-xs text-[var(--text-primary)] block">
-                                {meta.descricao}
-                              </span>
-                            </div>
-                          </label>
-
-                          {isSelected && (
-                            <div className="pl-6 pt-1 border-t border-[var(--border-default)]/60 space-y-1">
-                              <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                                Por que / Como esta ação influencia diretamente nesta meta?
+                          return (
+                            <div
+                              key={meta.id}
+                              className={`rounded-xl border transition-all ${
+                                isSelected
+                                  ? 'bg-[var(--bg-elevated)] border-[var(--color-primary)]/60 shadow-sm'
+                                  : 'bg-[var(--bg-elevated)]/40 border-[var(--border-default)] hover:border-[var(--border-default)]/80'
+                              }`}
+                            >
+                              <label className="flex items-center gap-2.5 p-2.5 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleToggleMetaVinculada(meta.id)}
+                                  className="w-3.5 h-3.5 rounded text-[var(--color-primary)] shrink-0"
+                                />
+                                <div className="min-w-0 flex-1 flex items-center gap-2">
+                                  {meta.objetivo && (
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded shrink-0">
+                                      {meta.objetivo}
+                                    </span>
+                                  )}
+                                  <span className={`text-xs truncate ${isSelected ? 'font-semibold text-[var(--text-primary)]' : 'font-medium text-[var(--text-secondary)]'}`}>
+                                    {meta.descricao}
+                                  </span>
+                                </div>
                               </label>
-                              <textarea
-                                rows={2}
-                                value={vinculada?.justificativa || ''}
-                                onChange={(e) => handleUpdateJustificativaMeta(meta.id, e.target.value)}
-                                placeholder="Explique a contribuição das oficinas e dinâmicas desta ação para esta meta específica..."
-                                className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                              />
+
+                              {isSelected && (
+                                <div className="px-2.5 pb-2.5 pt-0">
+                                  <textarea
+                                    rows={1}
+                                    value={vinculada?.justificativa || ''}
+                                    onChange={(e) => handleUpdateJustificativaMeta(meta.id, e.target.value)}
+                                    placeholder="Como esta ação contribui para esta meta? (opcional)"
+                                    className="w-full p-2 rounded-lg text-[11px] bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors resize-none"
+                                  />
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -5506,7 +5631,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
             <div className="grid grid-cols-2 gap-x-8 gap-y-1">
               <p><strong>Projeto Social:</strong> {formData.nome}</p>
               <p><strong>Ação / Encontro:</strong> {acaoToPrint?.nome_acao}</p>
-              <p><strong>Data/Hora:</strong> {acaoToPrint?.data_hora ? new Date(acaoToPrint.data_hora).toLocaleString('pt-BR') : '—'}</p>
+              <p><strong>Data/Hora:</strong> {acaoToPrint?.data_hora ? `${formatarDataHoraAcao(acaoToPrint.data_hora).data} às ${formatarDataHoraAcao(acaoToPrint.data_hora).hora}` : '—'}</p>
               <p><strong>Responsável:</strong> Equipe de Projetos</p>
             </div>
 
