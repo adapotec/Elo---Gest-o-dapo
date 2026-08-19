@@ -9,10 +9,12 @@ import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { FieldInfo } from '@/components/ui/FieldInfo';
 import { createClient } from '@/lib/supabase/client';
-import { ProjetoPedagogia } from '@/components/dashboard/projetos/ProjetoPedagogia';
-import { ProjetoSocioemocional } from '@/components/dashboard/projetos/ProjetoSocioemocional';
 import { ProjetoComunicacao } from '@/components/dashboard/projetos/ProjetoComunicacao';
 import { ProjetoParceiros } from '@/components/dashboard/projetos/ProjetoParceiros';
+import { PedagogiaFrequencia } from '@/components/dashboard/pedagogia/PedagogiaFrequencia';
+import { PedagogiaDossie } from '@/components/dashboard/pedagogia/PedagogiaDossie';
+import { PedagogiaSocioemocional } from '@/components/dashboard/pedagogia/PedagogiaSocioemocional';
+import { PedagogiaPlanosAula } from '@/components/dashboard/pedagogia/PedagogiaPlanosAula';
 import { PapelTimbradoModal } from '@/components/ui/PapelTimbradoModal';
 import {
   ArrowLeft,
@@ -344,6 +346,9 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
   // Sub-navegação da Área de Gestão
   const [gestaoSubTab, setGestaoSubTab] = useState<'diagnostico' | 'planejamento' | 'execucao' | 'encerramento'>('diagnostico');
+
+  // Sub-navegação da Área de Pedagogia
+  const [pedagogiaSubTab, setPedagogiaSubTab] = useState<'planos_aula' | 'socioemocional' | 'frequencia' | 'dossie'>('planos_aula');
 
   // Sub-navegação interna de Planejamento
   const [planejamentoSection, setPlanejamentoSection] = useState<'apresentacao' | 'objetivos' | 'ods' | 'metodologia' | 'orcamento'>('apresentacao');
@@ -3125,46 +3130,151 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
           )}
 
           {/* ========================================================================= */}
-          {/* ÁREA 2: PEDAGOGIA (VISUALIZAÇÃO + BANNER EM CONSTRUÇÃO + PREVIEW) */}
+          {/* ÁREA 2: PEDAGOGIA (DADOS REAIS & MÓDULO PEDAGÓGICO INTEGRADO) */}
           {/* ========================================================================= */}
-          {activeArea === 'pedagogia' && (
-            <div className="space-y-6">
-              <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-[#93368F]/10 text-[#93368F]">
-                      <GraduationCap className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">Área de Pedagogia do Projeto</h3>
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20">
-                          ## Em Construção ##
-                        </span>
+          {activeArea === 'pedagogia' && (() => {
+            const inscritosFormatados = inscricoes
+              .map((item: any) => item.beneficiarios)
+              .filter(Boolean);
+
+            const metasFormatadas: any[] = [];
+            if (Array.isArray(objetivosEspecificos)) {
+              objetivosEspecificos.forEach((obj: any) => {
+                if (Array.isArray(obj.metas)) {
+                  obj.metas.forEach((m: any) => {
+                    metasFormatadas.push({
+                      id: m.id,
+                      descricao: m.descricao_meta || m.descricao || '',
+                      indicador: m.indicador || '',
+                      meta_quantitativa: m.meta_quantitativa || null,
+                    });
+                  });
+                }
+              });
+            }
+
+            const PEDAGOGIA_TABS = [
+              { key: 'planos_aula', label: 'Planos de Aula & Metodologia', icon: BookOpen, color: '#93368F' },
+              { key: 'socioemocional', label: 'Acompanhamento Socioemocional', icon: Heart, color: '#F2632D' },
+              { key: 'frequencia', label: 'Frequência & Presença', icon: Calendar, color: '#1C9C82' },
+              { key: 'dossie', label: 'Dossiê dos Alunos', icon: FileText, color: '#3B82F6' },
+            ];
+
+            return (
+              <div className="space-y-6">
+                {/* Cabeçalho da Seção de Pedagogia do Projeto */}
+                <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border-default)] pb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-md shrink-0"
+                        style={{ backgroundColor: formData.cor_identificacao || '#93368F' }}
+                      >
+                        <GraduationCap className="w-6 h-6" />
                       </div>
-                      <p className="text-xs text-[var(--text-muted)]">Planos de aula, diretrizes metodológicas e acompanhamento socioemocional</p>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">
+                            Gestão Pedagógica & Metodologia
+                          </h3>
+                          <Badge variant="purple">PEDAGOGIA INTEGRADA</Badge>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)]">
+                          Planos de aula, acompanhamento socioemocional, registro de frequência e dossiê vinculados a <strong>{formData.nome || 'Projeto'}</strong>.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link href="/dashboard/pedagogia">
+                        <Button size="sm" variant="secondary" icon={<ExternalLink className="w-4 h-4" />}>
+                          Abrir Módulo de Pedagogia Global
+                        </Button>
+                      </Link>
                     </div>
                   </div>
 
-                  <Link href="/dashboard/pedagogia">
-                    <Button size="sm" variant="secondary" icon={<ExternalLink className="w-4 h-4" />}>
-                      Abrir Módulo de Pedagogia
-                    </Button>
-                  </Link>
+                  {/* Resumo Rápido em Pílulas */}
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-muted)] pt-1">
+                    <span>Inscritos no Projeto: <strong className="text-[var(--text-primary)] font-mono-data">{inscritosFormatados.length}</strong></span>
+                    <span>•</span>
+                    <span>Encontros Cadastrados: <strong className="text-[var(--text-primary)] font-mono-data">{acoes.length}</strong></span>
+                    <span>•</span>
+                    <span>Metas do Projeto: <strong className="text-[var(--text-primary)] font-mono-data">{metasFormatadas.length}</strong></span>
+                    <span>•</span>
+                    <span>Planos de Aula Vinculados: <strong className="text-[var(--text-primary)] font-mono-data">{planosPedagogia.length}</strong></span>
+                  </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
-                  A gestão pedagógica completa do Instituto Ádapo possui sua própria página no menu lateral (<strong>/pedagogia</strong>). Quando os planos de aula, roteiros de oficinas e relatórios socioemocionais forem vinculados a este projeto, eles serão exibidos automaticamente nesta área.
+                {/* Painel de Navegação Interno da Pedagogia (Tabs Bento) */}
+                <div className="p-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {PEDAGOGIA_TABS.map((tab) => {
+                      const IconComp = tab.icon;
+                      const isActive = pedagogiaSubTab === tab.key;
+                      return (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          onClick={() => setPedagogiaSubTab(tab.key as any)}
+                          className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-xs font-bold cursor-pointer ${
+                            isActive
+                              ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-sm scale-[1.02]'
+                              : 'border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                          }`}
+                        >
+                          <IconComp className="w-5 h-5" style={{ color: isActive ? 'var(--color-primary)' : tab.color }} />
+                          <span className="text-center">{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Sub-tela Ativa */}
+                <div>
+                  {pedagogiaSubTab === 'planos_aula' && (
+                    <PedagogiaPlanosAula
+                      projetoId={id}
+                      projetoNome={formData.nome || 'Projeto Social'}
+                      metas={metasFormatadas}
+                      acoes={acoes}
+                      voluntarios={todosVoluntarios}
+                      onRefresh={loadData}
+                    />
+                  )}
+
+                  {pedagogiaSubTab === 'socioemocional' && (
+                    <PedagogiaSocioemocional
+                      projetoId={id}
+                      projetoNome={formData.nome || 'Projeto Social'}
+                      inscritos={inscritosFormatados}
+                      voluntarios={todosVoluntarios}
+                      onRefresh={loadData}
+                    />
+                  )}
+
+                  {pedagogiaSubTab === 'frequencia' && (
+                    <PedagogiaFrequencia
+                      projetoId={id}
+                      projetoNome={formData.nome || 'Projeto Social'}
+                      acoes={acoes}
+                      inscritos={inscritosFormatados}
+                      onRefresh={loadData}
+                    />
+                  )}
+
+                  {pedagogiaSubTab === 'dossie' && (
+                    <PedagogiaDossie
+                      projetoId={id}
+                      projetoNome={formData.nome || 'Projeto Social'}
+                      inscritos={inscritosFormatados}
+                    />
+                  )}
                 </div>
               </div>
-
-              {/* PREVIEW COMPONENTES PEDAGÓGICOS E SOCIOEMOCIONAIS */}
-              <div className="space-y-6">
-                <ProjetoPedagogia projetoId={id} acoes={acoes} voluntarios={todosVoluntarios} />
-                <ProjetoSocioemocional projetoId={id} inscricoes={inscricoes} voluntarios={todosVoluntarios} />
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ========================================================================= */}
           {/* ÁREA 3: COMUNICAÇÃO (VISUALIZAÇÃO + BANNER EM CONSTRUÇÃO + PREVIEW) */}
