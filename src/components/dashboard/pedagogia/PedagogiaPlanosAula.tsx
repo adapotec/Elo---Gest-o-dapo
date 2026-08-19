@@ -376,10 +376,10 @@ export function PedagogiaPlanosAula({
             return (
               <div
                 key={plano.id}
-                className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]/40 transition-all flex flex-col"
+                className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]/40 transition-all flex flex-col justify-between"
               >
                 {/* Cabeçalho do Card */}
-                <div className="p-4 pb-3 space-y-2.5 flex-1">
+                <div className="p-5 space-y-3 flex-1">
                   {/* Badges e Ações do card */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-1.5 min-w-0">
@@ -390,12 +390,12 @@ export function PedagogiaPlanosAula({
                           : 'Data não inf.'}
                       </Badge>
                       {acaoObj ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-500/10 text-purple-600 border border-purple-500/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 border border-purple-500/20">
                           <FolderKanban className="w-3 h-3" />
                           Ação: {acaoObj.nome_acao}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-500/10 text-[var(--text-muted)] border border-slate-500/20">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-500/10 text-[var(--text-muted)] border border-slate-500/20">
                           Encontro Geral
                         </span>
                       )}
@@ -406,26 +406,26 @@ export function PedagogiaPlanosAula({
                       <button
                         type="button"
                         onClick={() => handleImprimirPlano(plano)}
-                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                        className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
                         title="Visualizar / PDF Timbrado"
                       >
-                        <Printer className="w-3.5 h-3.5" />
+                        <Printer className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleEditarPlano(plano)}
-                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors"
+                        className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors cursor-pointer"
                         title="Editar Plano"
                       >
-                        <Edit3 className="w-3.5 h-3.5" />
+                        <Edit3 className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleExcluirPlano(plano.id)}
-                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors"
+                        className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
                         title="Excluir Plano"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -444,47 +444,51 @@ export function PedagogiaPlanosAula({
 
                   {/* Prévia das Atividades Cadastradas */}
                   {Array.isArray(plano.atividades) && plano.atividades.length > 0 && (
-                    <div className="space-y-1.5 pt-1">
+                    <div className="space-y-2 pt-1.5">
                       <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider block">
                         Atividades Programadas ({plano.atividades.length})
                       </span>
-                      <div className="space-y-1">
-                        {plano.atividades.slice(0, 3).map((ativ, aIdx) => {
+                      <div className="space-y-2">
+                        {plano.atividades.map((ativ, aIdx) => {
                           const metaAtiv = metas.find((m) => m.id === ativ.meta_id);
                           return (
                             <div
                               key={ativ.id || aIdx}
-                              className="p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)]/60 text-xs flex items-center justify-between gap-2"
+                              className="p-3 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] text-xs space-y-1.5"
                             >
-                              <div className="min-w-0">
+                              <div className="flex items-center justify-between gap-2">
                                 <span className="font-semibold text-[var(--text-primary)] truncate block">
                                   {aIdx + 1}. {ativ.titulo}
                                 </span>
-                                <span className="text-[10px] text-[var(--text-muted)] truncate block">
-                                  Mediador: {ativ.mediador || 'Não informado'}
-                                </span>
+                                {ativ.mediador && (
+                                  <span className="text-[10px] font-medium text-[var(--text-muted)] shrink-0">
+                                    {ativ.mediador}
+                                  </span>
+                                )}
                               </div>
+                              {ativ.descricao && (
+                                <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed line-clamp-2">
+                                  {ativ.descricao}
+                                </p>
+                              )}
                               {metaAtiv && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--color-primary)] shrink-0 bg-[var(--color-primary)]/10 px-2 py-0.5 rounded">
-                                  <Target className="w-2.5 h-2.5" />
-                                  Meta
-                                </span>
+                                <div className="pt-1 border-t border-[var(--border-default)]/40 flex items-start gap-1.5 text-[11px] text-[var(--color-primary)]">
+                                  <Target className="w-3 h-3 shrink-0 mt-0.5" />
+                                  <span className="leading-tight">
+                                    <strong>Meta:</strong> {metaAtiv.descricao}
+                                  </span>
+                                </div>
                               )}
                             </div>
                           );
                         })}
-                        {plano.atividades.length > 3 && (
-                          <span className="text-[10px] text-[var(--text-muted)] italic block pl-1">
-                            + {plano.atividades.length - 3} outra(s) atividade(s)...
-                          </span>
-                        )}
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* Rodapé do card */}
-                <div className="px-4 py-2.5 border-t border-[var(--border-default)]/60 text-xs text-[var(--text-muted)] flex items-center justify-between bg-[var(--bg-secondary)]/30 rounded-b-2xl">
+                <div className="px-5 py-3 border-t border-[var(--border-default)]/60 text-xs text-[var(--text-muted)] flex items-center justify-between bg-[var(--bg-secondary)]/30 rounded-b-2xl">
                   <span>
                     Educador: <strong className="text-[var(--text-primary)]">{plano.oficineiro}</strong>
                   </span>
@@ -521,22 +525,22 @@ export function PedagogiaPlanosAula({
               <button
                 type="button"
                 onClick={() => setShowEditorModal(false)}
-                className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors shrink-0"
+                className="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors shrink-0 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Body / Formulário */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs">
               {/* 1. Vincular Ação Cadastrada do Cronograma */}
-              <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
+              <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
                 <label className="text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider flex items-center gap-1.5">
                   <FolderKanban className="w-3.5 h-3.5" />
                   Ação Cadastrada do Cronograma a Vincular *
                 </label>
                 {acoes.length === 0 ? (
-                  <p className="text-xs text-amber-600 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                  <p className="text-xs text-amber-600 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
                     Nenhuma ação cadastrada no cronograma deste projeto. Cadastre uma ação na aba "Execução & Monitoramento" ou preencha como encontro geral.
                   </p>
                 ) : (
@@ -554,7 +558,7 @@ export function PedagogiaPlanosAula({
                           : formData.data_oficina,
                       });
                     }}
-                    className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-colors"
                   >
                     <option value="">Selecione a ação cadastrada no projeto...</option>
                     {acoes.map((acao) => (
@@ -567,7 +571,7 @@ export function PedagogiaPlanosAula({
               </div>
 
               {/* 2. Título do Encontro e Data */}
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_170px] gap-3">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
                     Título do Encontro / Aula *
@@ -577,7 +581,7 @@ export function PedagogiaPlanosAula({
                     placeholder="Ex: Oficina 01 - Acolhimento, Dinâmica Coletiva e Construção"
                     value={formData.titulo}
                     onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                   />
                 </div>
 
@@ -589,7 +593,7 @@ export function PedagogiaPlanosAula({
                     type="date"
                     value={formData.data_oficina}
                     onChange={(e) => setFormData({ ...formData, data_oficina: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors font-mono-data"
                   />
                 </div>
               </div>
@@ -604,7 +608,7 @@ export function PedagogiaPlanosAula({
                   placeholder="Contextualize os objetivos, proposta temática e acolhida do encontro..."
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                  className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none leading-relaxed transition-colors"
                 />
               </div>
 
@@ -645,7 +649,7 @@ export function PedagogiaPlanosAula({
                           <button
                             type="button"
                             onClick={() => handleRemoveAtividade(aIdx)}
-                            className="text-xs text-[var(--color-danger)] font-semibold hover:underline flex items-center gap-1"
+                            className="text-xs text-[var(--color-danger)] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
                             Remover
@@ -664,7 +668,7 @@ export function PedagogiaPlanosAula({
                             placeholder="Ex: Roda de Acolhida e Apresentação"
                             value={ativ.titulo}
                             onChange={(e) => handleUpdateAtividade(aIdx, 'titulo', e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)]"
+                            className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                           />
                         </div>
 
@@ -689,7 +693,7 @@ export function PedagogiaPlanosAula({
                                   handleUpdateAtividade(aIdx, 'mediador', val);
                                 }
                               }}
-                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                              className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-colors"
                             >
                               <option value="">Selecione o voluntário...</option>
                               {voluntarios.map((v) => (
@@ -706,7 +710,7 @@ export function PedagogiaPlanosAula({
                                 placeholder="Digite o nome do mediador / oficineiro externo..."
                                 value={ativ.mediador}
                                 onChange={(e) => handleUpdateAtividade(aIdx, 'mediador', e.target.value)}
-                                className="w-full px-3 py-1.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                                className="w-full px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] transition-colors"
                               />
                             )}
                           </div>
@@ -723,7 +727,7 @@ export function PedagogiaPlanosAula({
                           placeholder="Descreva passo a passo como a atividade será conduzida com os alunos/participantes..."
                           value={ativ.descricao}
                           onChange={(e) => handleUpdateAtividade(aIdx, 'descricao', e.target.value)}
-                          className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                          className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none leading-relaxed transition-colors"
                         />
                       </div>
 
@@ -739,7 +743,7 @@ export function PedagogiaPlanosAula({
                             placeholder="Ex: Varetas de bambu, papel de seda, cola, tesoura"
                             value={ativ.materiais}
                             onChange={(e) => handleUpdateAtividade(aIdx, 'materiais', e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                            className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                           />
                         </div>
 
@@ -760,7 +764,7 @@ export function PedagogiaPlanosAula({
                                   el.style.display = el.style.display === 'none' ? 'block' : 'none';
                                 }
                               }}
-                              className="w-full px-3 py-2.5 rounded-lg text-xs text-left bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] hover:border-[var(--color-primary)]/60 transition-colors flex items-center justify-between gap-2"
+                              className="w-full px-3 py-2.5 rounded-xl text-xs text-left bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] hover:border-[var(--color-primary)]/60 transition-colors flex items-center justify-between gap-2 cursor-pointer"
                             >
                               <span className="whitespace-normal leading-relaxed">
                                 {ativ.meta_id
@@ -781,7 +785,7 @@ export function PedagogiaPlanosAula({
                                   const el = document.getElementById(`meta-dropdown-${aIdx}`);
                                   if (el) el.style.display = 'none';
                                 }}
-                                className={`w-full text-left px-3 py-2.5 text-xs border-b border-[var(--border-default)]/50 transition-colors ${
+                                className={`w-full text-left px-3 py-2.5 text-xs border-b border-[var(--border-default)]/50 transition-colors cursor-pointer ${
                                   !ativ.meta_id ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-semibold' : 'text-[var(--text-muted)] hover:bg-[var(--bg-secondary)]'
                                 }`}
                               >
@@ -796,7 +800,7 @@ export function PedagogiaPlanosAula({
                                     const el = document.getElementById(`meta-dropdown-${aIdx}`);
                                     if (el) el.style.display = 'none';
                                   }}
-                                  className={`w-full text-left px-3 py-2.5 text-xs transition-colors whitespace-normal leading-relaxed ${
+                                  className={`w-full text-left px-3 py-2.5 text-xs transition-colors whitespace-normal leading-relaxed cursor-pointer ${
                                     mIdx < metas.length - 1 ? 'border-b border-[var(--border-default)]/30' : ''
                                   } ${
                                     ativ.meta_id === m.id
@@ -830,7 +834,7 @@ export function PedagogiaPlanosAula({
                   placeholder="Orientações complementares, adaptações metodológicas ou avisos para a equipe..."
                   value={formData.observacoes_gerais}
                   onChange={(e) => setFormData({ ...formData, observacoes_gerais: e.target.value })}
-                  className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                  className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none leading-relaxed transition-colors"
                 />
               </div>
             </div>

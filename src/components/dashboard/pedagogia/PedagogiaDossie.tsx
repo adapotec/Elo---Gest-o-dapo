@@ -133,17 +133,17 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
           </div>
 
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[var(--text-muted)] absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Buscar criança..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
+              className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-all"
             />
           </div>
 
-          <div className="space-y-1 max-h-[550px] overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-[550px] overflow-y-auto pr-1">
             {inscritosFiltrados.length === 0 ? (
               <p className="text-xs text-[var(--text-muted)] italic text-center py-6">
                 Nenhuma criança encontrada.
@@ -158,17 +158,17 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                     key={aluno.id}
                     type="button"
                     onClick={() => setSelectedBeneficiarioId(aluno.id)}
-                    className={`w-full text-left p-2.5 rounded-xl transition-all flex items-center gap-3 border ${
+                    className={`w-full text-left p-3 rounded-xl transition-all flex items-center gap-3 border cursor-pointer ${
                       isSelected
                         ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/40 shadow-xs'
-                        : 'bg-[var(--bg-secondary)]/40 border-[var(--border-default)]/60 hover:bg-[var(--bg-secondary)]'
+                        : 'bg-[var(--bg-secondary)]/40 border-[var(--border-default)]/60 hover:bg-[var(--bg-secondary)] hover:border-[var(--border-default)]'
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                         isSelected
-                          ? 'bg-[var(--color-primary)] text-white'
-                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'
+                          ? 'bg-[var(--color-primary)] text-white shadow-2xs'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)]'
                       }`}
                     >
                       {aluno.nome_completo.charAt(0).toUpperCase()}
@@ -201,8 +201,8 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
             {/* Header do Dossiê */}
             <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-[var(--color-primary)]/15 text-[var(--color-primary)] font-bold text-base flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-[var(--color-primary)]/15 text-[var(--color-primary)] font-bold text-base flex items-center justify-center shrink-0 border border-[var(--color-primary)]/25">
                     {beneficiarioAtual.nome_completo.charAt(0).toUpperCase()}
                   </div>
                   <div className="space-y-0.5 min-w-0">
@@ -232,7 +232,7 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                     <Calendar className="w-3 h-3 text-[var(--color-primary)]" />
                     Nascimento & Idade
                   </span>
-                  <p className="font-semibold text-[var(--text-primary)] text-xs">
+                  <p className="font-semibold text-[var(--text-primary)] text-xs font-mono-data">
                     {beneficiarioAtual.data_nascimento
                       ? `${new Date(beneficiarioAtual.data_nascimento).toLocaleDateString('pt-BR')} (${calcularIdade(beneficiarioAtual.data_nascimento)} anos)`
                       : 'Não informado'}
@@ -254,7 +254,7 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                     <Phone className="w-3 h-3 text-[var(--color-primary)]" />
                     Contato
                   </span>
-                  <p className="font-semibold text-[var(--text-primary)] text-xs truncate">
+                  <p className="font-semibold text-[var(--text-primary)] text-xs truncate font-mono-data">
                     {beneficiarioAtual.telefone || 'Sem telefone'}
                   </p>
                 </div>
@@ -266,7 +266,7 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                   <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
                     Assiduidade no Projeto
                   </span>
-                  <span className="text-xs font-bold text-[var(--color-primary)]">
+                  <span className="text-xs font-bold font-mono-data text-[var(--color-primary)]">
                     {taxaAssiduidade}% de Presença
                   </span>
                 </div>
@@ -279,17 +279,17 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center text-xs pt-0.5">
-                  <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                     <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-medium">Presenças</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{totalPresencas}</span>
+                    <span className="font-bold font-mono-data text-emerald-600 dark:text-emerald-400 text-sm">{totalPresencas}</span>
                   </div>
-                  <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                  <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
                     <span className="text-[10px] text-rose-600 dark:text-rose-400 block font-medium">Faltas</span>
-                    <span className="font-bold text-rose-600 dark:text-rose-400 text-sm">{totalFaltas}</span>
+                    <span className="font-bold font-mono-data text-rose-600 dark:text-rose-400 text-sm">{totalFaltas}</span>
                   </div>
-                  <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                     <span className="text-[10px] text-amber-600 dark:text-amber-400 block font-medium">Justificadas</span>
-                    <span className="font-bold text-amber-600 dark:text-amber-400 text-sm">{totalJustificadas}</span>
+                    <span className="font-bold font-mono-data text-amber-600 dark:text-amber-400 text-sm">{totalJustificadas}</span>
                   </div>
                 </div>
               </div>
@@ -325,19 +325,19 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                             Resp: {aval.responsavel_preenchimento || 'Equipe Pedagógica'}
                           </span>
                         </div>
-                        <span className="text-[11px] text-[var(--text-muted)]">
+                        <span className="text-[11px] text-[var(--text-muted)] font-mono-data">
                           {new Date(aval.data_registro || aval.created_at).toLocaleDateString('pt-BR')}
                         </span>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                        <div className="p-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)]/60 space-y-1">
+                        <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]/60 space-y-1">
                           <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase block">Eixo 1: Autoestima & Autonomia</span>
                           <p className="text-[11px] text-[var(--text-primary)] font-medium">
                             {aval.eixo1_expressao_opinioes || '—'}
                           </p>
                         </div>
-                        <div className="p-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)]/60 space-y-1">
+                        <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]/60 space-y-1">
                           <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase block">Eixo 2: Socialização & Coletivo</span>
                           <p className="text-[11px] text-[var(--text-primary)] font-medium">
                             {aval.eixo2_resolucao_conflitos || '—'}
@@ -346,7 +346,7 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                       </div>
 
                       {aval.eixo4_evolucao_observada && (
-                        <div className="text-xs bg-[var(--bg-elevated)] p-2.5 rounded-lg border border-[var(--border-default)]/60 space-y-0.5">
+                        <div className="text-xs bg-[var(--bg-elevated)] p-2.5 rounded-xl border border-[var(--border-default)]/60 space-y-0.5">
                           <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase block">Evolução Observada</span>
                           <p className="text-[11px] text-[var(--text-secondary)]">{aval.eixo4_evolucao_observada}</p>
                         </div>
@@ -387,7 +387,7 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
                     <tbody className="divide-y divide-[var(--border-default)]/40">
                       {historicoFrequencia.map((item) => (
                         <tr key={item.id} className="hover:bg-[var(--bg-secondary)]/40">
-                          <td className="py-2 px-3 text-[var(--text-muted)]">
+                          <td className="py-2 px-3 text-[var(--text-muted)] font-mono-data">
                             {item.acoes_projeto?.data_hora
                               ? new Date(item.acoes_projeto.data_hora).toLocaleDateString('pt-BR')
                               : '—'}

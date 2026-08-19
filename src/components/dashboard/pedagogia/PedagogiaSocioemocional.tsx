@@ -222,26 +222,30 @@ export function PedagogiaSocioemocional({
 
   return (
     <div className="space-y-4">
-      {/* ── Barra de Seleção: Criança, Mês e Responsável ── */}
-      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-3">
+      {/* ── Topo: Seleção de Criança, Mês e Ações ── */}
+      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
-            {/* Selecionar Criança */}
+            {/* Seletor de Criança */}
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                Criança / Beneficiário
+                Criança / Beneficiário *
               </label>
-              <select
-                value={selectedBeneficiarioId}
-                onChange={(e) => setSelectedBeneficiarioId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
-              >
-                {inscritos.map((aluno) => (
-                  <option key={aluno.id} value={aluno.id}>
-                    {aluno.nome_completo} ({aluno.comunidade || aluno.bairro || 'Território não inf.'})
-                  </option>
-                ))}
-              </select>
+              {inscritos.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)] italic">Nenhum aluno inscrito.</p>
+              ) : (
+                <select
+                  value={selectedBeneficiarioId}
+                  onChange={(e) => setSelectedBeneficiarioId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all"
+                >
+                  {inscritos.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.nome_completo}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Mês de Referência */}
@@ -253,7 +257,7 @@ export function PedagogiaSocioemocional({
                 type="month"
                 value={mesReferencia}
                 onChange={(e) => setMesReferencia(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-mono-data focus:outline-none focus:border-[var(--color-primary)] transition-all"
               />
             </div>
 
@@ -267,7 +271,7 @@ export function PedagogiaSocioemocional({
                 placeholder="Ex: Educadora Ana / Psicóloga Bruna"
                 value={responsavel}
                 onChange={(e) => setResponsavel(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:border-[var(--color-primary)] transition-all"
               />
             </div>
           </div>
@@ -296,14 +300,14 @@ export function PedagogiaSocioemocional({
 
         {/* Metadados da Criança */}
         {beneficiarioAtual && (
-          <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-[var(--border-default)] text-xs text-[var(--text-muted)]">
+          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[var(--border-default)] text-xs text-[var(--text-muted)]">
             <Badge variant="primary">{projetoNome}</Badge>
             <span>•</span>
-            <span>Nascimento: <strong>{beneficiarioAtual.data_nascimento ? new Date(beneficiarioAtual.data_nascimento).toLocaleDateString('pt-BR') : '—'}</strong></span>
+            <span>Nascimento: <strong className="text-[var(--text-primary)] font-mono-data">{beneficiarioAtual.data_nascimento ? new Date(beneficiarioAtual.data_nascimento).toLocaleDateString('pt-BR') : '—'}</strong></span>
             <span>•</span>
-            <span>Idade: <strong>{calcularIdade(beneficiarioAtual.data_nascimento)} anos</strong></span>
+            <span>Idade: <strong className="text-[var(--text-primary)]">{calcularIdade(beneficiarioAtual.data_nascimento)} anos</strong></span>
             <span>•</span>
-            <span>Território: <strong>{beneficiarioAtual.comunidade || beneficiarioAtual.bairro || '—'}</strong></span>
+            <span>Território: <strong className="text-[var(--text-primary)]">{beneficiarioAtual.comunidade || beneficiarioAtual.bairro || '—'}</strong></span>
             {formData.id && (
               <Badge variant="neutral" className="ml-auto">
                 <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-500" />
@@ -628,7 +632,7 @@ export function PedagogiaSocioemocional({
                 placeholder="Ex: Demonstrou maior segurança para expressar suas opiniões nas rodas e participou ativamente das dinâmicas..."
                 value={formData.eixo4_evolucao_observada}
                 onChange={(e) => setFormData({ ...formData, eixo4_evolucao_observada: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none leading-relaxed transition-all"
               />
             </div>
 
@@ -645,7 +649,7 @@ export function PedagogiaSocioemocional({
                 placeholder="Ex: Apresentou momentos de retração em dias de atividades com som alto..."
                 value={formData.eixo4_pontos_atencao}
                 onChange={(e) => setFormData({ ...formData, eixo4_pontos_atencao: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none leading-relaxed transition-all"
               />
             </div>
 
@@ -662,7 +666,7 @@ export function PedagogiaSocioemocional({
                 placeholder="Ex: Integrar em dupla com colega de referência nas oficinas manuais e oferecer espaço de escuta antes da saída..."
                 value={formData.eixo4_intervencao_proposta}
                 onChange={(e) => setFormData({ ...formData, eixo4_intervencao_proposta: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] resize-none transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none leading-relaxed transition-all"
               />
             </div>
           </div>
@@ -690,7 +694,7 @@ export function PedagogiaSocioemocional({
       >
         <div className="space-y-5 text-xs text-slate-800 leading-relaxed">
           {/* Identificação e Acolhimento */}
-          <div className="border border-slate-300 rounded-lg p-3 bg-slate-50 space-y-1.5 timbrado-avoid-break">
+          <div className="border border-slate-300 rounded-xl p-3.5 bg-slate-50 space-y-1.5 timbrado-avoid-break">
             <p><strong>Nome da Criança:</strong> {beneficiarioAtual?.nome_completo}</p>
             <p><strong>Projeto / Oficina:</strong> {projetoNome}</p>
             <p><strong>Mês de Referência:</strong> {mesReferencia}</p>
@@ -702,7 +706,7 @@ export function PedagogiaSocioemocional({
           </p>
 
           {/* Síntese dos Eixos */}
-          <div className="border border-slate-300 rounded-lg p-4 space-y-3 timbrado-avoid-break">
+          <div className="border border-slate-300 rounded-xl p-4 space-y-3 timbrado-avoid-break">
             <h4 className="font-bold text-slate-900 uppercase text-[11px] border-b border-slate-300 pb-1">
               Desenvolvimento Socioemocional & Convivência
             </h4>
@@ -728,7 +732,7 @@ export function PedagogiaSocioemocional({
 
           {/* Avanços Observados */}
           {formData.eixo4_evolucao_observada && (
-            <div className="border border-slate-300 rounded-lg p-3 space-y-1 timbrado-avoid-break">
+            <div className="border border-slate-300 rounded-xl p-3.5 space-y-1 timbrado-avoid-break">
               <h4 className="font-bold text-slate-900 uppercase text-[11px] text-emerald-800">
                 Avanços e Conquistas no Mês
               </h4>
@@ -737,7 +741,7 @@ export function PedagogiaSocioemocional({
           )}
 
           {/* Plano Compartilhado com a Família */}
-          <div className="border border-slate-300 rounded-lg p-3 space-y-1 timbrado-avoid-break">
+          <div className="border border-slate-300 rounded-xl p-3.5 space-y-1 timbrado-avoid-break">
             <h4 className="font-bold text-slate-900 uppercase text-[11px]">
               Orientações & Apoio Compartilhado com a Família
             </h4>

@@ -222,7 +222,7 @@ export function PedagogiaFrequencia({
                   <select
                     value={selectedAcaoId}
                     onChange={(e) => setSelectedAcaoId(e.target.value)}
-                    className="w-full max-w-sm px-3 py-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 focus:border-[var(--color-primary)] transition-all"
+                    className="w-full max-w-sm px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all"
                   >
                     {acoes.map((acao) => (
                       <option key={acao.id} value={acao.id}>
@@ -264,25 +264,25 @@ export function PedagogiaFrequencia({
         </div>
 
         {/* Métricas em linha com borders internos */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-[var(--border-default)]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-[var(--border-default)] bg-[var(--bg-secondary)]/30">
           <div className="p-3 sm:p-4 text-center border-r border-[var(--border-default)]">
-            <Users className="w-4 h-4 text-[var(--text-muted)] mx-auto mb-1" />
-            <span className="text-lg font-bold text-[var(--text-primary)] block leading-tight">{totalInscritos}</span>
+            <Users className="w-4 h-4 text-[var(--text-muted)] mx-auto mb-1 opacity-80" />
+            <span className="text-lg font-bold font-mono-data text-[var(--text-primary)] block leading-tight">{totalInscritos}</span>
             <span className="text-[10px] text-[var(--text-muted)] font-medium">Inscritos</span>
           </div>
           <div className="p-3 sm:p-4 text-center border-r border-[var(--border-default)] sm:border-r">
             <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
-            <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 block leading-tight">{totalPresentes}</span>
+            <span className="text-lg font-bold font-mono-data text-emerald-600 dark:text-emerald-400 block leading-tight">{totalPresentes}</span>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Presentes</span>
           </div>
           <div className="p-3 sm:p-4 text-center border-r border-[var(--border-default)]">
             <XCircle className="w-4 h-4 text-rose-500 mx-auto mb-1" />
-            <span className="text-lg font-bold text-rose-600 dark:text-rose-400 block leading-tight">{totalFaltas}</span>
+            <span className="text-lg font-bold font-mono-data text-rose-600 dark:text-rose-400 block leading-tight">{totalFaltas}</span>
             <span className="text-[10px] text-rose-600 dark:text-rose-400 font-medium">Faltas</span>
           </div>
           <div className="p-3 sm:p-4 text-center">
             <CheckCheck className="w-4 h-4 text-[var(--color-primary)] mx-auto mb-1" />
-            <span className="text-lg font-bold text-[var(--color-primary)] block leading-tight">{taxaAssiduidade}%</span>
+            <span className="text-lg font-bold font-mono-data text-[var(--color-primary)] block leading-tight">{taxaAssiduidade}%</span>
             <span className="text-[10px] text-[var(--color-primary)] font-medium">Assiduidade</span>
           </div>
         </div>
@@ -306,7 +306,7 @@ export function PedagogiaFrequencia({
               placeholder="Buscar aluno por nome ou comunidade..."
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+              className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
             />
           </div>
 
@@ -314,14 +314,14 @@ export function PedagogiaFrequencia({
             <button
               type="button"
               onClick={() => handleMarcarTodos('presente')}
-              className="px-2.5 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)] transition-colors font-medium"
+              className="px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]/50 transition-colors font-semibold cursor-pointer"
             >
               Marcar Todos Presentes
             </button>
             <button
               type="button"
               onClick={() => handleMarcarTodos('falta')}
-              className="px-2.5 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-rose-500 hover:border-rose-300 transition-colors font-medium"
+              className="px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-rose-500 hover:border-rose-300 transition-colors font-semibold cursor-pointer"
             >
               Marcar Todos Ausentes
             </button>
@@ -361,7 +361,7 @@ export function PedagogiaFrequencia({
                               {index + 1}. {aluno.nome_completo}
                             </span>
                             {aluno.data_nascimento && (
-                              <span className="text-[10px] text-[var(--text-muted)]">
+                              <span className="text-[10px] text-[var(--text-muted)] font-mono-data">
                                 Nasc: {new Date(aluno.data_nascimento).toLocaleDateString('pt-BR')}
                               </span>
                             )}
@@ -374,14 +374,14 @@ export function PedagogiaFrequencia({
                       </td>
 
                       <td className="py-3 px-3 text-center">
-                        <div className="inline-flex rounded-lg border border-[var(--border-default)] p-0.5 bg-[var(--bg-secondary)] gap-0.5">
+                        <div className="inline-flex rounded-xl border border-[var(--border-default)] p-1 bg-[var(--bg-elevated)] gap-1">
                           <button
                             type="button"
                             onClick={() => handleStatusChange(aluno.id, 'presente')}
-                            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors flex items-center gap-1 ${
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
                               freq.status === 'presente'
                                 ? 'bg-emerald-500 text-white shadow-xs'
-                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
                             }`}
                           >
                             <CheckCircle2 className="w-3 h-3" />
@@ -390,10 +390,10 @@ export function PedagogiaFrequencia({
                           <button
                             type="button"
                             onClick={() => handleStatusChange(aluno.id, 'falta')}
-                            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors flex items-center gap-1 ${
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
                               freq.status === 'falta'
                                 ? 'bg-rose-500 text-white shadow-xs'
-                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
                             }`}
                           >
                             <XCircle className="w-3 h-3" />
@@ -402,10 +402,10 @@ export function PedagogiaFrequencia({
                           <button
                             type="button"
                             onClick={() => handleStatusChange(aluno.id, 'justificada')}
-                            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors flex items-center gap-1 ${
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
                               freq.status === 'justificada'
                                 ? 'bg-amber-500 text-white shadow-xs'
-                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
                             }`}
                           >
                             <AlertCircle className="w-3 h-3" />
@@ -420,7 +420,7 @@ export function PedagogiaFrequencia({
                           placeholder={freq.status === 'falta' ? 'Motivo da ausência...' : 'Observação...'}
                           value={freq.justificativa || ''}
                           onChange={(e) => handleJustificativaChange(aluno.id, e.target.value)}
-                          className="w-full px-2.5 py-1 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                          className="w-full px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                         />
                       </td>
                     </tr>
