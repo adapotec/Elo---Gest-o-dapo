@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +16,7 @@ import {
   Calendar,
   Search,
   CheckCheck,
+  FolderKanban,
 } from 'lucide-react';
 
 interface BeneficiarioInscrito {
@@ -55,7 +56,35 @@ export function PedagogiaFrequencia({
   inscritos = [],
   onRefresh,
 }: PedagogiaFrequenciaProps) {
-  const [selectedAcaoId, setSelectedAcaoId] = useState<string>(acoes[0]?.id || '');
+  // Filtro Mensal de Ações (Default: Mês Vigente ou primeiro mês disponível)
+  const currentMonthStr = new Date().toISOString().slice(0, 7); // Ex: "2026-08"
+
+  const mesesDisponiveisAcoes = useMemo(() => {
+    return Array.from(
+      new Set(
+        acoes
+          .map((a) => (a.data_hora ? a.data_hora.slice(0, 7) : ''))
+          .filter(Boolean)
+      )
+    ).sort().reverse();
+  }, [acoes]);
+
+  const [filtroMes, setFiltroMes] = useState<string>(() => {
+    const hasCurrent = acoes.some((a) => a.data_hora?.startsWith(currentMonthStr));
+    if (hasCurrent) return currentMonthStr;
+    return mesesDisponiveisAcoes[0] || currentMonthStr;
+  });
+
+  const acoesFiltradasMes = useMemo(() => {
+    if (filtroMes === 'todos') return acoes;
+    return acoes.filter((a) => a.data_hora && a.data_hora.startsWith(filtroMes));
+  }, [acoes, filtroMes]);
+
+  const [selectedAcaoId, setSelectedAcaoId] = useState<string>(() => {
+    const initialList = acoesFiltradasMes.length > 0 ? acoesFiltradasMes : acoes;
+    return initialList[0]?.id || '';
+  });
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -63,12 +92,20 @@ export function PedagogiaFrequencia({
   const [frequencias, setFrequencias] = useState<Record<string, FrequenciaRegistro>>({});
   const [showPrintModal, setShowPrintModal] = useState(false);
 
-  // Atualizar ação selecionada se a lista mudar
+  // Atualizar ação selecionada quando o filtro mensal mudar
   useEffect(() => {
-    if (!selectedAcaoId && acoes.length > 0) {
-      setSelectedAcaoId(acoes[0].id);
+    if (acoesFiltradasMes.length > 0) {
+      const exists = acoesFiltradasMes.some((a) => a.id === selectedAcaoId);
+      if (!exists) {
+        setSelectedAcaoId(acoesFiltradasMes[0].id);
+      }
+    } else if (filtroMes === 'todos' && acoes.length > 0) {
+      const exists = acoes.some((a) => a.id === selectedAcaoId);
+      if (!exists) {
+        setSelectedAcaoId(acoes[0].id);
+      }
     }
-  }, [acoes, selectedAcaoId]);
+  }, [acoesFiltradasMes, selectedAcaoId, filtroMes, acoes]);
 
   // Carregar chamada existente da ação selecionada
   useEffect(() => {
@@ -253,32 +290,82 @@ export function PedagogiaFrequencia({
 
         {/* Seletor de Encontro & Métricas Bento */}
         <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap flex-1">
-              <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                Encontro Selecionado:
-              </span>
-              {acoes.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)] italic">
-                  Nenhum encontro cadastrado. Cadastre ações no cronograma do projeto.
-                </p>
-              ) : (
+          <div className="p-4 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 flex-wrap flex-1">
+              
+              {/* 1. Filtro Mensal */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                  Mês:
+                </span>
                 <select
-                  value={selectedAcaoId}
-                  onChange={(e) => setSelectedAcaoId(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all"
+                  value={filtroMes}
+                  onChange={(e) => setFiltroMes(e.target.value)}
+                  className="px-2.5 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all shadow-sm"
+                  aria-label="Filtrar por Mês"
                 >
-                  {acoes.map((acao) => (
-                    <option key={acao.id} value={acao.id}>
-                      {acao.nome_acao} — {new Date(acao.data_hora).toLocaleDateString('pt-BR')}
-                    </option>
-                  ))}
+                  <option value="todos">Todos os Meses ({acoes.length})</option>
+                  {mesesDisponiveisAcoes.map((m) => {
+                    const [ano, mes] = m.split('-');
+                    const nomeMes = new Date(Number(ano), Number(mes) - 1, 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                    const countMes = acoes.filter((a) => a.data_hora && a.data_hora.startsWith(m)).length;
+                    const isVigente = m === currentMonthStr;
+
+                    return (
+                      <option key={m} value={m}>
+                        {nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1)} {isVigente ? '(Mês Vigente)' : ''} ({countMes})
+                      </option>
+                    );
+                  })}
                 </select>
-              )}
+
+                {filtroMes !== currentMonthStr && acoes.some((a) => a.data_hora?.startsWith(currentMonthStr)) && (
+                  <button
+                    type="button"
+                    onClick={() => setFiltroMes(currentMonthStr)}
+                    className="px-2 py-1 rounded-lg text-[11px] font-semibold bg-[var(--color-primary)]/10 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer"
+                    title="Ir para o mês vigente"
+                  >
+                    Mês Vigente
+                  </button>
+                )}
+              </div>
+
+              <div className="h-4 w-px bg-[var(--border-default)] hidden sm:block shrink-0" />
+
+              {/* 2. Encontro Selecionado do Mês */}
+              <div className="flex items-center gap-1.5 flex-1 min-w-[240px]">
+                <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider shrink-0">
+                  Encontro:
+                </span>
+                {acoes.length === 0 ? (
+                  <p className="text-xs text-[var(--text-muted)] italic">
+                    Nenhum encontro cadastrado no projeto.
+                  </p>
+                ) : acoesFiltradasMes.length === 0 ? (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 italic bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                    Nenhum encontro neste mês selecionado.
+                  </span>
+                ) : (
+                  <select
+                    value={selectedAcaoId}
+                    onChange={(e) => setSelectedAcaoId(e.target.value)}
+                    className="w-full max-w-lg px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all shadow-sm truncate"
+                    aria-label="Selecionar Ação ou Encontro"
+                  >
+                    {acoesFiltradasMes.map((acao) => (
+                      <option key={acao.id} value={acao.id}>
+                        {acao.nome_acao} — {new Date(acao.data_hora).toLocaleDateString('pt-BR')} ({new Date(acao.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
             {acaoAtual && (
-              <Badge variant="primary">
+              <Badge variant="primary" className="shrink-0 self-start sm:self-auto">
                 <Calendar className="w-3 h-3 mr-1" />
                 {new Date(acaoAtual.data_hora).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
               </Badge>

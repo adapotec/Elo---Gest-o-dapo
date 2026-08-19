@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -40,32 +40,31 @@ export interface AcaoItem {
   id: string;
   nome_acao: string;
   data_hora: string;
+  documento_estruturador?: string;
 }
 
-export interface AtividadePlanoAula {
+export interface AtividadePedagogicaItem {
   id: string;
   titulo: string;
   mediador: string;
   descricao: string;
   materiais: string;
-  meta_id: string;
+  meta_id?: string;
 }
+
+export type AtividadePlanoAula = AtividadePedagogicaItem;
 
 export interface PlanoAulaData {
   id?: string;
   projeto_id: string;
-  acao_id?: string | null;
+  acao_id: string | null;
   titulo: string;
   oficineiro: string;
   data_oficina: string;
-  descricao: string;
+  descricao?: string;
   objetivos?: string;
   meta_projeto_id?: string;
-  atividades: AtividadePlanoAula[];
-  atividades_dirigidas?: string;
-  brincadeiras_livres?: string;
-  recursos_materiais?: string;
-  avaliacao_encontro?: string;
+  atividades: AtividadePedagogicaItem[];
   observacoes_gerais?: string;
   created_at?: string;
   updated_at?: string;
@@ -95,6 +94,30 @@ export function PedagogiaPlanosAula({
   const [showEditorModal, setShowEditorModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [planoToPrint, setPlanoToPrint] = useState<PlanoAulaData | null>(null);
+
+  // Filtro Mensal de Ações no Modal de Plano de Aula
+  const currentMonthStr = new Date().toISOString().slice(0, 7); // Ex: "2026-08"
+
+  const mesesDisponiveisAcoes = useMemo(() => {
+    return Array.from(
+      new Set(
+        acoes
+          .map((a) => (a.data_hora ? a.data_hora.slice(0, 7) : ''))
+          .filter(Boolean)
+      )
+    ).sort().reverse();
+  }, [acoes]);
+
+  const [filtroMesModal, setFiltroMesModal] = useState<string>(() => {
+    const hasCurrent = acoes.some((a) => a.data_hora?.startsWith(currentMonthStr));
+    if (hasCurrent) return currentMonthStr;
+    return mesesDisponiveisAcoes[0] || 'todos';
+  });
+
+  const acoesModalFiltradas = useMemo(() => {
+    if (filtroMesModal === 'todos') return acoes;
+    return acoes.filter((a) => a.data_hora && a.data_hora.startsWith(filtroMesModal));
+  }, [acoes, filtroMesModal]);
 
   // Formulário de Edição
   const [formData, setFormData] = useState<PlanoAulaData>({
@@ -172,7 +195,17 @@ export function PedagogiaPlanosAula({
   }, [projetoId]);
 
   const handleNovoPlano = () => {
-    const acaoInicial = acoes[0];
+    const mesInicial = acoes.some((a) => a.data_hora?.startsWith(currentMonthStr))
+      ? currentMonthStr
+      : (mesesDisponiveisAcoes[0] || 'todos');
+
+    setFiltroMesModal(mesInicial);
+
+    const acoesDoMes = mesInicial === 'todos'
+      ? acoes
+      : acoes.filter((a) => a.data_hora && a.data_hora.startsWith(mesInicial));
+
+    const acaoInicial = acoesDoMes[0] || acoes[0];
     const dataInicial = acaoInicial?.data_hora
       ? new Date(acaoInicial.data_hora).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0];
@@ -202,6 +235,17 @@ export function PedagogiaPlanosAula({
   };
 
   const handleEditarPlano = (plano: PlanoAulaData) => {
+    if (plano.acao_id) {
+      const acaoObj = acoes.find((a) => a.id === plano.acao_id);
+      if (acaoObj?.data_hora) {
+        setFiltroMesModal(acaoObj.data_hora.slice(0, 7));
+      } else {
+        setFiltroMesModal('todos');
+      }
+    } else {
+      setFiltroMesModal('todos');
+    }
+
     setFormData(plano);
     setShowEditorModal(true);
   };
@@ -562,14 +606,62 @@ export function PedagogiaPlanosAula({
             {/* Modal Body / Formulário */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs">
               {/* 1. Vincular Ação Cadastrada do Cronograma */}
-              <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
-                <label className="text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider flex items-center gap-1.5">
-                  <FolderKanban className="w-3.5 h-3.5" />
-                  Ação Cadastrada do Cronograma a Vincular *
-                </label>
+              <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider flex items-center gap-1.5">
+                    <FolderKanban className="w-3.5 h-3.5" />
+                    Ação Cadastrada do Cronograma a Vincular *
+                  </label>
+
+                  {/* Filtro Mensal no Modal */}
+                  {acoes.length > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-[var(--color-primary)]" />
+                        Mês:
+                      </span>
+                      <select
+                        value={filtroMesModal}
+                        onChange={(e) => setFiltroMesModal(e.target.value)}
+                        className="px-2 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] cursor-pointer shadow-sm"
+                        aria-label="Filtrar Ações por Mês"
+                      >
+                        <option value="todos">Todos os Meses ({acoes.length})</option>
+                        {mesesDisponiveisAcoes.map((m) => {
+                          const [ano, mes] = m.split('-');
+                          const nomeMes = new Date(Number(ano), Number(mes) - 1, 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                          const countMes = acoes.filter((a) => a.data_hora && a.data_hora.startsWith(m)).length;
+                          const isVigente = m === currentMonthStr;
+
+                          return (
+                            <option key={m} value={m}>
+                              {nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1)} {isVigente ? '(Mês Vigente)' : ''} ({countMes})
+                            </option>
+                          );
+                        })}
+                      </select>
+
+                      {filtroMesModal !== currentMonthStr && acoes.some((a) => a.data_hora?.startsWith(currentMonthStr)) && (
+                        <button
+                          type="button"
+                          onClick={() => setFiltroMesModal(currentMonthStr)}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[var(--color-primary)]/10 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/20 transition-colors cursor-pointer"
+                          title="Ir para o mês vigente"
+                        >
+                          Vigente
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {acoes.length === 0 ? (
                   <p className="text-xs text-amber-600 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
                     Nenhuma ação cadastrada no cronograma deste projeto. Cadastre uma ação na aba "Execução & Monitoramento" ou preencha como encontro geral.
+                  </p>
+                ) : acoesModalFiltradas.length === 0 ? (
+                  <p className="text-xs text-amber-600 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
+                    Nenhuma ação cadastrada neste mês de referência. Selecione "Todos os Meses" no filtro acima ou alterne para outro mês.
                   </p>
                 ) : (
                   <select
@@ -589,9 +681,9 @@ export function PedagogiaPlanosAula({
                     className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-colors"
                   >
                     <option value="">Selecione a ação cadastrada no projeto...</option>
-                    {acoes.map((acao) => (
+                    {acoesModalFiltradas.map((acao) => (
                       <option key={acao.id} value={acao.id}>
-                        {acao.nome_acao} — {new Date(acao.data_hora).toLocaleString('pt-BR')}
+                        {acao.nome_acao} — {new Date(acao.data_hora).toLocaleDateString('pt-BR')} ({new Date(acao.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})
                       </option>
                     ))}
                   </select>

@@ -71,6 +71,9 @@
      - Sub-navegação em pílulas dividindo **Fichas Cadastradas** (consulta de fichas do projeto, atalho para Devolutiva em PDF timbrado, edição rápida e exclusão) e **Preencher / Editar Ficha** (formulário focado nos 4 eixos).
      - Integração do seletor de "Responsável pelo Preenchimento" com a lista de voluntários cadastrados da pedagogia + suporte a nome customizado/externo.
      - Campo do Eixo 4 identificado explicitamente com badge `[Exibido na Devolutiva Timbrada]`.
+   - **Filtro Mensal de Ações em Frequência e Planos de Aula**:
+     - **Encontro Selecionado (`PedagogiaFrequencia.tsx`)**: Adicionado filtro mensal com seletor de meses disponíveis, atalho para "Mês Vigente" e dropdown de encontros escopado por mês com exibição formatada de data e horário.
+     - **Vínculo no Modal de Plano de Aula (`PedagogiaPlanosAula.tsx`)**: Integrado filtro mensal antes do dropdown de ações no modal de criação e edição, sincronizando automaticamente o mês da ação vinculada ao editar e prevenindo listas infinitas.
    - **Planos de Aula & Metodologia (`PedagogiaPlanosAula.tsx`)**:
      - Cards salvos redesenhados no formato compacto com **Accordion Inteligente** para expandir dinâmicas, mediadores e metas sob demanda sem poluição visual.
      - Modal de edição harmonizado com tipografia, espaçamentos e paleta Ádapo.
