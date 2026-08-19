@@ -81,6 +81,11 @@
    - Integrados os 4 componentes oficiais com dados vivos do projeto (`PedagogiaPlanosAula`, `PedagogiaSocioemocional`, `PedagogiaFrequencia` e `PedagogiaDossie`).
    - Adicionada barra de navegação Bento interna com 4 sub-abas, cabeçalho temático com avatar do projeto e resumo em pílulas numéricas (`Inscritos`, `Encontros`, `Metas`, `Planos de Aula Vinculados`).
 
+4. **Saneamento e Conexão de Dados Reais no Painel Inicial (`/dashboard`)**:
+   - **Próximas Atividades do Instituto**: Substituídos os cards estáticos/hardcoded por consulta real à tabela `acoes_projeto` com join em `projetos_sociais` (data, horário, nome da oficina e cor de identificação).
+   - **Alertas Operacionais**: Conectados aos dados reais do banco (estoque crítico `<= 10`, requisições pendentes em `requisicoes_material`, volume de fichas socioemocionais do mês vigente e projetos em fase de planejamento).
+   - **Histórico & Avisos Recentes**: Montagem dinâmica baseada nos últimos registros de `beneficiarios`, `doacoes` e `acoes_projeto`.
+
 ---
 
 ### 2026-08-19 — `[UI/UX] & [DESIGN SYSTEM] & [REFACTOR]` 🔴 CRÍTICO
