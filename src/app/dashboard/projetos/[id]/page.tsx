@@ -2941,109 +2941,56 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                         </Button>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         {relatorios.map((rel) => {
-                          const acoesCount = Array.isArray(rel.acoes_selecionadas_ids)
-                            ? rel.acoes_selecionadas_ids.length
-                            : (Array.isArray(rel.avaliacao_acoes) ? rel.avaliacao_acoes.length : acoes.length);
-
-                          const metasArr = Array.isArray(rel.avaliacao_metas_novas) && rel.avaliacao_metas_novas.length > 0
-                            ? rel.avaliacao_metas_novas
-                            : (Array.isArray(rel.avaliacao_metas) ? rel.avaliacao_metas : []);
-
-                          const metasConcluidas = metasArr.filter((m: any) => m.status === 'concluida' || m.status_cumprimento === 'plenamente_atingida').length;
-                          const totalMetas = metasArr.length > 0 ? metasArr.length : todasMetasDisponiveis.length;
-
                           return (
                             <div
                               key={rel.id}
-                              className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 hover:border-[var(--color-primary)]/50 transition-all space-y-4 shadow-sm"
+                              className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 hover:border-[var(--color-primary)]/40 hover:bg-[var(--bg-elevated)] transition-all flex flex-col justify-between space-y-3.5 shadow-2xs group"
                             >
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border-default)]/60 pb-3">
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="font-bold text-sm text-[var(--text-primary)]">
+                              {/* Topo: Ícone Médio de Arquivo + Nome + Dados Principais */}
+                              <div className="flex items-start gap-3">
+                                <div className="w-11 h-11 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                                  <FileText className="w-5 h-5" />
+                                </div>
+
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <h4 className="font-bold text-xs text-[var(--text-primary)] truncate leading-tight" title={rel.numero_instrumento || 'Relatório Técnico de Monitoramento'}>
                                       {rel.numero_instrumento || 'Relatório Técnico de Monitoramento'}
-                                    </span>
-                                    {rel.numero_processo && !rel.numero_processo.includes('0001.2026/SEC-MA') && rel.numero_processo.trim() !== '' && (
-                                      <span className="text-xs text-[var(--text-muted)] font-mono">
-                                        ({rel.numero_processo})
-                                      </span>
-                                    )}
-                                    <span className="text-xs text-[var(--text-secondary)] font-semibold">
-                                      • Mês Ref: {rel.mes_referencia}
+                                    </h4>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[var(--text-muted)]">
+                                    <span className="font-semibold text-[var(--text-secondary)]">Mês Ref: {rel.mes_referencia}</span>
+                                    <span>•</span>
+                                    <span className="truncate">
+                                      {rel.periodo_inicio ? new Date(rel.periodo_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : 'Início'} até{' '}
+                                      {rel.periodo_fim ? new Date(rel.periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR') : 'Hoje'}
                                     </span>
                                   </div>
-                                  <p className="text-[11px] text-[var(--text-muted)]">
-                                    Período avaliado: {rel.periodo_inicio ? new Date(rel.periodo_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : 'Início'} até{' '}
-                                    {rel.periodo_fim ? new Date(rel.periodo_fim + 'T00:00:00').toLocaleDateString('pt-BR') : 'Hoje'}
-                                  </p>
-                                </div>
 
-                                <div className="flex items-center gap-2">
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                                    <CheckCircle className="w-3.5 h-3.5" />
-                                    Monitoramento Aprovado
-                                  </span>
+                                  <div className="pt-0.5">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                      <CheckCircle2 className="w-3 h-3" />
+                                      Monitoramento Aprovado
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
-                              {/* Resumo em 4 Métricas */}
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                                <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
-                                  <span className="text-[11px] text-[var(--text-muted)] block font-medium">Ações Avaliadas</span>
-                                  <span className="text-sm font-bold text-[var(--text-primary)]">{acoesCount} ações</span>
-                                </div>
-                                <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
-                                  <span className="text-[11px] text-[var(--text-muted)] block font-medium">Metas Concluídas</span>
-                                  <span className="text-sm font-bold text-[var(--color-success)]">
-                                    {metasConcluidas} de {totalMetas}
-                                  </span>
-                                </div>
-                                <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
-                                  <span className="text-[11px] text-[var(--text-muted)] block font-medium">Desembolso Acumulado</span>
-                                  <span className="text-sm font-bold text-[var(--text-primary)]">
-                                    {Number(rel.valor_desembolsado || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                  </span>
-                                </div>
-                                <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
-                                  <span className="text-[11px] text-[var(--text-muted)] block font-medium">Transparência Ativa</span>
-                                  <span className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-1.5 mt-0.5">
-                                    {rel.status_transparencia === 'conforme' ? (
-                                      <>
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-success)]" />
-                                        <span>Conteúdo Publicado</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                                        <span>Pendências</span>
-                                      </>
-                                    )}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {(rel.conclusao_texto || rel.justificativa_conclusao) && (
-                                <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-0.5">
-                                  <strong className="text-[var(--text-primary)] font-semibold">Síntese Conclusiva:</strong>{' '}
-                                  <p className="line-clamp-2 leading-relaxed text-[var(--text-secondary)] inline">
-                                    {rel.conclusao_texto || rel.justificativa_conclusao}
-                                  </p>
-                                </div>
-                              )}
-
-                              {/* Ações do Relatório */}
-                              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[var(--border-default)]/60">
+                              {/* Rodapé: Ações (Excluir, Editar, Visualizar PDF) */}
+                              <div className="flex items-center justify-between pt-2.5 border-t border-[var(--border-default)]/60 text-xs">
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveRelatorio(rel.id)}
-                                  className="text-xs text-[var(--color-danger)] font-semibold hover:underline"
+                                  className="text-[11px] text-[var(--color-danger)] font-medium hover:underline flex items-center gap-1 transition-colors"
                                 >
-                                  Excluir Relatório
+                                  <Trash2 className="w-3 h-3" />
+                                  Excluir
                                 </button>
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5">
                                   <Button
                                     size="sm"
                                     variant="secondary"
@@ -3058,7 +3005,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                     icon={<Printer className="w-3.5 h-3.5" />}
                                     onClick={() => handleOpenPrintMrosc(rel)}
                                   >
-                                    Visualizar / PDF Timbrado
+                                    Visualizar PDF
                                   </Button>
                                 </div>
                               </div>
