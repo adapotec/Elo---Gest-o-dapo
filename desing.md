@@ -1,56 +1,52 @@
-# Design System — Sistema Elo
-### Identidade Visual, Componentes, Geometria e Princípios de UI/UX
+# Design System & Padrões de Interface — Sistema Elo
+### Identidade Visual, Arquitetura de Páginas, Geometria Soft Bento e Diretrizes de UI/UX
 
-**Versão:** 1.0 (Auditoria Completa de UI/UX, Divulgação Progressiva & Consistência Visual)  
+**Versão:** 2.0 (Padronização Completa entre `/projetos`, `/pedagogia` e Módulos do Sistema)  
 **Organização:** Instituto Ádapo  
-**Referências:** Paleta institucional (`CORES.png`) + Princípios da `frontend-design` & `ui-ux-pro-max` + Psicologia de UX (Leis de Miller, Hick e Fitts).
+**Referências:** Paleta institucional oficial (`CORES.png`) + Princípios `frontend-design` & `ui-ux-pro-max` + Leis de Miller, Hick e Fitts.
 
 ---
 
-## 1. Direção de Identidade e Filosofia de Design
+## 1. Filosofia de Design & Diretrizes Centrais
 
-O Elo é um sistema de gestão **institucional, acolhedor, transparente e eficiente** voltado ao atendimento de crianças, adolescentes e comunidades. Ele se distancia do visual frio e impessoal dos SaaS corporativos, entregando uma interface com personalidade humana, clareza cirúrgica e rigor técnico.
+O Elo é um sistema de gestão **institucional, acolhedor, transparente e humanizado** voltado para a transformação social de crianças, adolescentes e suas famílias. Toda e qualquer página desenvolvida no ERP deve seguir rigorosamente os princípios abaixo:
 
 ### Princípios Fundamentais de UX/UI:
-1. **Restrição é Luxo & Clareza**: Eliminar elementos visuais supérfluos, ruídos decorativos e emojis em controles de interface.
-2. **Divulgação Progressiva (Progressive Disclosure)**: Não sobrecarregar o usuário com todos os dados de uma só vez. Detalhes secundários são exibidos através de abas, modais retráteis e tooltips contextuais.
-3. **A Lei de Miller (Miller's Law)**: Toda tela ou sub-seção deve agrupar as informações principais em no máximo **5 a 9 blocos lógicos visíveis**.
-4. **Espaço para Respirar (Whitespace)**: Manter espaçamento consistente e generoso (`p-6` a `p-8`, `gap-6`, `space-y-6`) para reduzir a fadiga visual e proporcionar leitura fluida.
-5. **Ergonomia e Área de Toque (Lei de Fitts)**: Elementos de clique com dimensões confortáveis (mínimo 36px de altura), feedback visual instantâneo e `cursor-pointer` em 100% dos itens interativos.
+1. **Restrição é Luxo & Clareza**: Eliminar elementos visuais supérfluos, ruídos decorativos e **100% de emojis em controles de UI**. Todos os ícones pertencem à biblioteca **Lucide React**.
+2. **Divulgação Progressiva (Progressive Disclosure)**: Telas densas nunca devem despejar todos os dados de uma vez. Usar sub-navegação em abas/pílulas, accordions inteligentes para roteiros/atividades e modais retráteis.
+3. **Lei de Miller (Miller's Law)**: Toda tela ou sub-seção deve agrupar as informações principais em no máximo **5 a 9 blocos lógicos visíveis**.
+4. **Espaço para Respirar (Whitespace)**: Espaçamento consistente e generoso (`p-6` a `p-8`, `gap-4` a `gap-6`, `space-y-6`) para leitura fluida e redução da fadiga visual.
+5. **Ergonomia e Área de Toque (Lei de Fitts)**: Altura confortável para botões e inputs (mínimo 36px/40px), feedback visual instantâneo e `cursor-pointer` em 100% dos itens interativos.
 
 ---
 
 ## 2. Paleta de Cores Institucional e Regra 60-30-10
 
-Extraída das diretrizes oficiais do Instituto Ádapo:
-
-| Nome do Token | Hex | Papel Semântico no Sistema |
+| Nome do Token | Hex / Variável | Papel Semântico no Sistema |
 |---|---|---|
-| `laranja` (Primária) | `#F2632D` | **Cor de Ação**: Botões primários (CTAs), destaques de conversão e foco ativo |
-| `laranja-claro` | `#F7955F` | Estados de hover e backgrounds suaves de destaque |
-| `amarelo` | `#F9C859` | Alertas de atenção, avisos de prazo, destaques informativos |
+| `laranja` (Primária) | `#F2632D` (`--color-primary`) | **Cor de Ação**: Botões primários (CTAs), destaques de conversão e foco ativo |
+| `laranja-claro` | `#F7955F` (`--color-primary-soft`) | Estados de hover e backgrounds suaves de abas ativas |
+| `amarelo` | `#F9C859` | Alertas de atenção, avisos de prazo, status intermediários |
 | `roxo` | `#93368F` | Módulo Pedagógico, planos de aula e categorização institucional |
 | `roxo-escuro` | `#4A1B57` | Cabeçalhos de alto contraste e textos institucionais em dark mode |
-| `marrom` | `#8B4A2E` | Módulo de Estoque, identificadores físicos e divisores decorativos |
+| `marrom` | `#8B4A2E` | Módulo de Estoque, identificadores físicos e divisores |
 | `verde-azulado` | `#1C9C82` | Status concluído/ativo, confirmações de sucesso e valores positivos |
 | `vermelho` | `#D64545` | Ações destrutivas (exclusões), cancelamentos e erros |
 
-### Distribuição Visual da Proporção 60-30-10:
+### Distribuição Visual 60-30-10:
 * **60% — Superfície & Fundo (Base)**: Canvas limpo (`--bg-primary`: `#FDFBF8` / Dark: `#1C1712`) e cartões elevados (`--bg-elevated`: `#FFFFFF` / Dark: `#2A251E`).
 * **30% — Estrutura & Leitura (Contraste Médio)**: Painéis secundários (`--bg-secondary`: `#F5F1EA` / Dark: `#24201A`), textos (`--text-primary`: `#2B2118` / Dark: `#F3EDE4`) e bordas (`--border-default`: `#E8E1D6` / Dark: `#383126`).
 * **10% — Ponto Focal & Ação (Laranja Ádapo)**: Reservado exclusivamente para botões de ação primária (`#F2632D`), badges ativos e indicadores de estado.
 
-> 🔴 **Regra de Ouro da Cor**: O roxo (`#93368F`) e o azul nunca devem substituir o laranja (`#F2632D`) como cor de ação principal de formulários ou botões primários.
+> 🔴 **Regra de Ouro**: O roxo (`#93368F`) e o azul nunca devem substituir o laranja (`#F2632D`) como cor de ação principal de formulários ou botões primários.
 
 ---
 
-## 3. Geometria Unificada do Design System (Soft Bento Institucional)
-
-Para eliminar o amadorismo de arredondamentos aleatórios (mistura descontrolada de 4px, 6px e 8px), o ERP Elo adota a estética **Soft Bento Institucional**, com regras geométricas rígidas:
+## 3. Geometria Unificada (Soft Bento Institucional)
 
 | Elemento de UI | Classe Tailwind | Raio (Radius) | Uso Obrigatório |
 |---|---|---|---|
-| **Containers Principais & Telas** | `rounded-2xl` | `16px` a `24px` | Painéis principais, seções de dashboard, envelopes de formulário |
+| **Containers Principais & Telas** | `rounded-2xl` | `16px` a `24px` | Painéis principais, cabeçalhos de módulo, envelopes de formulário |
 | **Cards, Modais & Tabelas** | `rounded-xl` | `12px` a `16px` | Cards de listagem, painéis de dados, modais de diálogo |
 | **Controles, Inputs & Botões** | `rounded-xl` | `10px` a `12px` | Campos de texto, `<select>`, botões `<Button>`, textareas |
 | **Tooltips & Menus Suspensos** | `rounded-xl` | `12px` | Componente `FieldInfo`, menus dropdown de ações |
@@ -60,58 +56,71 @@ Para eliminar o amadorismo de arredondamentos aleatórios (mistura descontrolada
 
 ---
 
-## 4. Contraste Tipográfico & Legibilidade
+## 4. Arquitetura Padrão de Telas e Sub-Telas Complexas
 
-A tipografia é hierarquizada em 3 famílias fontes complementares:
+Toda página de módulo (como `/dashboard/projetos/[id]` e `/dashboard/pedagogia`) deve seguir a mesma estrutura de 3 blocos:
 
-| Família Tipográfica | Fonte | Classe / Uso | Padrão de Contraste |
-|---|---|---|---|
-| **Display (Títulos & Destaques)** | **Fraunces** (Serifada) | `font-display font-bold` | `#2B2118` (Dark: `#F3EDE4`) |
-| **Corpo (Formulários & Tabelas)** | **Inter** (Sans-serif) | `font-sans text-sm / text-xs` | `#2B2118` (Dark: `#F3EDE4`) |
-| **Secundário & Legendas** | **Inter** (Sans-serif) | `text-[var(--text-secondary)]` | Mínimo Slate-600 (`#475569` / `#6B6055`) |
-| **Utilitária (Valores, CPFs & Datas)** | **IBM Plex Mono** | `font-mono-data` | Contraste alto para números e dados fiscais |
+### Bloco 1: Cabeçalho com Seletor Global Ativo
+- Contêiner: `rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-6`.
+- Ícone do módulo/projeto com cor de identificação dinâmica em quadrado arredondado `w-14 h-14 rounded-2xl text-white font-bold text-xl`.
+- Seletor de projeto sempre ativo em dropdown estilizado (`font-display font-bold text-lg sm:text-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] px-3 py-1.5 rounded-xl`).
+- Badge de status (`ATIVO` / `PLANEJAMENTO`) + resumo numérico em pílulas (`Inscritos`, `Encontros`, `Metas`).
+- Botão de ação rápida à direita (ex: `Ver Projeto Completo`).
 
----
+### Bloco 2: Barra de Navegação por Áreas (Tabs Bento)
+- Contêiner: `p-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]`.
+- Grid responsivo de abas (`grid-cols-2 md:grid-cols-4` ou `md:grid-cols-5`):
+  - **Aba Ativa**: `border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-sm scale-[1.02]`.
+  - **Aba Inativa**: `border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]`.
+  - Ícone de 20px com a cor semântica da área + rótulo claro em texto de 12px com peso `font-bold`.
 
-## 5. Profundidade em Camadas & Eixo Z (Layered Depth)
-
-Para que o usuário compreenda intuitivamente a sobreposição de elementos sem confusão visual:
-
-1. **Camada 0 (Fundo)**: `--bg-primary` plano.
-2. **Camada 1 (Superfície de Cards)**: `--bg-elevated` com borda de 1px `border-[var(--border-default)]` e sombra suave `shadow-[var(--shadow-card)]`.
-3. **Camada 2 (Dropdowns & Tooltips `FieldInfo`)**: Fundo escuro sólido `#2B2118` (ou `#FFFFFF` em light), borda de alto contraste `border-[#4A4235]` e sombra profunda `shadow-2xl` com `z-[100]`.
-4. **Camada 3 (Modais & Drawers)**: Backdrop escuro `bg-black/60 backdrop-blur-sm`, contêiner central `shadow-2xl` e `z-[200]`.
-
----
-
-## 6. Especificação dos Componentes Padronizados
-
-### 6.1 Balão Informativo e Dica de Tela (`FieldInfo.tsx`)
-- **Ícone**: SVG oficial `HelpCircle` da biblioteca **Lucide React** (tamanho 12x12 ou 14x14). **Emojis como ❓ ou ℹ️ são estritamente proibidos**.
-- **Comportamento**:
-  - **Hover Suave**: Transição de opacidade/cor estável entre 150ms e 200ms (`animate-in fade-in-0 zoom-in-95`).
-  - **Zero Layout Shift**: O hover nunca altera o tamanho ou margem do botão, evitando deslocamentos no formulário.
-  - **Clique Suporte**: Permite manter o balão aberto para leitura no celular ou via teclado (tecla `Escape` fecha).
-  - **`cursor-pointer`**: Sempre habilitado.
-
-### 6.2 Botões (`Button.tsx`)
-- Alinhamento inline estrito: `inline-flex flex-row items-center justify-center whitespace-nowrap shrink-0`.
-- Ícone SVG acoplado sem quebra de linha: `gap-2`.
-- Geometria: `rounded-xl` com micro-interação suave no hover (`transition-all duration-200`).
-
-### 6.3 Badges (`Badge.tsx`)
-- Variantes institucionais: `primary` (laranja), `purple` (pedagogia), `success` (verde), `warning` (amarelo), `danger` (vermelho), `neutral` (cinza).
-- Tipografia: `text-[10px]` ou `text-xs font-semibold tracking-wide uppercase`.
+### Bloco 3: Sub-navegação em Pílulas (Divulgação Progressiva)
+- Para sub-telas densas (como Socioemocional ou Execução):
+  - Botão 1: **"Consulta / Fichas Cadastradas (N)"** (exibe a visão panorâmica, cards compactos, busca e botões de exportação).
+  - Botão 2: **"Novo Registro / Preenchimento"** (abre a visualização focada no formulário de edição).
 
 ---
 
-## 7. Check-up Rápido de Tela (Auditoria Pré-Entrega)
+## 5. Padrões para Cards, Formulários e Modais
 
-Antes de considerar qualquer tela ou componente como finalizado, execute as seguintes validações:
+### 5.1 Cards Salvos com Accordion Inteligente
+- Evitar exibir formulários inteiros ou descrições extensas dentro dos cards salvos.
+- Exibir: Cabeçalho com data, ação vinculada, título do encontro e educador responsável.
+- Incluir botão interativo **"Ver roteiro de atividades (N) ▼"** que expande suavemente os detalhes das dinâmicas sem sobrecarregar a listagem.
 
-- [ ] **Teste do Espaço**: Os textos longos de ajuda foram convertidos para o componente `FieldInfo`? A tela ganhou pelo menos 20% a mais de espaço em branco para respirar?
-- [ ] **Teste da Lei de Miller**: As informações da tela estão agrupadas em no máximo 5 a 9 blocos lógicos visíveis?
-- [ ] **Teste do Cursor**: Todos os elementos interativos (linhas de tabela, cards clicáveis, botões de ajuda) possuem `cursor-pointer` e feedback suave?
-- [ ] **Teste de Consistência Geométrica**: Os arredondamentos seguem a regra (`rounded-2xl` para painéis, `rounded-xl` para cards/inputs/botões)?
-- [ ] **Teste de Zero Emojis**: Não há nenhum emoji sendo utilizado como ícone de controle? Todos os ícones pertencem à biblioteca Lucide React?
-- [ ] **Teste de Contraste & Dark Mode**: A tela foi testada no modo claro e no modo escuro sem textos apagados ou ilegíveis?
+### 5.2 Formulários Estruturados em Blocos Semânticos
+- Formulários complexos devem ser divididos em blocos `rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-4 sm:p-5 space-y-4`.
+- Cabeçalho do bloco com ícone semântico Lucide, título em caixa alta `text-xs font-bold uppercase tracking-wider` e subtítulo explicativo.
+- Grid de opções (`grid-cols-1 md:grid-cols-3 gap-3`) com radio buttons em caixas destacadas `p-3.5 rounded-xl bg-[var(--bg-secondary)]`.
+
+### 5.3 Selects com Suporte a Voluntários e Metas
+- **Responsáveis / Mediadores**: Dropdown populado automaticamente com os voluntários cadastrados da equipe + opção `__CUSTOM__` (*"+ Digitar outro nome / equipe externa..."*) que abre campo de texto livre sob demanda.
+- **Metas do Projeto**: Descrição completa sem truncamento (`whitespace-normal`), permitindo leitura 100% integral dos objetivos.
+- **Destino do Campo**: Quando um campo alimentar um documento timbrado, utilizar badge de destaque `[Exibido na Devolutiva Timbrada]`.
+
+### 5.4 Documentos Oficiais em Papel Timbrado (`PapelTimbradoModal.tsx`)
+- Todos os documentos destinados a famílias, parceiros ou prestação de contas devem utilizar o modal timbrado oficial:
+  - Formato A4 com margens proporcionais.
+  - Títulos sem emojis, cabeçalho institucional, síntese dos dados, campos de assinatura e classes `timbrado-avoid-break` para impressão perfeita em PDF.
+
+### 5.5 Notificações de Salvamento com Alto Contraste
+- Todos os feedbacks de gravação com sucesso devem utilizar container com contraste sólido:
+  ```tsx
+  <div className="p-4 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center gap-2 shadow-lg animate-in fade-in slide-in-from-top-2">
+    <CheckCircle2 className="w-5 h-5 shrink-0 text-white" />
+    Registro gravado com sucesso no sistema!
+  </div>
+  ```
+
+---
+
+## 6. Check-up Rápido de Tela (Auditoria Pré-Entrega)
+
+Antes de considerar qualquer tela ou componente como finalizado, valide:
+
+- [ ] **Teste do Espaço**: Textos longos de ajuda foram convertidos para `FieldInfo`? A tela possui respiro visual?
+- [ ] **Teste da Lei de Miller**: As informações estão agrupadas em no máximo 5 a 9 blocos lógicos visíveis?
+- [ ] **Teste do Cursor**: Todos os elementos interativos possuem `cursor-pointer` e transições suaves?
+- [ ] **Teste Geométrico**: `rounded-2xl` para contêineres principais e `rounded-xl` para cards/inputs/botões?
+- [ ] **Teste Zero Emojis**: 100% dos ícones vêm do **Lucide React**?
+- [ ] **Teste de Alto Contraste**: Notificações e textos foram validados no modo claro e no modo escuro?

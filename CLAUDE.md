@@ -56,6 +56,30 @@
 
 ### 2026-08-19 — `[UI/UX] & [DESIGN SYSTEM] & [REFACTOR]` 🔴 CRÍTICO
 
+**Padronização Integral de UI/UX entre `/pedagogia` e `/projetos`, Redução de Carga Cognitiva e Design System v2.0**
+
+1. **Atualização Oficial do `desing.md` (v2.0)**:
+   - Especificação do padrão de arquitetura em 3 blocos para páginas complexas: Cabeçalho com Seletor Global Ativo, Barra de Navegação por Áreas (Tabs Bento) e Sub-navegação em Pílulas.
+   - Padrão de **Cards Salvos com Accordion Inteligente** para visualização compacta sem poluição visual.
+   - Padrão de **Papel Timbrado Oficial (`PapelTimbradoModal.tsx`)** para devoluções à família, planos de aula e relatórios técnicos.
+   - Padrão de **Banners de Salvamento com Alto Contraste** (`bg-emerald-600 text-white font-bold`).
+
+2. **Otimização e Harmonização da Página de Pedagogia (`/dashboard/pedagogia`)**:
+   - **Seletor Global de Projeto no Cabeçalho**: Permite ao gestor pedagógico alternar o projeto ativo a qualquer momento, atualizando reativamente todas as 4 sub-telas (*Frequência, Dossiê, Socioemocional, Planos de Aula*).
+   - **Acompanhamento Socioemocional (`PedagogiaSocioemocional.tsx`)**:
+     - Sub-navegação em pílulas dividindo **Fichas Cadastradas** (consulta de fichas do projeto, atalho para Devolutiva em PDF timbrado, edição rápida e exclusão) e **Preencher / Editar Ficha** (formulário focado nos 4 eixos).
+     - Integração do seletor de "Responsável pelo Preenchimento" com a lista de voluntários cadastrados da pedagogia + suporte a nome customizado/externo.
+     - Campo do Eixo 4 identificado explicitamente com badge `[Exibido na Devolutiva Timbrada]`.
+   - **Planos de Aula & Metodologia (`PedagogiaPlanosAula.tsx`)**:
+     - Cards salvos redesenhados no formato compacto com **Accordion Inteligente** para expandir dinâmicas, mediadores e metas sob demanda sem poluição visual.
+     - Modal de edição harmonizado com tipografia, espaçamentos e paleta Ádapo.
+   - **Frequência & Presença (`PedagogiaFrequencia.tsx`)**:
+     - Banners de feedback atualizados com contraste sólido e alta legibilidade.
+
+---
+
+### 2026-08-19 — `[UI/UX] & [DESIGN SYSTEM] & [REFACTOR]` 🔴 CRÍTICO
+
 **Auditoria Completa de UI/UX, Divulgação Progressiva e Padronização Geométrica Soft Bento**
 
 1. **Atualização Oficial do `desing.md` (v1.0)**:
