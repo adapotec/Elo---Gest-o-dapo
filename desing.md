@@ -1,189 +1,117 @@
 # Design System — Sistema Elo
-### Identidade Visual, Componentes e Princípios de UX/UI
+### Identidade Visual, Componentes, Geometria e Princípios de UI/UX
 
-**Versão:** 0.2 (Atualizado com diretrizes da skill `frontend-design`)  
-**Referências:** Paleta institucional do Instituto Ádapo (`CORES.png`) + Estrutura de layout inspirada em L'Inventaire e Softcount + Princípios de UX Psychology.
+**Versão:** 1.0 (Auditoria Completa de UI/UX, Divulgação Progressiva & Consistência Visual)  
+**Organização:** Instituto Ádapo  
+**Referências:** Paleta institucional (`CORES.png`) + Princípios da `frontend-design` & `ui-ux-pro-max` + Psicologia de UX (Leis de Miller, Hick e Fitts).
 
 ---
 
 ## 1. Direção de Identidade e Filosofia de Design
 
-O Elo é um sistema **institucional, acolhedor e confiável** — não um SaaS corporativo genérico. A paleta nasce das cores do Instituto Ádapo (foco em crianças, adolescentes e transformação social): quente, humana, com o **laranja como cor de ação e destaque principal**, apoiado por roxo, amarelo, marrom terroso e verde-azulado como cores de suporte e categorização.
+O Elo é um sistema de gestão **institucional, acolhedor, transparente e eficiente** voltado ao atendimento de crianças, adolescentes e comunidades. Ele se distancia do visual frio e impessoal dos SaaS corporativos, entregando uma interface com personalidade humana, clareza cirúrgica e rigor técnico.
 
-### Princípios Fundamentais (`frontend-design`):
-1. **Restrição é Luxo**: Evitar poluição visual, elementos decorativos desnecessários ou emojis informais em controles do sistema.
-2. **Carga Cognitiva Mínima (Lei de Hick)**: Interfaces densas em dados devem agrupar campos de forma lógica, usando progressive disclosure (ex: formulários em seções claras/cards reutilizáveis).
-3. **Ergonomia e Área de Toque (Lei de Fitts)**: Alvos de ação principais devem possuir dimensões confortáveis, contraste nítido e resposta tátil imediata.
-4. **Alinhamento e Estrutura Semântica**: Ícones e textos em botões/Badges devem obrigatoriamente manter alinhamento inline rígido (`inline-flex flex-row items-center whitespace-nowrap`), sem quebra de linha entre ícone e rótulo.
+### Princípios Fundamentais de UX/UI:
+1. **Restrição é Luxo & Clareza**: Eliminar elementos visuais supérfluos, ruídos decorativos e emojis em controles de interface.
+2. **Divulgação Progressiva (Progressive Disclosure)**: Não sobrecarregar o usuário com todos os dados de uma só vez. Detalhes secundários são exibidos através de abas, modais retráteis e tooltips contextuais.
+3. **A Lei de Miller (Miller's Law)**: Toda tela ou sub-seção deve agrupar as informações principais em no máximo **5 a 9 blocos lógicos visíveis**.
+4. **Espaço para Respirar (Whitespace)**: Manter espaçamento consistente e generoso (`p-6` a `p-8`, `gap-6`, `space-y-6`) para reduzir a fadiga visual e proporcionar leitura fluida.
+5. **Ergonomia e Área de Toque (Lei de Fitts)**: Elementos de clique com dimensões confortáveis (mínimo 36px de altura), feedback visual instantâneo e `cursor-pointer` em 100% dos itens interativos.
 
 ---
 
-## 2. Paleta de Cores e Regra 60-30-10
+## 2. Paleta de Cores Institucional e Regra 60-30-10
 
-Extraída da referência institucional (`CORES.png`):
+Extraída das diretrizes oficiais do Instituto Ádapo:
 
-| Nome | Hex | Uso Semântico |
+| Nome do Token | Hex | Papel Semântico no Sistema |
 |---|---|---|
-| `laranja` (primária) | `#F2632D` | Ações primárias (CTAs), destaques de navegação, alvos de interação principais |
-| `laranja-claro` | `#F7955F` | Hover e estados ativos de foco |
-| `amarelo` | `#F9C859` | Alertas suaves, avisos de vencimento (`OVERDUE`), destaques secundários |
-| `roxo` | `#93368F` | Categorização de beneficiários, programas recorrentes, badges institucionais |
-| `roxo-escuro` | `#4A1B57` | Contraste alto, cabeçalhos institucionais em dark mode |
-| `marrom` | `#8B4A2E` | Módulo de Estoque, divisores decorativos, tom terroso institucional |
-| `verde-azulado` | `#1C9C82` | Status de sucesso (`ACTIVE`), confirmações financeiras, valores positivos |
+| `laranja` (Primária) | `#F2632D` | **Cor de Ação**: Botões primários (CTAs), destaques de conversão e foco ativo |
+| `laranja-claro` | `#F7955F` | Estados de hover e backgrounds suaves de destaque |
+| `amarelo` | `#F9C859` | Alertas de atenção, avisos de prazo, destaques informativos |
+| `roxo` | `#93368F` | Módulo Pedagógico, planos de aula e categorização institucional |
+| `roxo-escuro` | `#4A1B57` | Cabeçalhos de alto contraste e textos institucionais em dark mode |
+| `marrom` | `#8B4A2E` | Módulo de Estoque, identificadores físicos e divisores decorativos |
+| `verde-azulado` | `#1C9C82` | Status concluído/ativo, confirmações de sucesso e valores positivos |
+| `vermelho` | `#D64545` | Ações destrutivas (exclusões), cancelamentos e erros |
 
-### Proporção Visual (60-30-10):
-- **60% (Fundo & Base)**: Canvas claro acolhedor (`--bg-primary`: `#FDFBF8`) e superfície de cards (`--bg-elevated`: `#FFFFFF`).
-- **30% (Estrutura & Leitura)**: Painéis secundários (`--bg-secondary`: `#F5F1EA`), textos (`--text-primary`: `#2B2118`) e bordas (`--border-default`: `#E8E1D6`).
-- **10% (Contraste & Ação)**: Laranja primário (`#F2632D`) para alvos de conversão e botões primários.
+### Distribuição Visual da Proporção 60-30-10:
+* **60% — Superfície & Fundo (Base)**: Canvas limpo (`--bg-primary`: `#FDFBF8` / Dark: `#1C1712`) e cartões elevados (`--bg-elevated`: `#FFFFFF` / Dark: `#2A251E`).
+* **30% — Estrutura & Leitura (Contraste Médio)**: Painéis secundários (`--bg-secondary`: `#F5F1EA` / Dark: `#24201A`), textos (`--text-primary`: `#2B2118` / Dark: `#F3EDE4`) e bordas (`--border-default`: `#E8E1D6` / Dark: `#383126`).
+* **10% — Ponto Focal & Ação (Laranja Ádapo)**: Reservado exclusivamente para botões de ação primária (`#F2632D`), badges ativos e indicadores de estado.
 
----
-
-## 3. Tokens Semânticos (CSS Custom Properties)
-
-```css
-/* index.css */
-
-:root {
-  /* --- Paleta bruta --- */
-  --raw-laranja: #F2632D;
-  --raw-laranja-claro: #F7955F;
-  --raw-amarelo: #F9C859;
-  --raw-roxo: #93368F;
-  --raw-roxo-escuro: #4A1B57;
-  --raw-marrom: #8B4A2E;
-  --raw-verde: #1C9C82;
-
-  /* --- Tokens semânticos: Light Mode (padrão) --- */
-  --bg-primary: #FDFBF8;
-  --bg-secondary: #F5F1EA;
-  --bg-elevated: #FFFFFF;
-  --bg-sidebar: #FFFFFF;
-
-  --text-primary: #2B2118;
-  --text-secondary: #6B6055;
-  --text-muted: #9C9187;
-  --text-on-primary: #FFFFFF;
-
-  --border-default: #E8E1D6;
-  --border-strong: #D4CABA;
-
-  --color-primary: var(--raw-laranja);
-  --color-primary-hover: #DE5623;
-  --color-primary-soft: #FCE6DB;
-
-  --color-accent-purple: var(--raw-roxo);
-  --color-accent-yellow: var(--raw-amarelo);
-  --color-accent-brown: var(--raw-marrom);
-
-  --color-success: var(--raw-verde);
-  --color-success-soft: #DCF3EC;
-  --color-warning: var(--raw-amarelo);
-  --color-warning-soft: #FDF3DA;
-  --color-danger: #D64545;
-  --color-danger-soft: #FBE2E2;
-
-  --shadow-card: 0 1px 2px rgba(43, 33, 24, 0.06), 0 1px 8px rgba(43, 33, 24, 0.04);
-}
-
-[data-theme="dark"] {
-  --bg-primary: #1C1712;
-  --bg-secondary: #24201A;
-  --bg-elevated: #2A251E;
-  --bg-sidebar: #211C16;
-
-  --text-primary: #F3EDE4;
-  --text-secondary: #B8AC9C;
-  --text-muted: #7D7466;
-  --text-on-primary: #FFFFFF;
-
-  --border-default: #383126;
-  --border-strong: #4A4235;
-
-  --color-primary: var(--raw-laranja);
-  --color-primary-hover: #f7955fff;
-  --color-primary-soft: #3D2A1E;
-
-  --color-accent-purple: #B85BB3;
-  --color-accent-yellow: var(--raw-amarelo);
-  --color-accent-brown: #B87A54;
-
-  --color-success: #3FC1A2;
-  --color-success-soft: #1B3B33;
-  --color-warning: var(--raw-amarelo);
-  --color-warning-soft: #3D3620;
-  --color-danger: #E57575;
-  --color-danger-soft: #3D2323;
-
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 8px rgba(0, 0, 0, 0.2);
-}
-```
+> 🔴 **Regra de Ouro da Cor**: O roxo (`#93368F`) e o azul nunca devem substituir o laranja (`#F2632D`) como cor de ação principal de formulários ou botões primários.
 
 ---
 
-## 4. Tipografia Institucional
+## 3. Geometria Unificada do Design System (Soft Bento Institucional)
 
-| Papel | Fonte | Uso |
-|---|---|---|
-| **Display (Títulos)** | **Fraunces** (serifada) | Cabeçalhos de módulo, títulos de banners (`font-display font-bold`) |
-| **Corpo (UI & Formulários)** | **Inter** (sans-serif) | Textos de tabelas, labels de campos, parágrafos informativos |
-| **Utilitária (Dados & Moeda)** | **IBM Plex Mono** (monospace) | Valores em R$, contagem de assinantes, CPFs, datas e IDs (`font-mono-data`) |
+Para eliminar o amadorismo de arredondamentos aleatórios (mistura descontrolada de 4px, 6px e 8px), o ERP Elo adota a estética **Soft Bento Institucional**, com regras geométricas rígidas:
 
----
+| Elemento de UI | Classe Tailwind | Raio (Radius) | Uso Obrigatório |
+|---|---|---|---|
+| **Containers Principais & Telas** | `rounded-2xl` | `16px` a `24px` | Painéis principais, seções de dashboard, envelopes de formulário |
+| **Cards, Modais & Tabelas** | `rounded-xl` | `12px` a `16px` | Cards de listagem, painéis de dados, modais de diálogo |
+| **Controles, Inputs & Botões** | `rounded-xl` | `10px` a `12px` | Campos de texto, `<select>`, botões `<Button>`, textareas |
+| **Tooltips & Menus Suspensos** | `rounded-xl` | `12px` | Componente `FieldInfo`, menus dropdown de ações |
+| **Badges, Tags & Pílulas** | `rounded-full` ou `rounded-lg` | `9999px` ou `8px` | Indicadores de status, tags temáticas, contadores |
 
-## 5. Regras Rígidas de UI & Diretrizes de Componentes
-
-### 5.1 Proibição Absoluta de Emojis em Controles da Interface
-- **Regra**: NUNCA utilizar emojis em opções de `<Select>`, rótulos de `<Badge>`, botões `<Button>`, abas de navegação ou headers de tabela.
-- **Substituição**: Utilizar exclusivamente a biblioteca de ícones **Lucide React** (`<Gift />`, `<DollarSign />`, `<Package />`, `<Target />`, etc.) ou a sobriedade tipográfica pura.
-
-### 5.2 Botões (`Button.tsx`)
-- **Alinhamento Inline Rígido**: Os botões devem ser compostos por `inline-flex flex-row items-center justify-center whitespace-nowrap shrink-0`.
-- **Prevenção de Quebra de Ícone**: O container interno de `children` possui `inline-flex flex-row items-center gap-1.5 whitespace-nowrap`, impedindo que o ícone SVG e o texto fiquem empilhados em duas linhas em qualquer tamanho de tela.
-- **Variantes**:
-  - `primary`: Fundo `--color-primary`, texto branco.
-  - `secondary`: Transparente com borda `--border-strong`.
-  - `ghost`: Transparente com texto `--color-primary`.
-  - `danger`: Fundo `--color-danger`.
-
-### 5.3 Barra Superior (`Topbar.tsx`)
-- **Flexibilidade sem Truncamento**: Removido `truncate` forçado do título da página. Em resoluções menores, a Topbar se reorganiza de forma fluida (`flex-col lg:flex-row`), preservando o nome da tela visível e sem colidir com os botões de ação ou campo de busca.
-
-### 5.4 Balões Explicativos & Tooltips (`FieldInfo.tsx`)
-- **Contenção de Bordas**: Todo modal ou balão explicativo (`?`) possui largura máxima contida (`max-w-[calc(100vw-2rem)]`) e posicionamento inteligente (`right-0 sm:left-0`), evitando estouro lateral da janela.
+> ⛔ **Proibição**: Nunca utilizar `rounded-sm` (2px) ou `rounded-md` (6px) em cartões ou botões principais do sistema.
 
 ---
 
-## 6. Padronização Institucional de Categorias
+## 4. Contraste Tipográfico & Legibilidade
 
-Para garantir consistência nos relatórios financeiros e orçamentários do ERP Elo, todas as doações financeiras e em itens físicos devem utilizar a taxonomia padronizada abaixo:
+A tipografia é hierarquizada em 3 famílias fontes complementares:
 
-### A. Doações Financeiras (Categorias Padrão):
-1. `Geral Institucional`
-2. `Alimentação e Nutrição`
-3. `Material de Consumo e Didático`
-4. `Equipamentos e Tecnologia`
-5. `Recursos Humanos e Serviços`
-6. `Logística e Transporte`
-7. `Infraestrutura e Reformas`
-8. `Eventos e Capacitações`
-9. `Emergencial e Apadrinhamento`
-10. `Outros`
-
-### B. Doações em Itens Físicos (Categorias Padrão):
-1. `Cesta Básica / Alimentos`
-2. `Vestuário / Calçados`
-3. `Equipamentos / Eletrônicos`
-4. `Material Escolar / Didático`
-5. `Móveis / Utensílios`
-6. `Insumos / Consumo`
-7. `Outros Mantimentos`
+| Família Tipográfica | Fonte | Classe / Uso | Padrão de Contraste |
+|---|---|---|---|
+| **Display (Títulos & Destaques)** | **Fraunces** (Serifada) | `font-display font-bold` | `#2B2118` (Dark: `#F3EDE4`) |
+| **Corpo (Formulários & Tabelas)** | **Inter** (Sans-serif) | `font-sans text-sm / text-xs` | `#2B2118` (Dark: `#F3EDE4`) |
+| **Secundário & Legendas** | **Inter** (Sans-serif) | `text-[var(--text-secondary)]` | Mínimo Slate-600 (`#475569` / `#6B6055`) |
+| **Utilitária (Valores, CPFs & Datas)** | **IBM Plex Mono** | `font-mono-data` | Contraste alto para números e dados fiscais |
 
 ---
 
-## 7. Acessibilidade e Auditoria UX
+## 5. Profundidade em Camadas & Eixo Z (Layered Depth)
 
-- **Foco Visível**: Alvos de entrada e botões possuem `focus:ring-2 focus:ring-[var(--color-primary)]`.
-- **Navegação via Teclado**: Suporte completo a navegação por tabulação.
-- **Contraste Mínimo AA**: Garantido contraste de 4.5:1 para todos os textos sobre `--bg-primary` e `--bg-elevated`.
-- **Tema sem Flash (FOUC)**: Script inline de pré-hidratação que define `data-theme` antes da renderização do React.
+Para que o usuário compreenda intuitivamente a sobreposição de elementos sem confusão visual:
+
+1. **Camada 0 (Fundo)**: `--bg-primary` plano.
+2. **Camada 1 (Superfície de Cards)**: `--bg-elevated` com borda de 1px `border-[var(--border-default)]` e sombra suave `shadow-[var(--shadow-card)]`.
+3. **Camada 2 (Dropdowns & Tooltips `FieldInfo`)**: Fundo escuro sólido `#2B2118` (ou `#FFFFFF` em light), borda de alto contraste `border-[#4A4235]` e sombra profunda `shadow-2xl` com `z-[100]`.
+4. **Camada 3 (Modais & Drawers)**: Backdrop escuro `bg-black/60 backdrop-blur-sm`, contêiner central `shadow-2xl` e `z-[200]`.
+
+---
+
+## 6. Especificação dos Componentes Padronizados
+
+### 6.1 Balão Informativo e Dica de Tela (`FieldInfo.tsx`)
+- **Ícone**: SVG oficial `HelpCircle` da biblioteca **Lucide React** (tamanho 12x12 ou 14x14). **Emojis como ❓ ou ℹ️ são estritamente proibidos**.
+- **Comportamento**:
+  - **Hover Suave**: Transição de opacidade/cor estável entre 150ms e 200ms (`animate-in fade-in-0 zoom-in-95`).
+  - **Zero Layout Shift**: O hover nunca altera o tamanho ou margem do botão, evitando deslocamentos no formulário.
+  - **Clique Suporte**: Permite manter o balão aberto para leitura no celular ou via teclado (tecla `Escape` fecha).
+  - **`cursor-pointer`**: Sempre habilitado.
+
+### 6.2 Botões (`Button.tsx`)
+- Alinhamento inline estrito: `inline-flex flex-row items-center justify-center whitespace-nowrap shrink-0`.
+- Ícone SVG acoplado sem quebra de linha: `gap-2`.
+- Geometria: `rounded-xl` com micro-interação suave no hover (`transition-all duration-200`).
+
+### 6.3 Badges (`Badge.tsx`)
+- Variantes institucionais: `primary` (laranja), `purple` (pedagogia), `success` (verde), `warning` (amarelo), `danger` (vermelho), `neutral` (cinza).
+- Tipografia: `text-[10px]` ou `text-xs font-semibold tracking-wide uppercase`.
+
+---
+
+## 7. Check-up Rápido de Tela (Auditoria Pré-Entrega)
+
+Antes de considerar qualquer tela ou componente como finalizado, execute as seguintes validações:
+
+- [ ] **Teste do Espaço**: Os textos longos de ajuda foram convertidos para o componente `FieldInfo`? A tela ganhou pelo menos 20% a mais de espaço em branco para respirar?
+- [ ] **Teste da Lei de Miller**: As informações da tela estão agrupadas em no máximo 5 a 9 blocos lógicos visíveis?
+- [ ] **Teste do Cursor**: Todos os elementos interativos (linhas de tabela, cards clicáveis, botões de ajuda) possuem `cursor-pointer` e feedback suave?
+- [ ] **Teste de Consistência Geométrica**: Os arredondamentos seguem a regra (`rounded-2xl` para painéis, `rounded-xl` para cards/inputs/botões)?
+- [ ] **Teste de Zero Emojis**: Não há nenhum emoji sendo utilizado como ícone de controle? Todos os ícones pertencem à biblioteca Lucide React?
+- [ ] **Teste de Contraste & Dark Mode**: A tela foi testada no modo claro e no modo escuro sem textos apagados ou ilegíveis?

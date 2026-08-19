@@ -54,7 +54,30 @@
 
 ---
 
-## Changelog
+### 2026-08-19 — `[UI/UX] & [DESIGN SYSTEM] & [REFACTOR]` 🔴 CRÍTICO
+
+**Auditoria Completa de UI/UX, Divulgação Progressiva e Padronização Geométrica Soft Bento**
+
+1. **Atualização Oficial do `desing.md` (v1.0)**:
+   - Consolidação das regras de **Divulgação Progressiva** e **Lei de Miller** (máximo de 5 a 9 blocos visíveis).
+   - Definição do sistema geométrico **Soft Bento Institucional**: painéis com `rounded-2xl`, cards/tabelas/modais com `rounded-xl`, inputs/botões com `rounded-xl` e badges com `rounded-full`/`rounded-lg`.
+   - Regras de contraste tipográfico (mínimo Slate-600 para textos secundários) e profundidade tridimensional em 4 camadas (Z-axis).
+   - Criação do **Check-up Rápido de Tela** para auditorias de interface.
+
+2. **Reformulação do Componente de Dicas de Tela (`FieldInfo.tsx`)**:
+   - Ícone SVG oficial `HelpCircle` da biblioteca Lucide React (eliminando emojis).
+   - Abertura suave no **hover** (transição de opacidade/cor de 150-200ms com zero layout shift) e suporte a clique em dispositivos touch.
+   - Camada flutuante com `z-[100]`, fundo `#2B2118`, tipografia nítida e sombra profunda `shadow-2xl`.
+
+3. **Padronização Geométrica dos Componentes Base**:
+   - `Button.tsx`, `Input.tsx` e `Select.tsx` atualizados para a geometria padronizada `rounded-xl`.
+
+4. **Auditoria e Reestruturação das Rotas de Projetos**:
+   - **Listagem (`/dashboard/projetos/page.tsx`)**: Inclusão de 4 cards de métricas KPI com tooltips `FieldInfo`, barra de busca com raios harmonizados e espaçamento respirável.
+   - **Criação (`/dashboard/projetos/novo/page.tsx`)**: Textos longos convertidos em `FieldInfo`, formulário organizado em 4 blocos semânticos e geometria `rounded-xl` consistente.
+   - **Detalhe do Projeto (`/dashboard/projetos/[id]/page.tsx`)**: Sub-aba Diagnóstico reestruturada em **3 cartões temáticos equilibrados**, substituindo a lista vertical densa por campos agrupados com tooltips contextuais.
+
+---
 
 ### 2026-08-18 — `[RECURSO] & [UX/UI] & [REFACTOR]` 🔴 CRÍTICO
 

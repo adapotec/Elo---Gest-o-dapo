@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DetailPanel } from '@/components/ui/DetailPanel';
 import { Select } from '@/components/ui/Select';
+import { FieldInfo } from '@/components/ui/FieldInfo';
 import { createClient } from '@/lib/supabase/client';
 import {
   Plus,
@@ -212,6 +213,11 @@ export default function ProjetosPage() {
     }
   };
 
+  const totalProjetos = projetos.length;
+  const projetosAtivos = projetos.filter((p) => p.status === 'ativo').length;
+  const totalBeneficiarios = projetos.reduce((acc, p) => acc + (p.num_beneficiarios || 0), 0);
+  const totalVoluntarios = projetos.reduce((acc, p) => acc + (p.num_voluntarios || 0), 0);
+
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <Topbar
@@ -225,16 +231,71 @@ export default function ProjetosPage() {
       />
 
       <div className="p-8 space-y-6 flex-1 overflow-y-auto">
-        {/* Barra de Filtros */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)]">
+        {/* Cards de Métricas Principais (Lei de Miller: 4 blocos de alto nível) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1">
+                Total de Projetos
+                <FieldInfo text="Quantidade total de projetos sociais registrados no Instituto Ádapo." />
+              </span>
+              <p className="font-display text-2xl font-bold text-[var(--text-primary)]">{totalProjetos}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center">
+              <FolderKanban className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1">
+                Projetos Ativos
+                <FieldInfo text="Projetos em fase de execução comunitária e atendimento socioeducativo." />
+              </span>
+              <p className="font-display text-2xl font-bold text-[var(--color-success)]">{projetosAtivos}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)] flex items-center justify-center">
+              <Sparkles className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1">
+                Beneficiários
+                <FieldInfo text="Total acumulado de crianças e adolescentes matriculados nos projetos sociais." />
+              </span>
+              <p className="font-display text-2xl font-bold text-[var(--text-primary)]">{totalBeneficiarios}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center">
+              <Users className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center justify-between">
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1">
+                Voluntários Atuantes
+                <FieldInfo text="Equipe operacional e oficineiros ativamente alocados na gestão dos projetos." />
+              </span>
+              <p className="font-display text-2xl font-bold text-[var(--color-accent-purple)]">{totalVoluntarios}</p>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-[var(--color-accent-purple)]/10 text-[var(--color-accent-purple)] flex items-center justify-center">
+              <HeartHandshake className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        {/* Barra de Filtros Padronizada */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)]">
           <div className="relative w-full md:w-80">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Buscar por nome do projeto..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+              className="w-full pl-10 pr-3.5 py-2.5 rounded-xl text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
             />
           </div>
 

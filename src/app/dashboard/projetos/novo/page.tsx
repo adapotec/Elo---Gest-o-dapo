@@ -315,7 +315,7 @@ export default function NovoProjetoPage() {
                   onChange={handleChange}
                   rows={3}
                   placeholder="Resumo geral sobre o propósito e impacto que o projeto visa alcançar..."
-                  className="w-full p-3.5 rounded-lg text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)]"
+                  className="w-full p-3.5 rounded-xl text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                 />
               </div>
 
@@ -350,9 +350,12 @@ export default function NovoProjetoPage() {
               <div className="pt-4 border-t border-[var(--border-default)] space-y-4">
                 {/* Ícone do Projeto */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] block">
-                    Ícone Representativo do Projeto
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
+                      Ícone Representativo do Projeto
+                    </label>
+                    <FieldInfo text="Escolha um ícone temático da biblioteca Lucide para identificar o projeto nos painéis e relatórios." />
+                  </div>
                   <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
                     {ICONES_PROJETO.map((item) => {
                       const IconComp = item.icon;
@@ -363,9 +366,9 @@ export default function NovoProjetoPage() {
                           type="button"
                           onClick={() => setFormData({ ...formData, icone: item.key })}
                           title={item.label}
-                          className={`p-2.5 rounded-xl border flex flex-col items-center justify-center transition-all ${isSelected
-                            ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/20 font-bold scale-105'
-                            : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'
+                          className={`p-2.5 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${isSelected
+                            ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/20 font-bold scale-105 shadow-sm'
+                            : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40'
                             }`}
                         >
                           <IconComp className="w-5 h-5" />
@@ -378,16 +381,19 @@ export default function NovoProjetoPage() {
                 {/* Cor Visual Arco-Íris + Cor Personalizada */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
-                      Cor de Identificação Visual
-                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
+                        Cor de Identificação Visual
+                      </label>
+                      <FieldInfo text="Cor temática utilizada nos cartões, timbrados e cabeçalho do projeto." />
+                    </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-[var(--text-muted)]">Cor Personalizada:</span>
+                      <span className="text-xs text-[var(--text-muted)]">Personalizada:</span>
                       <input
                         type="color"
                         value={formData.cor_identificacao}
                         onChange={(e) => setFormData({ ...formData, cor_identificacao: e.target.value })}
-                        className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent"
+                        className="w-7 h-7 rounded-lg border-0 cursor-pointer bg-transparent"
                       />
                       <span className="font-mono-data text-xs uppercase font-bold text-[var(--text-primary)]">
                         {formData.cor_identificacao}
@@ -402,9 +408,9 @@ export default function NovoProjetoPage() {
                         type="button"
                         onClick={() => setFormData({ ...formData, cor_identificacao: c.hex })}
                         title={c.name}
-                        className={`w-7 h-7 rounded-full border-2 transition-all ${formData.cor_identificacao.toLowerCase() === c.hex.toLowerCase()
+                        className={`w-7 h-7 rounded-full border-2 transition-all cursor-pointer ${formData.cor_identificacao.toLowerCase() === c.hex.toLowerCase()
                           ? 'border-[var(--text-primary)] scale-110 shadow-md ring-2 ring-offset-2 ring-[var(--color-primary)]'
-                          : 'border-transparent opacity-90 hover:opacity-100'
+                          : 'border-transparent opacity-90 hover:opacity-100 hover:scale-105'
                           }`}
                         style={{ backgroundColor: c.hex }}
                       />
@@ -414,7 +420,7 @@ export default function NovoProjetoPage() {
               </div>
 
               {/* Beneficiários Diretos, Indiretos e Permissão de Vínculo */}
-              <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-4">
+              <div className="p-5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-4">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-[var(--color-primary)]" />
                   <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
@@ -426,7 +432,7 @@ export default function NovoProjetoPage() {
                   <div>
                     <div className="flex items-center mb-1">
                       <label className="text-sm font-medium text-[var(--text-secondary)]">Número de Beneficiários Diretos</label>
-                      <FieldInfo text="Quantidade de pessoas atendidas diretamente nas atividades, oficinas e encontros do projeto." />
+                      <FieldInfo text="Quantidade de crianças/adolescentes atendidas diretamente nas atividades socioeducativas." />
                     </div>
                     <Input
                       type="number"
@@ -453,27 +459,27 @@ export default function NovoProjetoPage() {
                 </div>
 
                 {/* Pergunta se aceita vincular beneficiários diretos */}
-                <div className="pt-2 border-t border-[var(--border-default)]">
-                  <div className="flex items-start gap-3">
+                <div className="pt-3 border-t border-[var(--border-default)]">
+                  <label htmlFor="aceita_vinculo_beneficiarios" className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       id="aceita_vinculo_beneficiarios"
                       checked={formData.aceita_vinculo_beneficiarios}
                       onChange={(e) => setFormData({ ...formData, aceita_vinculo_beneficiarios: e.target.checked })}
-                      className="mt-1 w-4 h-4 rounded text-[var(--color-primary)] border-[var(--border-strong)] focus:ring-[var(--color-primary)]"
+                      className="mt-1 w-4 h-4 rounded text-[var(--color-primary)] border-[var(--border-strong)] focus:ring-[var(--color-primary)] cursor-pointer"
                     />
                     <div>
-                      <label htmlFor="aceita_vinculo_beneficiarios" className="text-sm font-semibold text-[var(--text-primary)] cursor-pointer flex items-center gap-1.5">
-                        Este projeto aceita vincular beneficiários diretos individualmente?
-                        <FieldInfo text="Habilite se o projeto exige matrícula/inscrição nominal dos beneficiários. Desmarque para eventos abertos ao público sem necessidade de cadastro individual." />
-                      </label>
+                      <span className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-1">
+                        Aceita matrícula/vínculo individual de beneficiários?
+                        <FieldInfo text="Marque para projetos que exigem lista de chamada e presença nominal. Desmarque para eventos abertos à comunidade." />
+                      </span>
                       <p className="text-xs text-[var(--text-muted)] mt-0.5">
                         {formData.aceita_vinculo_beneficiarios
-                          ? 'SIM — Este projeto aparecerá como opção de vínculo na aba e cadastro de Beneficiários.'
-                          : 'NÃO — Projeto de público aberto ou evento comunitário sem lista de chamada nominal.'}
+                          ? 'SIM — Projeto com matrícula e chamada nominal de crianças.'
+                          : 'NÃO — Ação comunitária livre sem necessidade de inscrição nominal.'}
                       </p>
                     </div>
-                  </div>
+                  </label>
                 </div>
               </div>
             </div>
