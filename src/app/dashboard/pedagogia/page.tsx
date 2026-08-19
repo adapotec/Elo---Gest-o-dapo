@@ -32,11 +32,18 @@ interface ProjetoItem {
 
 type TabKey = 'frequencia' | 'dossie' | 'socioemocional' | 'planos_aula';
 
-const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: 'frequencia', label: 'Frequência & Chamada', icon: <Calendar className="w-4 h-4" /> },
-  { key: 'dossie', label: 'Dossiê do Beneficiário', icon: <Users className="w-4 h-4" /> },
-  { key: 'socioemocional', label: 'Acomp. Socioemocional', icon: <Heart className="w-4 h-4" /> },
-  { key: 'planos_aula', label: 'Planos de Aula', icon: <BookOpen className="w-4 h-4" /> },
+interface TabItem {
+  key: TabKey;
+  label: string;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  color: string;
+}
+
+const TABS: TabItem[] = [
+  { key: 'frequencia', label: 'Frequência & Chamada', icon: Calendar, color: '#F2632D' },
+  { key: 'dossie', label: 'Dossiê do Beneficiário', icon: Users, color: '#1C9C82' },
+  { key: 'socioemocional', label: 'Acomp. Socioemocional', icon: Heart, color: '#93368F' },
+  { key: 'planos_aula', label: 'Planos de Aula', icon: BookOpen, color: '#3B82F6' },
 ];
 
 export default function PedagogiaPage() {
@@ -158,91 +165,87 @@ export default function PedagogiaPage() {
         }
       />
 
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-5 flex-1 overflow-y-auto">
+      <div className="p-8 max-w-6xl space-y-6 flex-1 overflow-y-auto">
         {/* ═══════════════════════════════════════════════════════════════
-            BLOCO 1: SELETOR DE PROJETO + MÉTRICAS RÁPIDAS
+            CABEÇALHO DO PROJETO VIGENTE (PADRÃO IDÊNTICO A PROJETOS)
         ═══════════════════════════════════════════════════════════════ */}
-        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] overflow-hidden">
-          {/* Cabeçalho do seletor */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5">
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20 flex items-center justify-center shrink-0 shadow-2xs">
-                <GraduationCap className="w-5 h-5" />
+        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] overflow-hidden transition-all">
+          <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-md shrink-0 transition-transform hover:scale-105"
+                style={{ backgroundColor: projetoAtivo?.cor_identificacao || '#3B82F6' }}
+              >
+                <GraduationCap className="w-7 h-7" />
               </div>
-              <div className="min-w-0 space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] block">
-                    Projeto Social Vigente
-                  </span>
-                  <FieldInfo
-                    title="Projeto Ativo na Pedagogia"
-                    text="As listas de presença, dossiês de alunos, avaliações socioemocionais e planos de aula serão sincronizados com o projeto selecionado aqui."
-                  />
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {projetos.length > 1 ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={selectedProjetoId}
+                        onChange={(e) => setSelectedProjetoId(e.target.value)}
+                        className="font-display font-bold text-xl text-[var(--text-primary)] bg-[var(--bg-secondary)]/50 hover:bg-[var(--bg-secondary)] border border-[var(--border-default)] px-3 py-1 rounded-xl focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all"
+                      >
+                        {projetos.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <h2 className="font-display font-bold text-xl text-[var(--text-primary)] truncate">
+                      {projetoAtivo?.nome || 'Carregando Projeto...'}
+                    </h2>
+                  )}
+                  <Badge variant={projetoAtivo?.status === 'ativo' ? 'success' : 'warning'}>
+                    {(projetoAtivo?.status || 'ATIVO').toUpperCase()}
+                  </Badge>
                 </div>
-                {loading ? (
-                  <div className="text-xs text-[var(--text-muted)]">Carregando projetos...</div>
-                ) : projetos.length === 0 ? (
-                  <p className="text-xs text-[var(--text-muted)] italic">
-                    Nenhum projeto cadastrado no sistema.
-                  </p>
-                ) : (
-                  <select
-                    value={selectedProjetoId}
-                    onChange={(e) => setSelectedProjetoId(e.target.value)}
-                    className="w-full max-w-xs px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all"
-                  >
-                    {projetos.map((proj) => (
-                      <option key={proj.id} value={proj.id}>
-                        {proj.nome} ({proj.status || 'Ativo'})
-                      </option>
-                    ))}
-                  </select>
-                )}
+                <p className="text-xs text-[var(--text-muted)]">
+                  Inscritos: <strong className="text-[var(--text-secondary)] font-mono-data">{inscritos.length}</strong> • Encontros: <strong className="text-[var(--text-secondary)] font-mono-data">{acoes.length}</strong> • Metas: <strong className="text-[var(--text-secondary)] font-mono-data">{metas.length}</strong>
+                </p>
               </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {selectedProjetoId && (
+                <Link href={`/dashboard/projetos/${selectedProjetoId}`}>
+                  <Button variant="secondary" size="sm" icon={<FolderKanban className="w-4 h-4" />}>
+                    Ver Projeto Completo
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
-
-          {/* Indicadores rápidos */}
-          {projetoAtivo && (
-            <div className="grid grid-cols-3 border-t border-[var(--border-default)] bg-[var(--bg-secondary)]/30">
-              <div className="p-3 sm:p-4 text-center border-r border-[var(--border-default)] last:border-r-0">
-                <Users className="w-4 h-4 text-[var(--color-primary)] mx-auto mb-1 opacity-80" />
-                <span className="text-lg sm:text-xl font-bold font-mono-data text-[var(--text-primary)] block leading-tight">{inscritos.length}</span>
-                <span className="text-[10px] sm:text-[11px] text-[var(--text-muted)] font-medium">Inscritos</span>
-              </div>
-              <div className="p-3 sm:p-4 text-center border-r border-[var(--border-default)] last:border-r-0">
-                <Calendar className="w-4 h-4 text-[var(--color-primary)] mx-auto mb-1 opacity-80" />
-                <span className="text-lg sm:text-xl font-bold font-mono-data text-[var(--text-primary)] block leading-tight">{acoes.length}</span>
-                <span className="text-[10px] sm:text-[11px] text-[var(--text-muted)] font-medium">Encontros</span>
-              </div>
-              <div className="p-3 sm:p-4 text-center">
-                <Target className="w-4 h-4 text-[var(--color-primary)] mx-auto mb-1 opacity-80" />
-                <span className="text-lg sm:text-xl font-bold font-mono-data text-[var(--text-primary)] block leading-tight">{metas.length}</span>
-                <span className="text-[10px] sm:text-[11px] text-[var(--text-muted)] font-medium">Metas</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════
-            BLOCO 2: NAVEGAÇÃO POR ABAS (SOFT BENTO)
+            PAINEL DE NAVEGAÇÃO SUPERIOR POR ÁREAS (PADRÃO IDÊNTICO A PROJETOS)
         ═══════════════════════════════════════════════════════════════ */}
-        <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
-          {TABS.map((tab, idx) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shrink-0 border cursor-pointer ${
-                activeTab === tab.key
-                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm'
-                  : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border-default)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]/40 hover:bg-[var(--bg-secondary)]/50'
-              }`}
-            >
-              {tab.icon}
-              <span className="opacity-75">{idx + 1}.</span> {tab.label}
-            </button>
-          ))}
+        <div className="p-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {TABS.map((tab) => {
+              const IconComp = tab.icon;
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-xs font-bold cursor-pointer ${
+                    isActive
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-sm scale-[1.02]'
+                      : 'border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <IconComp className="w-5 h-5" style={{ color: isActive ? 'var(--color-primary)' : tab.color }} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════

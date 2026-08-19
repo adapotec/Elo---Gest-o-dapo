@@ -204,127 +204,138 @@ export function PedagogiaFrequencia({
   );
 
   return (
-    <div className="space-y-4">
-      {/* ── Barra de Seleção de Ação e Ações Rápidas ── */}
-      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] overflow-hidden">
-        <div className="p-4 sm:p-5 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-            <div className="space-y-1 min-w-0 flex-1">
-              <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                Encontro / Ação do Projeto
-              </label>
+    <div className="space-y-6">
+      {/* ── Painel Principal de Frequência (Padrão Idêntico a Projetos) ── */}
+      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-6 space-y-6">
+        {/* Cabeçalho da Seção */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
+          <div className="space-y-0.5 min-w-0">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                Frequência & Registro de Presença
+              </h3>
+            </div>
+            <p className="text-xs text-[var(--text-muted)]">
+              Controle de presença dos beneficiários nas ações e encontros do projeto <strong>{projetoNome}</strong>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<Printer className="w-4 h-4" />}
+              onClick={() => setShowPrintModal(true)}
+              disabled={!acaoAtual || totalInscritos === 0}
+            >
+              Exportar Presença
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              icon={<Save className="w-4 h-4" />}
+              onClick={handleSalvarFrequencia}
+              disabled={saving || !acaoAtual || totalInscritos === 0}
+            >
+              {saving ? 'Salvando...' : 'Salvar Chamada'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Feedback de Salvamento */}
+        {saveSuccess && (
+          <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            Chamada registrada com sucesso!
+          </div>
+        )}
+
+        {/* Seletor de Encontro & Métricas Bento */}
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap flex-1">
+              <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                Encontro Selecionado:
+              </span>
               {acoes.length === 0 ? (
                 <p className="text-xs text-[var(--text-muted)] italic">
-                  Nenhum encontro cadastrado. Cadastre ações no módulo de Projetos.
+                  Nenhum encontro cadastrado. Cadastre ações no cronograma do projeto.
                 </p>
               ) : (
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    value={selectedAcaoId}
-                    onChange={(e) => setSelectedAcaoId(e.target.value)}
-                    className="w-full max-w-sm px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all"
-                  >
-                    {acoes.map((acao) => (
-                      <option key={acao.id} value={acao.id}>
-                        {acao.nome_acao} — {new Date(acao.data_hora).toLocaleDateString('pt-BR')}
-                      </option>
-                    ))}
-                  </select>
-                  {acaoAtual && (
-                    <Badge variant="primary">
-                      <Calendar className="w-3 h-3 mr-1" />
-                      {new Date(acaoAtual.data_hora).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
-                    </Badge>
-                  )}
-                </div>
+                <select
+                  value={selectedAcaoId}
+                  onChange={(e) => setSelectedAcaoId(e.target.value)}
+                  className="px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all"
+                >
+                  {acoes.map((acao) => (
+                    <option key={acao.id} value={acao.id}>
+                      {acao.nome_acao} — {new Date(acao.data_hora).toLocaleDateString('pt-BR')}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<Printer className="w-4 h-4" />}
-                onClick={() => setShowPrintModal(true)}
-                disabled={!acaoAtual || totalInscritos === 0}
-              >
-                Exportar Presença
-              </Button>
-              <Button
-                size="sm"
-                variant="primary"
-                icon={<Save className="w-4 h-4" />}
-                onClick={handleSalvarFrequencia}
-                disabled={saving || !acaoAtual || totalInscritos === 0}
-              >
-                {saving ? 'Salvando...' : 'Salvar Chamada'}
-              </Button>
+            {acaoAtual && (
+              <Badge variant="primary">
+                <Calendar className="w-3 h-3 mr-1" />
+                {new Date(acaoAtual.data_hora).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}
+              </Badge>
+            )}
+          </div>
+
+          {/* 4 Mini-Cards Bento de Métricas */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)]/40 border border-[var(--border-default)] text-center space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">Inscritos</span>
+              <span className="text-lg font-bold font-mono-data text-[var(--text-primary)] block leading-tight">{totalInscritos}</span>
+            </div>
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-300 block">Presentes</span>
+              <span className="text-lg font-bold font-mono-data text-emerald-600 dark:text-emerald-400 block leading-tight">{totalPresentes}</span>
+            </div>
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-rose-700 dark:text-rose-300 block">Faltas</span>
+              <span className="text-lg font-bold font-mono-data text-rose-600 dark:text-rose-400 block leading-tight">{totalFaltas}</span>
+            </div>
+            <div className="p-3.5 rounded-xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 text-center space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-[var(--color-primary)] block">Assiduidade</span>
+              <span className="text-lg font-bold font-mono-data text-[var(--color-primary)] block leading-tight">{taxaAssiduidade}%</span>
             </div>
           </div>
         </div>
 
-        {/* Métricas em linha com borders internos */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-[var(--border-default)] bg-[var(--bg-secondary)]/30">
-          <div className="p-3 sm:p-4 text-center border-r border-[var(--border-default)]">
-            <Users className="w-4 h-4 text-[var(--text-muted)] mx-auto mb-1 opacity-80" />
-            <span className="text-lg font-bold font-mono-data text-[var(--text-primary)] block leading-tight">{totalInscritos}</span>
-            <span className="text-[10px] text-[var(--text-muted)] font-medium">Inscritos</span>
-          </div>
-          <div className="p-3 sm:p-4 text-center border-r border-[var(--border-default)] sm:border-r">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
-            <span className="text-lg font-bold font-mono-data text-emerald-600 dark:text-emerald-400 block leading-tight">{totalPresentes}</span>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Presentes</span>
-          </div>
-          <div className="p-3 sm:p-4 text-center border-r border-[var(--border-default)]">
-            <XCircle className="w-4 h-4 text-rose-500 mx-auto mb-1" />
-            <span className="text-lg font-bold font-mono-data text-rose-600 dark:text-rose-400 block leading-tight">{totalFaltas}</span>
-            <span className="text-[10px] text-rose-600 dark:text-rose-400 font-medium">Faltas</span>
-          </div>
-          <div className="p-3 sm:p-4 text-center">
-            <CheckCheck className="w-4 h-4 text-[var(--color-primary)] mx-auto mb-1" />
-            <span className="text-lg font-bold font-mono-data text-[var(--color-primary)] block leading-tight">{taxaAssiduidade}%</span>
-            <span className="text-[10px] text-[var(--color-primary)] font-medium">Assiduidade</span>
-          </div>
-        </div>
-      </div>
+        {/* ── Barra de Busca e Ações em Lote ── */}
+        <div className="space-y-3 pt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Buscar aluno por nome ou comunidade..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+              />
+            </div>
 
-      {/* Feedback de Salvamento */}
-      {saveSuccess && (
-        <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          Chamada registrada com sucesso!
-        </div>
-      )}
-
-      {/* ── Tabela de Chamada ── */}
-      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-2.5" />
-            <input
-              type="text"
-              placeholder="Buscar aluno por nome ou comunidade..."
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => handleMarcarTodos('presente')}
-              className="px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]/50 transition-colors font-semibold cursor-pointer"
-            >
-              Marcar Todos Presentes
-            </button>
-            <button
-              type="button"
-              onClick={() => handleMarcarTodos('falta')}
-              className="px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-rose-500 hover:border-rose-300 transition-colors font-semibold cursor-pointer"
-            >
-              Marcar Todos Ausentes
-            </button>
+            <div className="flex items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => handleMarcarTodos('presente')}
+                className="px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]/50 transition-colors font-semibold cursor-pointer"
+              >
+                Marcar Todos Presentes
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMarcarTodos('falta')}
+                className="px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-rose-500 hover:border-rose-300 transition-colors font-semibold cursor-pointer"
+              >
+                Marcar Todos Ausentes
+              </button>
+            </div>
           </div>
         </div>
 

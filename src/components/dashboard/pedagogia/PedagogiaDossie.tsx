@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { PapelTimbradoModal } from '@/components/ui/PapelTimbradoModal';
 import {
   User,
+  Users,
   Search,
   Printer,
   Calendar,
@@ -122,81 +123,99 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      {/* Coluna Esquerda: Lista de Crianças / Alunos */}
-      <div className="lg:col-span-4 space-y-3">
-        <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-              Crianças do Projeto ({inscritos.length})
-            </h3>
-          </div>
-
-          <div className="relative">
-            <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-2.5" />
-            <input
-              type="text"
-              placeholder="Buscar criança..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-all"
-            />
-          </div>
-
-          <div className="space-y-1.5 max-h-[550px] overflow-y-auto pr-1">
-            {inscritosFiltrados.length === 0 ? (
-              <p className="text-xs text-[var(--text-muted)] italic text-center py-6">
-                Nenhuma criança encontrada.
-              </p>
-            ) : (
-              inscritosFiltrados.map((aluno) => {
-                const isSelected = aluno.id === selectedBeneficiarioId;
-                const idade = calcularIdade(aluno.data_nascimento);
-
-                return (
-                  <button
-                    key={aluno.id}
-                    type="button"
-                    onClick={() => setSelectedBeneficiarioId(aluno.id)}
-                    className={`w-full text-left p-3 rounded-xl transition-all flex items-center gap-3 border cursor-pointer ${
-                      isSelected
-                        ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/40 shadow-xs'
-                        : 'bg-[var(--bg-secondary)]/40 border-[var(--border-default)]/60 hover:bg-[var(--bg-secondary)] hover:border-[var(--border-default)]'
-                    }`}
-                  >
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                        isSelected
-                          ? 'bg-[var(--color-primary)] text-white shadow-2xs'
-                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)]'
-                      }`}
-                    >
-                      {aluno.nome_completo.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
-                        {aluno.nome_completo}
-                      </p>
-                      <p className="text-[11px] text-[var(--text-muted)] truncate">
-                        {aluno.comunidade || aluno.bairro || 'Território não inf.'} {idade !== null ? `• ${idade} anos` : ''}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })
-            )}
+    <div className="space-y-6">
+      {/* ── Topo: Cabeçalho da Seção Dossiê (Padrão Idêntico a Projetos) ── */}
+      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-0.5 min-w-0">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                Dossiê Individual do Beneficiário
+              </h3>
+            </div>
+            <p className="text-xs text-[var(--text-muted)]">
+              Ficha cadastral, indicadores de assiduidade e histórico de avaliações dos alunos de <strong>{projetoNome}</strong> ({inscritos.length} crianças).
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Coluna Direita: Dossiê Individual Detalhado */}
-      <div className="lg:col-span-8 space-y-4">
-        {!beneficiarioAtual ? (
-          <div className="p-12 text-center rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-3">
-            <User className="w-10 h-10 mx-auto text-[var(--text-muted)] opacity-50" />
-            <p className="text-sm font-semibold text-[var(--text-secondary)]">Selecione uma criança na lista para abrir seu dossiê.</p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Coluna Esquerda: Lista de Crianças / Alunos */}
+        <div className="lg:col-span-4 space-y-3">
+          <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                Crianças do Projeto ({inscritos.length})
+              </h3>
+            </div>
+
+            <div className="relative">
+              <Search className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Buscar criança..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-all"
+              />
+            </div>
+
+            <div className="space-y-1.5 max-h-[550px] overflow-y-auto pr-1">
+              {inscritosFiltrados.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)] italic text-center py-6">
+                  Nenhuma criança encontrada.
+                </p>
+              ) : (
+                inscritosFiltrados.map((aluno) => {
+                  const isSelected = aluno.id === selectedBeneficiarioId;
+                  const idade = calcularIdade(aluno.data_nascimento);
+
+                  return (
+                    <button
+                      key={aluno.id}
+                      type="button"
+                      onClick={() => setSelectedBeneficiarioId(aluno.id)}
+                      className={`w-full text-left p-3 rounded-xl transition-all flex items-center gap-3 border cursor-pointer ${
+                        isSelected
+                          ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/40 shadow-xs'
+                          : 'bg-[var(--bg-secondary)]/40 border-[var(--border-default)]/60 hover:bg-[var(--bg-secondary)] hover:border-[var(--border-default)]'
+                      }`}
+                    >
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                          isSelected
+                            ? 'bg-[var(--color-primary)] text-white shadow-2xs'
+                            : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+                        }`}
+                      >
+                        {aluno.nome_completo.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
+                          {aluno.nome_completo}
+                        </p>
+                        <p className="text-[11px] text-[var(--text-muted)] truncate">
+                          {aluno.comunidade || aluno.bairro || 'Território não inf.'} {idade !== null ? `• ${idade} anos` : ''}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
-        ) : (
+        </div>
+
+        {/* Coluna Direita: Dossiê Individual Detalhado */}
+        <div className="lg:col-span-8 space-y-4">
+          {!beneficiarioAtual ? (
+            <div className="p-12 text-center rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-3">
+              <User className="w-10 h-10 mx-auto text-[var(--text-muted)] opacity-50" />
+              <p className="text-sm font-semibold text-[var(--text-secondary)]">Selecione uma criança na lista para abrir seu dossiê.</p>
+            </div>
+          ) : (
           <>
             {/* Header do Dossiê */}
             <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
@@ -423,6 +442,7 @@ export function PedagogiaDossie({ projetoId, projetoNome, inscritos = [] }: Peda
           </>
         )}
       </div>
+    </div>
 
       {/* MODAL DE EXPORTAÇÃO DO DOSSIÊ EM PAPEL TIMBRADO */}
       <PapelTimbradoModal

@@ -221,59 +221,20 @@ export function PedagogiaSocioemocional({
   };
 
   return (
-    <div className="space-y-4">
-      {/* ── Topo: Seleção de Criança, Mês e Ações ── */}
-      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
-            {/* Seletor de Criança */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                Criança / Beneficiário *
-              </label>
-              {inscritos.length === 0 ? (
-                <p className="text-xs text-[var(--text-muted)] italic">Nenhum aluno inscrito.</p>
-              ) : (
-                <select
-                  value={selectedBeneficiarioId}
-                  onChange={(e) => setSelectedBeneficiarioId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all"
-                >
-                  {inscritos.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.nome_completo}
-                    </option>
-                  ))}
-                </select>
-              )}
+    <div className="space-y-6">
+      {/* ── Topo: Cabeçalho da Seção e Controles (Padrão Idêntico a Projetos) ── */}
+      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
+          <div className="space-y-0.5 min-w-0">
+            <div className="flex items-center gap-2">
+              <Heart className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                Acompanhamento Socioemocional (4 Eixos Ádapo)
+              </h3>
             </div>
-
-            {/* Mês de Referência */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                Mês de Referência
-              </label>
-              <input
-                type="month"
-                value={mesReferencia}
-                onChange={(e) => setMesReferencia(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-mono-data focus:outline-none focus:border-[var(--color-primary)] transition-all"
-              />
-            </div>
-
-            {/* Responsável pelo Preenchimento */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                Responsável pelo Preenchimento
-              </label>
-              <input
-                type="text"
-                placeholder="Ex: Educadora Ana / Psicóloga Bruna"
-                value={responsavel}
-                onChange={(e) => setResponsavel(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:border-[var(--color-primary)] transition-all"
-              />
-            </div>
+            <p className="text-xs text-[var(--text-muted)]">
+              Avaliação do desenvolvimento socioemocional e plano de acolhimento para <strong>{projetoNome}</strong>.
+            </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -295,6 +256,58 @@ export function PedagogiaSocioemocional({
             >
               {saving ? 'Salvando...' : 'Salvar Ficha'}
             </Button>
+          </div>
+        </div>
+
+        {/* Seleção de Criança, Mês e Responsável */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Seletor de Criança */}
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+              Criança / Beneficiário *
+            </label>
+            {inscritos.length === 0 ? (
+              <p className="text-xs text-[var(--text-muted)] italic">Nenhum aluno inscrito.</p>
+            ) : (
+              <select
+                value={selectedBeneficiarioId}
+                onChange={(e) => setSelectedBeneficiarioId(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all"
+              >
+                {inscritos.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.nome_completo}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Mês de Referência */}
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+              Mês de Referência
+            </label>
+            <input
+              type="month"
+              value={mesReferencia}
+              onChange={(e) => setMesReferencia(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-mono-data focus:outline-none focus:border-[var(--color-primary)] transition-all"
+            />
+          </div>
+
+          {/* Responsável pelo Preenchimento */}
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+              Responsável pelo Preenchimento
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Educadora Ana / Psicóloga Bruna"
+              value={responsavel}
+              onChange={(e) => setResponsavel(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:border-[var(--color-primary)] transition-all"
+            />
           </div>
         </div>
 

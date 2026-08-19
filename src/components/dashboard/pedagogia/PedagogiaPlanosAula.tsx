@@ -321,29 +321,31 @@ export function PedagogiaPlanosAula({
   };
 
   return (
-    <div className="space-y-4">
-      {/* ── Topo: Resumo e Botão Novo Plano ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
-        <div className="space-y-0.5 min-w-0">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
-            <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-              Planos de Aula do Projeto ({planos.length})
-            </h3>
+    <div className="space-y-6">
+      {/* ── Topo: Resumo e Botão Novo Plano (Padrão Idêntico a Projetos) ── */}
+      <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-0.5 min-w-0">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                Planos de Aula & Metodologia
+              </h3>
+            </div>
+            <p className="text-xs text-[var(--text-muted)]">
+              Planejamento pedagógico vinculado às ações do cronograma e metas de <strong>{projetoNome}</strong> ({planos.length} planos cadastrados).
+            </p>
           </div>
-          <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-            Planejamento pedagógico vinculado às ações do cronograma e metas de <strong>{projetoNome}</strong>.
-          </p>
-        </div>
 
-        <Button
-          size="sm"
-          variant="primary"
-          icon={<Plus className="w-4 h-4" />}
-          onClick={handleNovoPlano}
-        >
-          Novo Plano de Aula
-        </Button>
+          <Button
+            size="sm"
+            variant="primary"
+            icon={<Plus className="w-4 h-4" />}
+            onClick={handleNovoPlano}
+          >
+            Novo Plano de Aula
+          </Button>
+        </div>
       </div>
 
       {/* Feedback de Salvamento */}
