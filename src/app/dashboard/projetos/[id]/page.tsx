@@ -2120,66 +2120,82 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                       <div className="space-y-4">
                         {/* 1. Apresentação */}
                         <div>
-                          <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Apresentação do Projeto</label>
+                          <div className="flex items-center mb-1">
+                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Apresentação do Projeto</label>
+                            <FieldInfo text="Apresentação detalhada da proposta institucional, histórico da iniciativa e escopo geral das atividades." />
+                          </div>
                           <textarea
                             name="apresentacao"
                             value={formData.apresentacao}
                             onChange={handleChange}
-                            rows={5}
-                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                            rows={4}
+                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                             placeholder="Apresentação detalhada da proposta, histórico da iniciativa e escopo geral das atividades..."
                           />
                         </div>
 
                         {/* 2. Justificativa Social */}
                         <div>
-                          <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Justificativa Social</label>
+                          <div className="flex items-center mb-1">
+                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Justificativa Social</label>
+                            <FieldInfo text="Relevância da ação socioeducativa, problema territorial a ser enfrentado, direitos garantidos e impacto comunitário." />
+                          </div>
                           <textarea
                             name="justificativa"
                             value={formData.justificativa}
                             onChange={handleChange}
-                            rows={5}
-                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                            rows={4}
+                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                             placeholder="Relevância da ação, problema social a ser enfrentado, direitos a serem garantidos e impacto comunitário esperado..."
                           />
                         </div>
 
-                        {/* 3. Público-Alvo */}
-                        <div>
-                          <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Público-Alvo</label>
-                          <textarea
-                            name="publico_alvo"
-                            value={formData.publico_alvo}
-                            onChange={handleChange}
-                            rows={4}
-                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
-                            placeholder="Perfil detalhado do público: faixa etária, gênero, recorte racial, condições de vulnerabilidade social e quantitativo estimado..."
-                          />
+                        {/* 3. Público-Alvo & Critérios */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <div className="flex items-center mb-1">
+                              <label className="text-xs font-semibold text-[var(--text-secondary)]">Público-Alvo</label>
+                              <FieldInfo text="Perfil detalhado do público participante: faixa etária, gênero, recorte racial e vulnerabilidade social." />
+                            </div>
+                            <textarea
+                              name="publico_alvo"
+                              value={formData.publico_alvo}
+                              onChange={handleChange}
+                              rows={3}
+                              className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                              placeholder="Perfil detalhado do público: faixa etária, gênero, condições de vulnerabilidade..."
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex items-center mb-1">
+                              <label className="text-xs font-semibold text-[var(--text-secondary)]">Critérios de Ingresso e Permanência</label>
+                              <FieldInfo text="Requisitos de acesso, processo de acolhimento, frequência mínima exigida e compromissos familiares." />
+                            </div>
+                            <textarea
+                              name="ingresso_permanencia"
+                              value={formData.ingresso_permanencia}
+                              onChange={handleChange}
+                              rows={3}
+                              className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                              placeholder="Requisitos de acesso, frequência mínima exigida, critérios de continuidade..."
+                            />
+                          </div>
                         </div>
 
-                        {/* 4. Critérios de Ingresso / Permanência */}
+                        {/* 4. Localidade da Execução */}
                         <div>
-                          <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Critérios de Ingresso e Permanência</label>
-                          <textarea
-                            name="ingresso_permanencia"
-                            value={formData.ingresso_permanencia}
-                            onChange={handleChange}
-                            rows={4}
-                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
-                            placeholder="Requisitos de acesso, processo seletivo ou inscrição, frequência mínima exigida, compromissos familiares e critérios de continuidade..."
-                          />
-                        </div>
-
-                        {/* 5. Localidade da Execução */}
-                        <div>
-                          <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Localidade da Execução & Território</label>
+                          <div className="flex items-center mb-1">
+                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Localidade da Execução & Território</label>
+                            <FieldInfo text="Endereço dos polos de atendimento, equipamentos parceiros, abrangência geográfica e infraestrutura local." />
+                          </div>
                           <textarea
                             name="localidade"
                             value={formData.localidade}
                             onChange={handleChange}
-                            rows={4}
-                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
-                            placeholder="Endereço ou polos de atendimento, equipamentos comunitários parceiros, abrangência geográfica e acessibilidade do local..."
+                            rows={3}
+                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                            placeholder="Endereço ou polos de atendimento, equipamentos comunitários parceiros, abrangência geográfica..."
                           />
                         </div>
                       </div>
@@ -2287,20 +2303,58 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                   {/* SEÇÃO PLANEJAMENTO: METODOLOGIA & RESULTADOS */}
                   {planejamentoSection === 'metodologia' && (
                     <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-                      <h3 className="font-display font-bold text-base text-[var(--text-primary)] border-b border-[var(--border-default)] pb-2">
-                        Metodologia, Acessibilidade & Resultados Esperados
-                      </h3>
-                      <div>
-                        <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Metodologia de Execução</label>
-                        <textarea name="metodologia" value={formData.metodologia} onChange={handleChange} rows={3} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Abordagem pedagógica e operacional..." />
+                      <div className="border-b border-[var(--border-default)] pb-2">
+                        <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                          Metodologia, Acessibilidade & Resultados Esperados
+                        </h3>
+                        <p className="text-xs text-[var(--text-muted)]">Abordagem pedagógica, tecnologias sociais, inclusão e impactos projetados</p>
                       </div>
-                      <div>
-                        <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Medidas de Acessibilidade & Inclusão</label>
-                        <textarea name="acessibilidade" value={formData.acessibilidade} onChange={handleChange} rows={2} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Garantia de acesso físico, sensorial e social..." />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Resultados Esperados</label>
-                        <textarea name="resultados_esperados" value={formData.resultados_esperados} onChange={handleChange} rows={3} className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)]" placeholder="Impactos esperados ao final do ciclo..." />
+
+                      <div className="space-y-4">
+                        <div>
+                          <div className="flex items-center mb-1">
+                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Metodologia de Execução & Práticas Pedagógicas</label>
+                            <FieldInfo text="Métodos aplicados, dinâmicas de acolhimento, oficinas práticas e instrumentos pedagógicos socioeducativos." />
+                          </div>
+                          <textarea
+                            name="metodologia"
+                            value={formData.metodologia}
+                            onChange={handleChange}
+                            rows={3}
+                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                            placeholder="Abordagem pedagógica e operacional das oficinas, vivências e encontros..."
+                          />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center mb-1">
+                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Medidas de Acessibilidade & Inclusão</label>
+                            <FieldInfo text="Acessibilidade física, comunicacional e atitudinal garantida para pessoas com deficiência ou necessidades específicas." />
+                          </div>
+                          <textarea
+                            name="acessibilidade"
+                            value={formData.acessibilidade}
+                            onChange={handleChange}
+                            rows={2}
+                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                            placeholder="Garantia de acesso físico, sensorial, comunicacional e social para todos os públicos..."
+                          />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center mb-1">
+                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Resultados Esperados & Transformação Social</label>
+                            <FieldInfo text="Evolução comportamental, fortalecimento de vínculos familiares e ganhos socioemocionais projetados." />
+                          </div>
+                          <textarea
+                            name="resultados_esperados"
+                            value={formData.resultados_esperados}
+                            onChange={handleChange}
+                            rows={3}
+                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                            placeholder="Impactos quantitativos e qualitativos esperados ao final do ciclo de execução..."
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2761,24 +2815,103 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
 
               {/* SUB-TELA GESTÃO: ENCERRAMENTO */}
               {gestaoSubTab === 'encerramento' && (
-                <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-                  <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
                     <div>
-                      <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Avaliação de Encerramento & Prestação de Contas</h3>
-                      <p className="text-xs text-[var(--text-muted)]">Relatório final de impacto e conclusão do ciclo de vida</p>
+                      <div className="flex items-center gap-2">
+                        <CheckSquare className="w-5 h-5 text-[var(--color-primary)]" />
+                        <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                          Avaliação de Encerramento & Prestação de Contas
+                        </h3>
+                      </div>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Consolidação dos resultados, balanço de metas, sustentabilidade da ação e prestação de contas final
+                      </p>
                     </div>
-                    <Badge variant="neutral">Encerramento</Badge>
+                    <Badge variant={formData.status === 'concluido' ? 'success' : 'warning'}>
+                      Status: {formData.status.toUpperCase()}
+                    </Badge>
                   </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Relatório & Parecer de Encerramento</label>
+                  {/* 4 Cards de Resumo Executivo do Ciclo */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Ações Executadas</span>
+                        <Calendar className="w-4 h-4 text-[var(--color-primary)]" />
+                      </div>
+                      <p className="text-xl font-bold font-mono-data text-[var(--text-primary)]">
+                        {acoes.length}
+                      </p>
+                      <span className="text-[10px] text-[var(--text-muted)]">No cronograma</span>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Beneficiários</span>
+                        <Users className="w-4 h-4 text-[var(--color-primary)]" />
+                      </div>
+                      <p className="text-xl font-bold font-mono-data text-[var(--text-primary)]">
+                        {beneficiariosVinculados.length || formData.num_beneficiarios_diretos || 0}
+                      </p>
+                      <span className="text-[10px] text-[var(--text-muted)]">Atendidos diretamente</span>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Voluntários</span>
+                        <HeartHandshake className="w-4 h-4 text-[var(--color-accent-purple)]" />
+                      </div>
+                      <p className="text-xl font-bold font-mono-data text-[var(--text-primary)]">
+                        {voluntariosVinculados.length}
+                      </p>
+                      <span className="text-[10px] text-[var(--text-muted)]">Alocados no projeto</span>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Orçamento Total</span>
+                        <DollarSign className="w-4 h-4 text-[var(--color-success)]" />
+                      </div>
+                      <p className="text-xl font-bold font-mono-data text-[var(--color-primary)]">
+                        R$ {totalOrcamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                      <span className="text-[10px] text-[var(--text-muted)]">{despesas.length} itens orçados</span>
+                    </div>
+                  </div>
+
+                  {/* Parecer Técnico de Conclusão */}
+                  <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--text-primary)]">
+                          Parecer de Conclusão, Sustentabilidade & Lições Aprendidas
+                        </h4>
+                        <FieldInfo text="Avaliação qualitativa sobre o impacto social gerado, sustentabilidade futura das atividades e aprendizados para os próximos projetos." />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-[var(--text-muted)]">Status do Projeto:</span>
+                        <select
+                          value={formData.status}
+                          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] cursor-pointer focus:outline-none focus:border-[var(--color-primary)]"
+                        >
+                          <option value="planejamento">Em Planejamento</option>
+                          <option value="ativo">Ativo / Em Execução</option>
+                          <option value="pausado">Pausado</option>
+                          <option value="concluido">Concluído</option>
+                          <option value="cancelado">Cancelado</option>
+                        </select>
+                      </div>
+                    </div>
+
                     <textarea
                       name="avaliacao_encerramento"
                       value={formData.avaliacao_encerramento}
                       onChange={handleChange}
-                      rows={6}
-                      className="w-full p-4 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
-                      placeholder="Avaliação de alcance de metas, sustentabilidade da ação comunitária, lições aprendidas e encaminhamentos..."
+                      rows={5}
+                      className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
+                      placeholder="Avaliação formal de alcance de metas, impactos na comunidade atendida, sustentabilidade das ações comunitárias, lições aprendidas pela equipe e recomendações futuras..."
                     />
                   </div>
                 </div>
@@ -4626,7 +4759,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                 value={row.horario}
                                 onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'horario', e.target.value)}
                                 placeholder="Ex: 08:30 - 09:15"
-                                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+                                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
                               />
                             </div>
 
@@ -4637,7 +4770,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                 value={row.atividade}
                                 onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'atividade', e.target.value)}
                                 placeholder="Ex: Acolhimento, oficina prática, dinâmica de integração..."
-                                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+                                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
                               />
                             </div>
                           </div>
@@ -4660,7 +4793,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                       const ativ = planoVinculado.atividades.find((a: any) => a.id === e.target.value);
                                       if (ativ) handleImportarAtividadePedagogica(rIdx, ativ);
                                     }}
-                                    className="text-[11px] font-semibold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded-lg border border-[var(--color-primary)]/20 cursor-pointer focus:outline-none"
+                                    className="text-[11px] font-semibold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded-xl border border-[var(--color-primary)]/20 cursor-pointer focus:outline-none"
                                   >
                                     <option value="">+ Selecionar atividade...</option>
                                     {planoVinculado.atividades.map((ativ: any, aIdx: number) => (
@@ -4678,7 +4811,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                               onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'descricao', e.target.value)}
                               placeholder="Descreva o passo a passo da dinâmica ou selecione acima para importar da pedagogia..."
                               rows={2}
-                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-normal resize-none leading-relaxed"
+                              className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-normal resize-none leading-relaxed"
                             />
                           </div>
 
@@ -4695,7 +4828,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                   {ensureStringArray(row.materiais).map((mat, mIdx) => (
                                     <span
                                       key={mIdx}
-                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)]"
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)]"
                                     >
                                       {mat}
                                       <button
@@ -4723,7 +4856,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                       e.currentTarget.value = '';
                                     }
                                   }}
-                                  className="flex-1 px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                                  className="flex-1 px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
                                 />
                                 <button
                                   type="button"
@@ -4734,7 +4867,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                       input.value = '';
                                     }
                                   }}
-                                  className="px-2.5 py-2 rounded-lg text-xs font-medium bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--color-primary)] hover:text-white hover:border-[var(--color-primary)] transition-colors"
+                                  className="px-2.5 py-2 rounded-xl text-xs font-medium bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--color-primary)] hover:text-white hover:border-[var(--color-primary)] transition-colors cursor-pointer"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
                                 </button>
@@ -4752,7 +4885,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                   {ensureStringArray(row.equipe).map((membro, eqIdx) => (
                                     <span
                                       key={eqIdx}
-                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20"
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20"
                                     >
                                       {membro}
                                       <button
@@ -4780,7 +4913,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                     handleAddEquipeToRow(rIdx, val);
                                   }
                                 }}
-                                className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
                               >
                                 <option value="">+ Vincular responsável...</option>
                                 <optgroup label="Voluntários Cadastrados">
@@ -4805,7 +4938,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                               value={row.local}
                               onChange={(e) => handleUpdateProgramacaoRow(rIdx, 'local', e.target.value)}
                               placeholder="Ex: Pátio Principal, Sala 02, Auditório..."
-                              className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                              className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
                             />
                           </div>
                         </div>
@@ -4894,7 +5027,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                                 value={vinculada?.justificativa || ''}
                                 onChange={(e) => handleUpdateJustificativaMeta(meta.id, e.target.value)}
                                 placeholder="Explique a contribuição das oficinas e dinâmicas desta ação para esta meta específica..."
-                                className="w-full p-2 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                                className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                               />
                             </div>
                           )}
