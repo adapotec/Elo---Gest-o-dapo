@@ -214,7 +214,7 @@ export function PedagogiaPlanosAula({
       projeto_id: projetoId,
       acao_id: acaoInicial?.id || null,
       titulo: '',
-      oficineiro: voluntarios[0]?.nome_completo || '',
+      oficineiro: '',
       data_oficina: dataInicial,
       descricao: '',
       objetivos: '',
@@ -223,7 +223,7 @@ export function PedagogiaPlanosAula({
         {
           id: crypto.randomUUID(),
           titulo: 'Acolhida & Dinâmica Inicial',
-          mediador: voluntarios[0]?.nome_completo || '',
+          mediador: '',
           descricao: '',
           materiais: '',
           meta_id: metas[0]?.id || '',
@@ -259,7 +259,7 @@ export function PedagogiaPlanosAula({
         {
           id: crypto.randomUUID(),
           titulo: `Atividade ${prev.atividades.length + 1}`,
-          mediador: prev.oficineiro || voluntarios[0]?.nome_completo || '',
+          mediador: prev.oficineiro || '',
           descricao: '',
           materiais: '',
           meta_id: metas[0]?.id || '',
@@ -562,7 +562,12 @@ export function PedagogiaPlanosAula({
                 {/* Rodapé do card */}
                 <div className="px-5 py-3 border-t border-[var(--border-default)]/60 text-xs text-[var(--text-muted)] flex items-center justify-between bg-[var(--bg-secondary)]/30 rounded-b-2xl">
                   <span>
-                    Educador: <strong className="text-[var(--text-primary)]">{plano.oficineiro}</strong>
+                    Educador:{' '}
+                    {plano.oficineiro ? (
+                      <strong className="text-[var(--text-primary)]">{plano.oficineiro}</strong>
+                    ) : (
+                      <em className="text-[var(--text-muted)] font-normal">Não informado</em>
+                    )}
                   </span>
                   <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
                     {totalAtividades} {totalAtividades === 1 ? 'atividade' : 'atividades'}
@@ -690,8 +695,8 @@ export function PedagogiaPlanosAula({
                 )}
               </div>
 
-              {/* 2. Título do Encontro e Data */}
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_170px] gap-3">
+              {/* 2. Título do Encontro, Data e Educador Responsável */}
+              <div className="space-y-3">
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
                     Título do Encontro / Aula *
@@ -705,16 +710,63 @@ export function PedagogiaPlanosAula({
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
-                    Data da Oficina *
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.data_oficina}
-                    onChange={(e) => setFormData({ ...formData, data_oficina: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors font-mono-data"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">
+                      Data da Oficina *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.data_oficina}
+                      onChange={(e) => setFormData({ ...formData, data_oficina: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors font-mono-data"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block flex items-center gap-1">
+                      <UserCheck className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                      Educador / Oficineiro Responsável Geral
+                    </label>
+                    <div className="space-y-1.5">
+                      <select
+                        value={
+                          voluntarios.some((v) => v.nome_completo === formData.oficineiro)
+                            ? formData.oficineiro
+                            : formData.oficineiro
+                            ? '__CUSTOM__'
+                            : ''
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '__CUSTOM__') {
+                            setFormData({ ...formData, oficineiro: '' });
+                          } else {
+                            setFormData({ ...formData, oficineiro: val });
+                          }
+                        }}
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-colors"
+                      >
+                        <option value="">Selecione o educador (opcional)...</option>
+                        {voluntarios.map((v) => (
+                          <option key={v.id} value={v.nome_completo}>
+                            {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
+                          </option>
+                        ))}
+                        <option value="__CUSTOM__">+ Digitar nome personalizado / externo...</option>
+                      </select>
+
+                      {(!voluntarios.some((v) => v.nome_completo === formData.oficineiro) || formData.oficineiro === '') && (
+                        <input
+                          type="text"
+                          placeholder="Digite o nome do educador / oficineiro responsável..."
+                          value={formData.oficineiro}
+                          onChange={(e) => setFormData({ ...formData, oficineiro: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] transition-colors"
+                        />
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -941,6 +993,16 @@ export function PedagogiaPlanosAula({
                       </div>
                     </div>
                   ))}
+
+                  {/* Botão de Adicionar Nova Atividade fixo na parte inferior da lista */}
+                  <button
+                    type="button"
+                    onClick={handleAddAtividade}
+                    className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-[var(--border-default)] hover:border-[var(--color-primary)] bg-[var(--bg-secondary)]/30 hover:bg-[var(--bg-secondary)]/70 text-[var(--color-primary)] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm group"
+                  >
+                    <Plus className="w-4 h-4 transition-transform group-hover:scale-110" />
+                    <span>Adicionar Nova Atividade / Dinâmica ao Roteiro</span>
+                  </button>
                 </div>
               </div>
 

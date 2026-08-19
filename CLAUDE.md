@@ -76,6 +76,8 @@
      - **Vínculo no Modal de Plano de Aula (`PedagogiaPlanosAula.tsx`)**: Integrado filtro mensal antes do dropdown de ações no modal de criação e edição, sincronizando automaticamente o mês da ação vinculada ao editar e prevenindo listas infinitas.
    - **Planos de Aula & Metodologia (`PedagogiaPlanosAula.tsx`)**:
      - Cards salvos redesenhados no formato compacto com **Accordion Inteligente** para expandir dinâmicas, mediadores e metas sob demanda sem poluição visual.
+     - **Correção de Educador/Mediador**: Removido preenchimento forçado silencioso do primeiro voluntário (`voluntarios[0]`), adicionado campo explícito de "Educador / Oficineiro Responsável Geral" no modal com seleção de voluntário ou nome personalizado, e exibição de "Não informado" quando vazio.
+     - **Ergonomia UI/UX de Atividades**: Adicionado botão de "+ Adicionar Nova Atividade / Dinâmica ao Roteiro" na extremidade inferior da lista de atividades, eliminando a necessidade de rolar para o topo do formulário.
      - Modal de edição harmonizado com tipografia, espaçamentos e paleta Ádapo.
    - **Frequência & Presença (`PedagogiaFrequencia.tsx`)**:
      - Banners de feedback atualizados com contraste sólido e alta legibilidade.
