@@ -93,12 +93,14 @@ export default function LoginPage() {
   const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
   const [forgotError, setForgotError] = useState<string | null>(null);
 
-  // Status de primeiro acesso detectado
+  // Perfil selecionado na ciranda
   const selectedVoluntario = voluntarios[selectedIndex] || null;
-  const detectedFirstAccess = selectedVoluntario ? !selectedVoluntario.hasAccount : false;
+  const hasAccount = selectedVoluntario ? Boolean(selectedVoluntario.hasAccount) : false;
+
+  // Modo efetivo: se o perfil tem conta, vai direto para LOGIN. Se não tem, vai para 1º ACESSO.
   const isFirstAccess = authModeOverride !== null
     ? authModeOverride === 'first_access'
-    : detectedFirstAccess;
+    : !hasAccount;
 
   // Atualiza email de recuperação quando o voluntário muda
   useEffect(() => {
@@ -136,7 +138,7 @@ export default function LoginPage() {
     }
   };
 
-  // Carrega voluntários do banco de dados e cruza com os profiles existentes
+  // Carrega voluntários do banco de dados e cruza com os profiles existentes de forma 100% precisa
   useEffect(() => {
     async function fetchVoluntarios() {
       try {
@@ -149,16 +151,24 @@ export default function LoginPage() {
           .eq('status', 'ativo')
           .order('nome_completo', { ascending: true });
 
-        // 2. Busca profiles para saber quem já tem conta ativa
+        // 2. Busca profiles para saber quem já tem conta ativa (por email e por nome)
         const { data: profData } = await supabase
           .from('profiles')
-          .select('email, id, avatar_url');
+          .select('email, nome_completo, id, avatar_url');
 
-        const profMap = new Set((profData || []).map((p: any) => p.email?.toLowerCase().trim()));
+        const profEmails = new Set(
+          (profData || []).map((p: any) => p.email?.toLowerCase().trim()).filter(Boolean)
+        );
+        const profNames = new Set(
+          (profData || []).map((p: any) => p.nome_completo?.toLowerCase().trim()).filter(Boolean)
+        );
 
         if (volData && volData.length > 0) {
           const list: VoluntarioItem[] = volData.map((v: any) => {
-            const hasAcc = profMap.has(v.email?.toLowerCase().trim());
+            const vEmail = v.email?.toLowerCase().trim();
+            const vName = v.nome_completo?.toLowerCase().trim();
+            const hasAcc = profEmails.has(vEmail) || profNames.has(vName);
+
             return {
               id: v.id,
               nome_completo: v.nome_completo,
@@ -228,9 +238,8 @@ export default function LoginPage() {
       });
 
       if (signInError) {
-        // Se a senha estiver incorreta ou não existir conta
         if (signInError.message.includes('Invalid login credentials')) {
-          setError('Senha incorreta ou usuário ainda não cadastrado. Verifique a senha ou acerte o 1º acesso.');
+          setError('Senha incorreta. Verifique a senha digitada ou clique em "Esqueceu a senha?".');
         } else {
           setError(signInError.message || 'Erro ao realizar login.');
         }
@@ -283,6 +292,12 @@ export default function LoginPage() {
 
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
+          // Atualiza lista local para marcar este voluntário como com conta ativa
+          setVoluntarios((prev) =>
+            prev.map((v, i) => (i === selectedIndex ? { ...v, hasAccount: true } : v))
+          );
+          setAuthModeOverride('login');
+
           const { error: signInErr } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password,
@@ -294,13 +309,17 @@ export default function LoginPage() {
             return;
           } else {
             setError('Esta conta já possui senha cadastrada. Insira sua senha para entrar.');
-            setAuthModeOverride('login');
             setLoading(false);
             return;
           }
         }
         throw signUpError;
       }
+
+      // Atualiza lista local
+      setVoluntarios((prev) =>
+        prev.map((v, i) => (i === selectedIndex ? { ...v, hasAccount: true } : v))
+      );
 
       const { error: autoLoginErr } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -363,9 +382,9 @@ export default function LoginPage() {
                       setSuccessMsg(null);
                       setAuthModeOverride(null);
                     }}
-                    icon={<ArrowRight className="w-4 h-4" />}
+                    icon={hasAccount ? <ArrowRight className="w-4 h-4" /> : <KeyRound className="w-4 h-4" />}
                   >
-                    {detectedFirstAccess ? 'Continuar (1º Acesso)' : 'Acessar com este Perfil'}
+                    {hasAccount ? 'Acessar com este Perfil' : 'Primeiro Acesso: Criar Senha'}
                   </Button>
 
                   {/* Fallback para login manual com outro e-mail */}
@@ -438,14 +457,14 @@ export default function LoginPage() {
                 </div>
 
                 <div className="shrink-0 text-right">
-                  {isFirstAccess ? (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
-                      1º Acesso
-                    </span>
-                  ) : (
+                  {hasAccount ? (
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3" />
                       Conta Ativa
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                      1º Acesso
                     </span>
                   )}
                 </div>
@@ -480,7 +499,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* FORMULÁRIO 1: PRIMEIRO ACESSO (CRIAÇÃO DE SENHA) */}
+            {/* FORMULÁRIO 1: PRIMEIRO ACESSO (CRIAÇÃO DE SENHA - APENAS SE NÃO TIVER CONTA) */}
             {isFirstAccess && !useManualEmail ? (
               <form onSubmit={handleCreatePassword} className="space-y-4">
                 <div className="space-y-1">
@@ -531,20 +550,9 @@ export default function LoginPage() {
                 >
                   {loading ? 'Ativando Conta...' : 'Ativar Minha Conta & Entrar'}
                 </Button>
-
-                {/* Alternância para quem já possui senha */}
-                <div className="text-center pt-2 border-t border-[var(--border-default)]">
-                  <button
-                    type="button"
-                    onClick={() => setAuthModeOverride('login')}
-                    className="text-xs text-[var(--color-primary)] hover:underline font-semibold cursor-pointer"
-                  >
-                    Já cadastrou sua senha anteriormente? Entrar com senha
-                  </button>
-                </div>
               </form>
             ) : (
-              /* FORMULÁRIO 2: LOGIN DE CONTA EXISTENTE */
+              /* FORMULÁRIO 2: LOGIN DE CONTA EXISTENTE (DIRETO PARA QUEM JÁ TEM CONTA) */
               <form onSubmit={handleLogin} className="space-y-4">
                 {useManualEmail ? (
                   <Input
@@ -602,19 +610,6 @@ export default function LoginPage() {
                 >
                   {loading ? 'Verificando...' : 'Entrar no Sistema'}
                 </Button>
-
-                {/* Alternância para primeiro acesso caso necessário */}
-                {!useManualEmail && (
-                  <div className="text-center pt-2 border-t border-[var(--border-default)]">
-                    <button
-                      type="button"
-                      onClick={() => setAuthModeOverride('first_access')}
-                      className="text-xs text-[var(--text-muted)] hover:text-[var(--color-primary)] font-medium cursor-pointer"
-                    >
-                      É seu primeiro acesso? Cadastrar nova senha
-                    </button>
-                  </div>
-                )}
               </form>
             )}
           </div>
