@@ -6,15 +6,18 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { VolunteerCarousel, VoluntarioItem } from '@/components/auth/VolunteerCarousel';
+import { EloLogo } from '@/components/ui/EloLogo';
 import {
   ShieldCheck,
   ArrowRight,
+  ArrowLeft,
   UserCheck,
   KeyRound,
   AlertCircle,
   Mail,
   CheckCircle2,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 
 const FALLBACK_VOLUNTARIOS: VoluntarioItem[] = [
@@ -52,9 +55,19 @@ const FALLBACK_VOLUNTARIOS: VoluntarioItem[] = [
   },
 ];
 
+function getInitials(name: string): string {
+  if (!name) return 'A';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
+
+  // Etapa do fluxo: 'ciranda' (Etapa 1) vs 'login' (Etapa 2)
+  const [step, setStep] = useState<'ciranda' | 'login'>('ciranda');
 
   // Estados de voluntários e ciranda
   const [voluntarios, setVoluntarios] = useState<VoluntarioItem[]>([]);
@@ -296,62 +309,140 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-between bg-[var(--bg-primary)] p-4 sm:p-6 lg:p-8 select-none">
       <div />
 
-      {/* ── CONTEÚDO CENTRAL: CIRANDA DE PERFIS + CARD DE ACESSO ── */}
-      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-5xl mx-auto py-4">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-2xl border border-[var(--border-default)] shadow-[var(--shadow-card)]">
-          
-          {/* COLUNA ESQUERDA: LOGO + CIRANDA ADAPETE */}
-          <div className="lg:col-span-6 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-[var(--border-default)] pb-6 lg:pb-0 lg:pr-8">
+      {/* ── CONTEÚDO CENTRAL: FLUXO EM ETAPAS (CIRANDA -> LOGIN) ── */}
+      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-lg mx-auto py-4">
+        
+        {/* ========================================================================= */}
+        {/* ETAPA 1: VISUALIZAÇÃO E SELEÇÃO NA CIRANDA ADAPETE */}
+        {/* ========================================================================= */}
+        {step === 'ciranda' && (
+          <div className="w-full flex flex-col items-center bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-2xl border border-[var(--border-default)] shadow-[var(--shadow-card)] animate-in fade-in zoom-in-95 duration-200">
             {loadingVoluntarios ? (
-              <div className="py-20 flex flex-col items-center justify-center gap-3 text-xs text-[var(--text-muted)]">
+              <div className="py-24 flex flex-col items-center justify-center gap-3 text-xs text-[var(--text-muted)]">
                 <RefreshCw className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
                 <span>Carregando equipe do Instituto Ádapo...</span>
               </div>
             ) : (
-              <VolunteerCarousel
-                voluntarios={voluntarios}
-                selectedIndex={selectedIndex}
-                onSelectVoluntario={handleSelectVoluntario}
-              />
+              <>
+                {/* Ciranda Orbital */}
+                <VolunteerCarousel
+                  voluntarios={voluntarios}
+                  selectedIndex={selectedIndex}
+                  onSelectVoluntario={handleSelectVoluntario}
+                />
+
+                {/* Botão de Prosseguir para Autenticação / Primeiro Acesso */}
+                <div className="mt-6 w-full max-w-[320px] space-y-3 flex flex-col items-center">
+                  <Button
+                    type="button"
+                    size="md"
+                    className="w-full shadow-md font-bold text-sm py-2.5 flex items-center justify-center gap-2"
+                    onClick={() => {
+                      setStep('login');
+                      setPassword('');
+                      setConfirmPassword('');
+                      setError(null);
+                      setSuccessMsg(null);
+                    }}
+                    icon={<ArrowRight className="w-4 h-4" />}
+                  >
+                    {isFirstAccess ? 'Continuar (1º Acesso)' : 'Acessar com este Perfil'}
+                  </Button>
+
+                  {/* Fallback para login manual com outro e-mail */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUseManualEmail(true);
+                      setStep('login');
+                      setEmail('');
+                      setPassword('');
+                      setError(null);
+                      setSuccessMsg(null);
+                    }}
+                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5 pt-1"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Não está na ciranda? Entrar com outro e-mail</span>
+                  </button>
+                </div>
+              </>
             )}
-
-            {/* Alternar para digitação de outro e-mail */}
-            <div className="mt-3 pt-3 border-t border-[var(--border-default)]/60 w-full text-center">
-              <button
-                type="button"
-                onClick={() => setUseManualEmail(!useManualEmail)}
-                className="text-xs text-[var(--text-secondary)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5"
-              >
-                <Mail className="w-3.5 h-3.5" />
-                {useManualEmail ? 'Voltar para seleção pela Ciranda' : 'Entrar com outro e-mail institucional'}
-              </button>
-            </div>
           </div>
+        )}
 
-          {/* COLUNA DIREITA: FORMULÁRIO DE LOGIN / PRIMEIRO ACESSO */}
-          <div className="lg:col-span-6 flex flex-col justify-center space-y-5 lg:pl-2">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-xs font-bold mb-2">
-                <UserCheck className="w-3.5 h-3.5" />
-                {isFirstAccess && !useManualEmail ? 'Primeiro Acesso Detectado' : 'Acesso ao Sistema'}
+        {/* ========================================================================= */}
+        {/* ETAPA 2: MODAL DE AUTENTICAÇÃO / PRIMEIRO ACESSO */}
+        {/* ========================================================================= */}
+        {step === 'login' && (
+          <div className="w-full flex flex-col bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-2xl border border-[var(--border-default)] shadow-[var(--shadow-card)] animate-in fade-in zoom-in-95 duration-200 space-y-5">
+            
+            {/* Botão Voltar para a Ciranda */}
+            <button
+              type="button"
+              onClick={() => {
+                setStep('ciranda');
+                setError(null);
+                setSuccessMsg(null);
+              }}
+              className="self-start inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] font-semibold transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Voltar para a Ciranda</span>
+            </button>
+
+            {/* Header da Autenticação com Perfil Selecionado */}
+            {!useManualEmail && selectedVoluntario ? (
+              <div className="p-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-11 h-11 rounded-full overflow-hidden bg-[var(--color-primary)] text-white font-bold flex items-center justify-center shrink-0 border border-[var(--border-default)] text-sm shadow-xs">
+                    {selectedVoluntario.avatar_url ? (
+                      <img
+                        src={selectedVoluntario.avatar_url}
+                        alt={selectedVoluntario.nome_completo}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      getInitials(selectedVoluntario.nome_completo)
+                    )}
+                  </div>
+                  <div className="min-w-0 space-y-0.5">
+                    <h3 className="font-display font-bold text-sm text-[var(--text-primary)] truncate">
+                      {selectedVoluntario.nome_completo}
+                    </h3>
+                    <p className="text-[11px] text-[var(--text-muted)] truncate">
+                      {selectedVoluntario.funcao || selectedVoluntario.area_atuacao || 'Equipe Ádapo'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="shrink-0 text-right">
+                  {isFirstAccess ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                      1º Acesso
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" />
+                      Conta Ativa
+                    </span>
+                  )}
+                </div>
               </div>
-
-              <h2 className="font-display font-bold text-xl sm:text-2xl text-[var(--text-primary)]">
-                {useManualEmail
-                  ? 'Acesso Institucional'
-                  : isFirstAccess
-                  ? 'Criar Senha de Acesso'
-                  : `Olá, ${selectedVoluntario?.nome_completo?.split(' ')[0] || 'Voluntário'}`}
-              </h2>
-
-              <p className="text-xs text-[var(--text-secondary)] mt-1">
-                {useManualEmail
-                  ? 'Informe seu e-mail institucional e senha para entrar no sistema.'
-                  : isFirstAccess
-                  ? 'Seu cadastro foi localizado na equipe! Crie sua senha individual para ativar sua conta.'
-                  : 'Insira sua senha de voluntário para acessar o painel de gestão.'}
-              </p>
-            </div>
+            ) : (
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-xs font-bold mb-2">
+                  <Mail className="w-3.5 h-3.5" />
+                  Acesso Institucional
+                </div>
+                <h2 className="font-display font-bold text-xl text-[var(--text-primary)]">
+                  Entrar no ELO
+                </h2>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  Informe seu e-mail institucional e senha de acesso.
+                </p>
+              </div>
+            )}
 
             {/* Mensagens de Alerta / Erro / Sucesso */}
             {error && (
@@ -371,6 +462,15 @@ export default function LoginPage() {
             {/* FORMULÁRIO 1: PRIMEIRO ACESSO (CRIAÇÃO DE SENHA) */}
             {isFirstAccess && !useManualEmail ? (
               <form onSubmit={handleCreatePassword} className="space-y-4">
+                <div className="space-y-1">
+                  <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">
+                    Criar Senha de Acesso
+                  </h4>
+                  <p className="text-[11px] text-[var(--text-muted)]">
+                    Seu cadastro foi localizado na equipe! Crie sua senha individual para ativar sua conta.
+                  </p>
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-[var(--color-primary)]" />
@@ -430,10 +530,6 @@ export default function LoginPage() {
                         <Mail className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                         E-mail de Acesso
                       </span>
-                      <span className="text-[10px] text-[var(--color-success)] font-bold flex items-center gap-1">
-                        <ShieldCheck className="w-3 h-3" />
-                        Conta Ativa
-                      </span>
                     </label>
                     <input
                       type="email"
@@ -487,8 +583,8 @@ export default function LoginPage() {
               <span>Acesso restrito à equipe e voluntários do Instituto Ádapo</span>
             </div>
           </div>
+        )}
 
-        </div>
       </div>
 
       {/* ── MODAL DE RECUPERAÇÃO DE SENHA (ESQUECI MINHA SENHA) ── */}

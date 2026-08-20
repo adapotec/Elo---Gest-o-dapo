@@ -58,11 +58,13 @@ export default function DashboardPage() {
     role: string;
     email: string;
     avatarUrl: string | null;
+    funcao: string;
   }>({
     name: 'Voluntário',
     role: 'voluntario_operacional',
     email: '',
     avatarUrl: null,
+    funcao: 'Voluntário(a) Social',
   });
 
   // Saudação Dinâmica e Ícone do Horário
@@ -137,7 +139,7 @@ export default function DashboardPage() {
       try {
         setLoading(true);
 
-        // A. Dados do Usuário Logado
+        // A. Dados do Usuário Logado com Fallback para Voluntários
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const { data: prof } = await supabase
@@ -146,14 +148,36 @@ export default function DashboardPage() {
             .eq('id', user.id)
             .maybeSingle();
 
-          if (prof) {
-            setUserInfo({
-              name: prof.nome_completo || user.email?.split('@')[0] || 'Voluntário',
-              role: prof.role || 'voluntario_operacional',
-              email: prof.email || user.email || '',
-              avatarUrl: prof.avatar_url || null,
-            });
+          let userAvatar = prof?.avatar_url || null;
+          let userFuncao = 'Voluntário(a) Social';
+
+          if (prof?.role === 'admin') userFuncao = 'Administrador(a)';
+          else if (prof?.role === 'coordenador') userFuncao = 'Coordenador(a)';
+
+          if (user.email) {
+            const { data: vol } = await supabase
+              .from('voluntarios')
+              .select('avatar_url, funcao, area_atuacao')
+              .eq('email', user.email)
+              .maybeSingle();
+
+            if (vol) {
+              if (!userAvatar && vol.avatar_url) userAvatar = vol.avatar_url;
+              if (vol.funcao) {
+                userFuncao = vol.funcao;
+              } else if (vol.area_atuacao) {
+                userFuncao = vol.area_atuacao;
+              }
+            }
           }
+
+          setUserInfo({
+            name: prof?.nome_completo || user.email?.split('@')[0] || 'Voluntário',
+            role: prof?.role || 'voluntario_operacional',
+            email: prof?.email || user.email || '',
+            avatarUrl: userAvatar,
+            funcao: userFuncao,
+          });
         }
 
         // B. Filtros temporais
@@ -378,12 +402,6 @@ export default function DashboardPage() {
                     {userInfo.name.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <span
-                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center justify-center text-xs shadow-xs"
-                  title={greetingData.text}
-                >
-                  {greetingData.emoji}
-                </span>
               </div>
 
               {/* Textos da Saudação */}
@@ -393,11 +411,11 @@ export default function DashboardPage() {
                     {greetingData.text}, {userInfo.name.split(' ')[0]}! {greetingData.emoji}
                   </h1>
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
-                    {roleNames[userInfo.role] || 'Equipe Ádapo'}
+                    {userInfo.funcao}
                   </span>
                 </div>
                 <p className="text-xs text-[var(--text-muted)] font-medium">
-                  {dataPorExtenso} • <span className="text-[var(--text-secondary)]">Transformando vidas através da educação, cidadania e acolhimento social.</span>
+                  {dataPorExtenso} • <span className="text-[var(--color-primary)] font-semibold">"Dando linha pra sonhar"</span> • <span className="text-[var(--text-secondary)]">Instituto Ádapo</span>
                 </p>
               </div>
             </div>
@@ -606,8 +624,14 @@ export default function DashboardPage() {
                 </Button>
               </Link>
 
+              <Link href="/dashboard/projetos">
+                <Button size="sm" variant="secondary" icon={<FolderKanban className="w-3.5 h-3.5 text-[#F2632D]" />}>
+                  Cadastrar Ação
+                </Button>
+              </Link>
+
               <Link href="/dashboard/pedagogia">
-                <Button size="sm" variant="secondary" icon={<GraduationCap className="w-3.5 h-3.5 text-[#F2632D]" />}>
+                <Button size="sm" variant="secondary" icon={<GraduationCap className="w-3.5 h-3.5 text-[#93368F]" />}>
                   Plano de Aula
                 </Button>
               </Link>

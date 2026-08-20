@@ -43,7 +43,7 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
 
-  // Carrega os dados do perfil autenticado
+  // Carrega os dados do perfil autenticado com fallback para voluntários
   useEffect(() => {
     async function loadProfile() {
       try {
@@ -55,19 +55,36 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
             .eq('id', user.id)
             .maybeSingle();
 
+          let userAvatar = profile?.avatar_url || null;
+          let userFuncao = profile?.role || 'voluntario_operacional';
+
+          // Fallback para tabela de voluntários para buscar foto ou função se necessário
+          if (user.email) {
+            const { data: vol } = await supabase
+              .from('voluntarios')
+              .select('avatar_url, funcao, area_atuacao')
+              .eq('email', user.email)
+              .maybeSingle();
+
+            if (vol) {
+              if (!userAvatar && vol.avatar_url) userAvatar = vol.avatar_url;
+              if (vol.funcao || vol.area_atuacao) userFuncao = vol.funcao || vol.area_atuacao;
+            }
+          }
+
           if (profile) {
             setUserProfile({
-              name: profile.nome_completo || 'Voluntário Ádapo',
+              name: profile.nome_completo || user.email?.split('@')[0] || 'Voluntário Ádapo',
               email: profile.email || user.email || '',
-              role: profile.role || 'voluntario_operacional',
-              avatarUrl: profile.avatar_url || null,
+              role: userFuncao,
+              avatarUrl: userAvatar,
             });
           } else {
             setUserProfile({
               name: user.email?.split('@')[0] || 'Voluntário',
               email: user.email || '',
-              role: 'voluntario_operacional',
-              avatarUrl: null,
+              role: userFuncao,
+              avatarUrl: userAvatar,
             });
           }
         }
@@ -110,18 +127,28 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
 
   return (
     <header className="min-h-[64px] py-3 px-4 sm:px-6 border-b border-[var(--border-default)] bg-[var(--bg-elevated)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sticky top-0 z-30 shadow-xs backdrop-blur-md">
-      {/* ── LADO ESQUERDO: TÍTULO & SUBTÍTULO DA PÁGINA ── */}
-      <div className="min-w-0">
-        {title && (
-          <h2 className="font-display font-bold text-lg md:text-xl text-[var(--text-primary)] leading-snug">
-            {title}
-          </h2>
-        )}
-        {subtitle && (
-          <p className="text-xs text-[var(--text-muted)] leading-relaxed mt-0.5">
-            {subtitle}
-          </p>
-        )}
+      {/* ── LADO ESQUERDO: LOGO DO ÁDAPO + TÍTULO & SUBTÍTULO DA PÁGINA ── */}
+      <div className="flex items-center gap-3.5 min-w-0">
+        <Link href="/dashboard" className="shrink-0 flex items-center" title="Instituto Ádapo">
+          <img
+            src="/logo/logo-adapo-completa-preta.svg"
+            alt="Instituto Ádapo"
+            className="h-9 md:h-10 w-auto object-contain shrink-0 dark:brightness-0 dark:invert transition-all hover:opacity-90"
+          />
+        </Link>
+
+        <div className="min-w-0">
+          {title && (
+            <h2 className="font-display font-bold text-lg md:text-xl text-[var(--text-primary)] leading-snug">
+              {title}
+            </h2>
+          )}
+          {subtitle && (
+            <p className="text-xs text-[var(--text-muted)] leading-relaxed mt-0.5">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* ── LADO DIREITO: BUSCA + AÇÕES + CONFIGURAÇÕES + PERFIL FIXOS ── */}

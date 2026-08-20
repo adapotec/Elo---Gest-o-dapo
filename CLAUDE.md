@@ -53,17 +53,27 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-20 — `[UI/UX] & [AUTH & LOGIN FLOW]` 🔴 CRÍTICO
+
+**Fluxo de Acesso Progressivo em 2 Etapas (`src/app/(auth)/login/page.tsx`)**
+- **Etapa 1 (`step === 'ciranda'`)**: Foco total na **Ciranda Adapete** centralizada. Exibe a Logo ELO dinâmica, o nome da plataforma, os perfis na órbita, o perfil selecionado com foto nítida e badge de status, acompanhado de botão de ação: *"Acessar com este Perfil →"* (ou *"Continuar (1º Acesso)"*).
+- **Etapa 2 (`step === 'login'`)**: Modal de autenticação dedicado com card de identificação do voluntário selecionado, botão *"← Voltar para a Ciranda"*, campos de senha (com alternância de visibilidade), suporte a primeiro acesso e recuperação de senha.
+- **Divulgação Progressiva**: Elimina a sobrecarga cognitiva da tela dividida em 2 colunas concorrentes, criando uma jornada de login linear, acolhedora e moderna.
+
+---
+
 ### 2026-08-20 — `[UI/UX] & [DASHBOARD]` 🔴 CRÍTICO
 
 **Cockpit Operacional Orientado à Ação, Alertas & Acolhimento em `/dashboard` (Opção A)**
-- **Banner de Boas-Vindas Humanizado**: Saudação contextual dinâmica (*Bom dia ☀️ / Boa tarde 🌤️ / Boa noite 🌙*), avatar do usuário autenticado, data de hoje por extenso e badges de função.
+- **Topbar com Logo Oficial do Instituto Ádapo**: Inserção vetorial de `logo-adapo-completa-preta.svg` ao lado esquerdo do título/subtítulo (com filtro automático no dark mode).
+- **Banner de Boas-Vindas Humanizado**: Saudação contextual dinâmica (*Bom dia ☀️ / Boa tarde 🌤️ / Boa noite 🌙*), avatar sincronizado do perfil/voluntário (sem sobreposição de emojis), tag com a função real do voluntário e o lema oficial: *"Dando linha pra sonhar" — Instituto Ádapo*.
 - **Trilho de Alertas Prioritários (Soft Bento Horizontal)**: Pílulas de atenção rápida conectadas aos dados reais do Supabase (estoque baixo, projetos em planejamento, fichas socioemocionais do mês e status geral).
 - **4 KPIs Executivos com Micro-Indicadores**: Total de Beneficiários Ativos, Encontros do Mês, Projetos Ativos e Quantidade de Voluntários.
 - **Próximas Ações do Cronograma (Próximos 7 dias)**: Lista das oficinas e encontros com badges de projeto e link direto para ver o projeto ou o calendário.
 - **Painel de Aniversariantes do Mês**: Lista de acolhimento comunitário com aniversariantes (beneficiários e voluntários) ordenados pelo dia.
 - **Painel de Galeria & Pastas Google Drive**: Acesso rápido a fotos das oficinas, termos de imagem, documentos oficiais e apostilas na nuvem.
 - **Logs de Últimas Movimentações**: Linha do tempo visual em tempo real com ícones coloridos das últimas operações registradas no sistema.
-- **Atalhos Rápidos de 1 Clique**: Acesso direto para Nova Inscrição, Plano de Aula, Registrar Doação, Movimentar Estoque e Calendário.
+- **Atalhos Rápidos de 1 Clique**: Nova Inscrição, Cadastrar Ação em Projetos, Plano de Aula, Registrar Doação, Movimentar Estoque e Calendário.
 
 ---
 
