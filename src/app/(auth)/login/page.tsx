@@ -2,40 +2,40 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { VolunteerCarousel, VoluntarioItem } from '@/components/auth/VolunteerCarousel';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { VolunteerCarousel, VoluntarioItem } from '@/components/auth/VolunteerCarousel';
-import { EloLogo } from '@/components/ui/EloLogo';
 import {
-  ShieldCheck,
-  ArrowRight,
-  ArrowLeft,
-  UserCheck,
   KeyRound,
+  ShieldCheck,
   AlertCircle,
-  Mail,
   CheckCircle2,
   RefreshCw,
-  Sparkles,
+  ArrowRight,
+  ArrowLeft,
+  Mail,
+  HelpCircle,
+  Lock,
 } from 'lucide-react';
 
 const FALLBACK_VOLUNTARIOS: VoluntarioItem[] = [
   {
     id: '1',
-    nome_completo: 'Coordenação Geral',
-    email: 'admin@adapong.org',
-    funcao: 'Coordenação Geral',
-    area_atuacao: 'Diretoria',
+    nome_completo: 'Coordenação Pedagógica',
+    email: 'pedagogico@adapong.org',
+    funcao: 'Coordenação',
+    area_atuacao: 'Pedagogia',
     hasAccount: true,
   },
   {
     id: '2',
-    nome_completo: 'Pedagogia & Oficinas',
-    email: 'pedagogia@adapong.org',
-    funcao: 'Pedagogia',
-    area_atuacao: 'Projetos Sociais',
-    hasAccount: false,
+    nome_completo: 'Equipe de Projetos',
+    email: 'projetos@adapong.org',
+    funcao: 'Coordenação',
+    area_atuacao: 'Projetos',
+    hasAccount: true,
   },
   {
     id: '3',
@@ -77,6 +77,9 @@ export default function LoginPage() {
   // Modo manual vs ciranda
   const [useManualEmail, setUseManualEmail] = useState<boolean>(false);
 
+  // Alternância manual de modo no formulário (Login vs Primeiro Acesso)
+  const [authModeOverride, setAuthModeOverride] = useState<'login' | 'first_access' | null>(null);
+
   // Estados do formulário
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -92,7 +95,10 @@ export default function LoginPage() {
 
   // Status de primeiro acesso detectado
   const selectedVoluntario = voluntarios[selectedIndex] || null;
-  const isFirstAccess = selectedVoluntario ? !selectedVoluntario.hasAccount : false;
+  const detectedFirstAccess = selectedVoluntario ? !selectedVoluntario.hasAccount : false;
+  const isFirstAccess = authModeOverride !== null
+    ? authModeOverride === 'first_access'
+    : detectedFirstAccess;
 
   // Atualiza email de recuperação quando o voluntário muda
   useEffect(() => {
@@ -205,6 +211,7 @@ export default function LoginPage() {
     setError(null);
     setSuccessMsg(null);
     setUseManualEmail(false);
+    setAuthModeOverride(null);
   };
 
   // Login tradicional
@@ -215,24 +222,26 @@ export default function LoginPage() {
     setSuccessMsg(null);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
-      if (authError) {
-        if (authError.message.includes('Invalid login credentials')) {
-          setError('E-mail ou senha incorretos. Verifique suas credenciais.');
+      if (signInError) {
+        // Se a senha estiver incorreta ou não existir conta
+        if (signInError.message.includes('Invalid login credentials')) {
+          setError('Senha incorreta ou usuário ainda não cadastrado. Verifique a senha ou acerte o 1º acesso.');
         } else {
-          setError(authError.message);
+          setError(signInError.message || 'Erro ao realizar login.');
         }
         setLoading(false);
-      } else {
-        setSuccessMsg('Autenticado com sucesso! Entrando no ELO...');
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 600);
+        return;
       }
+
+      setSuccessMsg('Autenticado com sucesso! Entrando no ELO...');
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 600);
     } catch (err: any) {
       setError(err.message || 'Erro ao realizar login.');
       setLoading(false);
@@ -285,6 +294,7 @@ export default function LoginPage() {
             return;
           } else {
             setError('Esta conta já possui senha cadastrada. Insira sua senha para entrar.');
+            setAuthModeOverride('login');
             setLoading(false);
             return;
           }
@@ -304,6 +314,7 @@ export default function LoginPage() {
         }, 700);
       } else {
         setSuccessMsg('Senha cadastrada com sucesso! Digite sua senha para entrar.');
+        setAuthModeOverride('login');
         setLoading(false);
       }
     } catch (err: any) {
@@ -313,21 +324,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-[#F2632D] via-[#EA580C] to-[#C2410C] dark:from-[#7C2D12] dark:via-[#431407] dark:to-[#1C0A03] p-4 sm:p-6 lg:p-8 select-none relative overflow-hidden">
-      {/* Elementos Decorativos de Fundo */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-black/20 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="min-h-screen flex flex-col justify-between bg-[var(--bg-primary)] p-4 sm:p-6 lg:p-8 select-none transition-colors duration-300">
       <div />
 
       {/* ── CONTEÚDO CENTRAL: FLUXO EM ETAPAS (CIRANDA -> LOGIN) ── */}
-      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-lg sm:max-w-[540px] mx-auto py-4 z-10">
+      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-lg sm:max-w-[540px] mx-auto py-4">
         
         {/* ========================================================================= */}
         {/* ETAPA 1: VISUALIZAÇÃO E SELEÇÃO NA CIRANDA ADAPETE */}
         {/* ========================================================================= */}
         {step === 'ciranda' && (
-          <div className="w-full flex flex-col items-center bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-3xl border border-white/20 dark:border-[var(--border-default)] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-full flex flex-col items-center bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-3xl border border-[var(--border-default)] shadow-[var(--shadow-card)] animate-in fade-in zoom-in-95 duration-200">
             {loadingVoluntarios ? (
               <div className="py-24 flex flex-col items-center justify-center gap-3 text-xs text-[var(--text-muted)]">
                 <RefreshCw className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
@@ -335,7 +342,7 @@ export default function LoginPage() {
               </div>
             ) : (
               <>
-                {/* Ciranda Orbital */}
+                {/* Ciranda Orbital Ampliada */}
                 <VolunteerCarousel
                   voluntarios={voluntarios}
                   selectedIndex={selectedIndex}
@@ -343,21 +350,22 @@ export default function LoginPage() {
                 />
 
                 {/* Botão de Prosseguir para Autenticação / Primeiro Acesso */}
-                <div className="mt-5 w-full max-w-[340px] space-y-3.5 flex flex-col items-center">
+                <div className="mt-5 w-full max-w-[360px] space-y-3 flex flex-col items-center">
                   <Button
                     type="button"
                     size="lg"
-                    className="w-full shadow-lg hover:shadow-xl font-bold text-sm sm:text-base py-3 flex items-center justify-center gap-2 rounded-xl transition-all"
+                    className="w-full shadow-md hover:shadow-lg font-bold text-sm sm:text-base py-3 flex items-center justify-center gap-2 rounded-xl transition-all"
                     onClick={() => {
                       setStep('login');
                       setPassword('');
                       setConfirmPassword('');
                       setError(null);
                       setSuccessMsg(null);
+                      setAuthModeOverride(null);
                     }}
                     icon={<ArrowRight className="w-4 h-4" />}
                   >
-                    {isFirstAccess ? 'Continuar (1º Acesso)' : 'Acessar com este Perfil'}
+                    {detectedFirstAccess ? 'Continuar (1º Acesso)' : 'Acessar com este Perfil'}
                   </Button>
 
                   {/* Fallback para login manual com outro e-mail */}
@@ -370,6 +378,7 @@ export default function LoginPage() {
                       setPassword('');
                       setError(null);
                       setSuccessMsg(null);
+                      setAuthModeOverride('login');
                     }}
                     className="text-xs text-[var(--text-muted)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5 pt-0.5"
                   >
@@ -386,7 +395,7 @@ export default function LoginPage() {
         {/* ETAPA 2: MODAL DE AUTENTICAÇÃO / PRIMEIRO ACESSO */}
         {/* ========================================================================= */}
         {step === 'login' && (
-          <div className="w-full flex flex-col bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-3xl border border-white/20 dark:border-[var(--border-default)] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] animate-in fade-in zoom-in-95 duration-200 space-y-5">
+          <div className="w-full flex flex-col bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-3xl border border-[var(--border-default)] shadow-[var(--shadow-card)] animate-in fade-in zoom-in-95 duration-200 space-y-5">
             
             {/* Botão Voltar para a Ciranda */}
             <button
@@ -395,6 +404,7 @@ export default function LoginPage() {
                 setStep('ciranda');
                 setError(null);
                 setSuccessMsg(null);
+                setAuthModeOverride(null);
               }}
               className="self-start inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] font-semibold transition-colors cursor-pointer"
             >
@@ -429,11 +439,11 @@ export default function LoginPage() {
 
                 <div className="shrink-0 text-right">
                   {isFirstAccess ? (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
                       1º Acesso
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3" />
                       Conta Ativa
                     </span>
@@ -521,6 +531,17 @@ export default function LoginPage() {
                 >
                   {loading ? 'Ativando Conta...' : 'Ativar Minha Conta & Entrar'}
                 </Button>
+
+                {/* Alternância para quem já possui senha */}
+                <div className="text-center pt-2 border-t border-[var(--border-default)]">
+                  <button
+                    type="button"
+                    onClick={() => setAuthModeOverride('login')}
+                    className="text-xs text-[var(--color-primary)] hover:underline font-semibold cursor-pointer"
+                  >
+                    Já cadastrou sua senha anteriormente? Entrar com senha
+                  </button>
+                </div>
               </form>
             ) : (
               /* FORMULÁRIO 2: LOGIN DE CONTA EXISTENTE */
@@ -536,39 +557,35 @@ export default function LoginPage() {
                   />
                 ) : (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                        E-mail de Acesso
-                      </span>
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                      E-mail Institucional
                     </label>
                     <input
                       type="email"
                       value={email}
                       disabled
-                      className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-mono-data font-medium cursor-not-allowed"
+                      className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-muted)] cursor-not-allowed font-mono-data"
                     />
                   </div>
                 )}
 
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-sm font-medium text-[var(--text-secondary)]">
-                      Sua Senha <span className="text-[var(--color-primary)]">*</span>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                      Senha de Acesso *
                     </label>
                     <button
                       type="button"
-                      onClick={() => {
-                        setShowForgotModal(true);
-                        setForgotError(null);
-                        setForgotSuccess(null);
-                      }}
-                      className="text-xs text-[var(--color-primary)] hover:underline font-semibold cursor-pointer"
+                      onClick={() => setShowForgotModal(true)}
+                      className="text-[11px] text-[var(--color-primary)] hover:underline font-semibold cursor-pointer"
                     >
                       Esqueceu a senha?
                     </button>
                   </div>
                   <Input
+                    label=""
                     type="password"
                     placeholder="••••••••"
                     value={password}
@@ -581,76 +598,73 @@ export default function LoginPage() {
                   type="submit"
                   className="w-full mt-2"
                   disabled={loading}
-                  icon={<ArrowRight className="w-4 h-4" />}
+                  icon={<KeyRound className="w-4 h-4" />}
                 >
-                  {loading ? 'Entrando...' : 'Entrar no Sistema'}
+                  {loading ? 'Verificando...' : 'Entrar no Sistema'}
                 </Button>
+
+                {/* Alternância para primeiro acesso caso necessário */}
+                {!useManualEmail && (
+                  <div className="text-center pt-2 border-t border-[var(--border-default)]">
+                    <button
+                      type="button"
+                      onClick={() => setAuthModeOverride('first_access')}
+                      className="text-xs text-[var(--text-muted)] hover:text-[var(--color-primary)] font-medium cursor-pointer"
+                    >
+                      É seu primeiro acesso? Cadastrar nova senha
+                    </button>
+                  </div>
+                )}
               </form>
             )}
-
-            {/* Aviso de Segurança Institucional */}
-            <div className="pt-3 border-t border-[var(--border-default)] flex items-center justify-center gap-2 text-xs text-[var(--text-muted)]">
-              <ShieldCheck className="w-4 h-4 text-[var(--color-success)]" />
-              <span>Acesso restrito à equipe e voluntários do Instituto Ádapo</span>
-            </div>
           </div>
         )}
-
       </div>
 
-      {/* ── MODAL DE RECUPERAÇÃO DE SENHA (ESQUECI MINHA SENHA) ── */}
+      {/* Modal de Recuperação de Senha */}
       {showForgotModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
-            <div className="flex items-start justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] shrink-0">
+                <HelpCircle className="w-5 h-5" />
+              </div>
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-xs font-bold">
-                  <KeyRound className="w-3.5 h-3.5" />
-                  Recuperação de Acesso
-                </div>
-                <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">
-                  Redefinir Senha
+                <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                  Recuperar Senha de Acesso
                 </h3>
-                <p className="text-xs text-[var(--text-secondary)]">
-                  Enviaremos um link de acesso seguro para o seu e-mail cadastrado.
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                  Digite seu e-mail para receber um link de redefinição de senha com validade temporária.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowForgotModal(false)}
-                className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
-                aria-label="Fechar modal"
-              >
-                ✕
-              </button>
             </div>
 
             {forgotError && (
-              <div className="p-3 rounded-xl bg-[var(--color-danger-soft)] text-[var(--color-danger)] text-xs font-medium flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="p-3 rounded-xl bg-[var(--color-danger-soft)] text-[var(--color-danger)] text-xs font-medium flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{forgotError}</span>
               </div>
             )}
 
             {forgotSuccess && (
-              <div className="p-3.5 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)] text-xs font-medium flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-                <span className="leading-relaxed">{forgotSuccess}</span>
+              <div className="p-3 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)] text-xs font-medium flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{forgotSuccess}</span>
               </div>
             )}
 
             {!forgotSuccess && (
-              <form onSubmit={handleForgotPassword} className="space-y-4 pt-1">
+              <form onSubmit={handleForgotPassword} className="space-y-3">
                 <Input
-                  label="Seu E-mail Cadastrado *"
+                  label="E-mail Cadastrado *"
                   type="email"
-                  placeholder="exemplo@adapong.org"
+                  placeholder="seu.email@exemplo.com"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   required
                 />
 
-                <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="pt-2 flex items-center justify-end gap-2">
                   <Button
                     type="button"
                     variant="secondary"
@@ -687,7 +701,7 @@ export default function LoginPage() {
       )}
 
       {/* Rodapé Oficial */}
-      <footer className="text-center text-xs text-white/90 dark:text-white/70 py-2 font-medium drop-shadow-xs z-10">
+      <footer className="text-center text-xs text-[var(--text-muted)] py-2 font-medium">
         &copy; {new Date().getFullYear()} Instituto Ádapo — Todos os direitos reservados.
       </footer>
     </div>
