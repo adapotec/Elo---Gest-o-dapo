@@ -306,17 +306,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[var(--bg-primary)] p-4 sm:p-6 lg:p-8 select-none">
+    <div className="min-h-screen flex flex-col justify-between bg-gradient-to-br from-[#F2632D] via-[#EA580C] to-[#C2410C] dark:from-[#7C2D12] dark:via-[#431407] dark:to-[#1C0A03] p-4 sm:p-6 lg:p-8 select-none relative overflow-hidden">
+      {/* Elementos Decorativos de Fundo */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-black/20 rounded-full blur-3xl pointer-events-none" />
+
       <div />
 
       {/* ── CONTEÚDO CENTRAL: FLUXO EM ETAPAS (CIRANDA -> LOGIN) ── */}
-      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-lg mx-auto py-4">
+      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-lg mx-auto py-4 z-10">
         
         {/* ========================================================================= */}
         {/* ETAPA 1: VISUALIZAÇÃO E SELEÇÃO NA CIRANDA ADAPETE */}
         {/* ========================================================================= */}
         {step === 'ciranda' && (
-          <div className="w-full flex flex-col items-center bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-2xl border border-[var(--border-default)] shadow-[var(--shadow-card)] animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-full flex flex-col items-center bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-3xl border border-white/20 dark:border-[var(--border-default)] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] animate-in fade-in zoom-in-95 duration-200">
             {loadingVoluntarios ? (
               <div className="py-24 flex flex-col items-center justify-center gap-3 text-xs text-[var(--text-muted)]">
                 <RefreshCw className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
@@ -375,7 +379,7 @@ export default function LoginPage() {
         {/* ETAPA 2: MODAL DE AUTENTICAÇÃO / PRIMEIRO ACESSO */}
         {/* ========================================================================= */}
         {step === 'login' && (
-          <div className="w-full flex flex-col bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-2xl border border-[var(--border-default)] shadow-[var(--shadow-card)] animate-in fade-in zoom-in-95 duration-200 space-y-5">
+          <div className="w-full flex flex-col bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-3xl border border-white/20 dark:border-[var(--border-default)] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] animate-in fade-in zoom-in-95 duration-200 space-y-5">
             
             {/* Botão Voltar para a Ciranda */}
             <button
@@ -676,7 +680,7 @@ export default function LoginPage() {
       )}
 
       {/* Rodapé Oficial */}
-      <footer className="text-center text-xs text-[var(--text-muted)] py-2">
+      <footer className="text-center text-xs text-white/90 dark:text-white/70 py-2 font-medium drop-shadow-xs z-10">
         &copy; {new Date().getFullYear()} Instituto Ádapo — Todos os direitos reservados.
       </footer>
     </div>
