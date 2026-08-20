@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -20,6 +21,7 @@ import {
   Shield,
   MessageSquareHeart,
   Plus,
+  ExternalLink,
 } from 'lucide-react';
 
 interface BeneficiarioItem {
@@ -35,6 +37,7 @@ interface PedagogiaSocioemocionalProps {
   projetoNome: string;
   inscritos: BeneficiarioItem[];
   voluntarios?: any[];
+  readOnly?: boolean;
   onRefresh?: () => void;
 }
 
@@ -43,6 +46,7 @@ export function PedagogiaSocioemocional({
   projetoNome,
   inscritos = [],
   voluntarios = [],
+  readOnly = false,
   onRefresh,
 }: PedagogiaSocioemocionalProps) {
   const [subTab, setSubTab] = useState<'fichas' | 'formulario'>('fichas');
@@ -313,81 +317,100 @@ export function PedagogiaSocioemocional({
               <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
                 Acompanhamento Socioemocional (4 Eixos Ádapo)
               </h3>
+              {readOnly && (
+                <Badge variant="neutral">Modo Somente Visualização</Badge>
+              )}
             </div>
             <p className="text-xs text-[var(--text-muted)]">
-              Avaliação contínua do desenvolvimento socioemocional, convivência e plano de acolhimento para <strong>{projetoNome}</strong>.
+              {readOnly
+                ? `Acompanhamento do desenvolvimento socioemocional e relatórios dos alunos de ${projetoNome} (${todasFichasProjeto.length} fichas cadastradas). Para preencher ou editar fichas, acesse o módulo de Pedagogia.`
+                : `Avaliação contínua do desenvolvimento socioemocional, convivência e plano de acolhimento para ${projetoNome}.`}
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {subTab === 'fichas' ? (
-              <Button
-                size="sm"
-                variant="primary"
-                icon={<Heart className="w-4 h-4" />}
-                onClick={handleNovaFicha}
-              >
-                Nova Avaliação Socioemocional
-              </Button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setSubTab('fichas')}
-                >
-                  Ver Fichas Salvas
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  icon={<MessageSquareHeart className="w-4 h-4 text-[var(--color-primary)]" />}
-                  onClick={() => handleAbrirDevolutiva()}
-                  disabled={!beneficiarioAtual}
-                >
-                  Devolutiva à Família
-                </Button>
+            {!readOnly ? (
+              subTab === 'fichas' ? (
                 <Button
                   size="sm"
                   variant="primary"
-                  icon={<Save className="w-4 h-4" />}
-                  onClick={handleSalvar}
-                  disabled={saving || !beneficiarioAtual}
+                  icon={<Heart className="w-4 h-4" />}
+                  onClick={handleNovaFicha}
                 >
-                  {saving ? 'Salvando...' : 'Salvar Ficha'}
+                  Nova Avaliação Socioemocional
                 </Button>
-              </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setSubTab('fichas')}
+                  >
+                    Ver Fichas Salvas
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={<MessageSquareHeart className="w-4 h-4 text-[var(--color-primary)]" />}
+                    onClick={() => handleAbrirDevolutiva()}
+                    disabled={!beneficiarioAtual}
+                  >
+                    Devolutiva à Família
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={<Save className="w-4 h-4" />}
+                    onClick={handleSalvar}
+                    disabled={saving || !beneficiarioAtual}
+                  >
+                    {saving ? 'Salvando...' : 'Salvar Ficha'}
+                  </Button>
+                </div>
+              )
+            ) : (
+              <Link href="/dashboard/pedagogia">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<ExternalLink className="w-4 h-4" />}
+                >
+                  Gerenciar na Pedagogia
+                </Button>
+              </Link>
             )}
           </div>
         </div>
 
         {/* Sub-navegação em Pílulas */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setSubTab('fichas')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              subTab === 'fichas'
-                ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/80'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            Fichas Cadastradas ({todasFichasProjeto.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setSubTab('formulario')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-              subTab === 'formulario'
-                ? 'bg-[var(--color-primary)] text-white shadow-sm'
-                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/80'
-            }`}
-          >
-            <Heart className="w-3.5 h-3.5" />
-            {formData.id ? 'Editar Ficha Ativa' : 'Preencher Nova Ficha'}
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSubTab('fichas')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                subTab === 'fichas'
+                  ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/80'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Fichas Cadastradas ({todasFichasProjeto.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSubTab('formulario')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                subTab === 'formulario'
+                  ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/80'
+              }`}
+            >
+              <Heart className="w-3.5 h-3.5" />
+              {formData.id ? 'Editar Ficha Ativa' : 'Preencher Nova Ficha'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Feedback de Salvamento com Alto Contraste */}
@@ -412,16 +435,30 @@ export function PedagogiaSocioemocional({
                 Nenhuma avaliação socioemocional registrada para {projetoNome}.
               </p>
               <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto">
-                Registre o acompanhamento contínuo dos 4 eixos (Autoestima, Socialização, Regras e Registro Qualitativo) e gere a devolutiva em PDF timbrado para as famílias.
+                {readOnly
+                  ? 'Nenhuma ficha dos 4 eixos foi preenchida para os alunos deste projeto ainda. Acesse a seção de Pedagogia para realizar novas avaliações.'
+                  : 'Registre o acompanhamento contínuo dos 4 eixos (Autoestima, Socialização, Regras e Registro Qualitativo) e gere a devolutiva em PDF timbrado para as famílias.'}
               </p>
-              <Button
-                variant="primary"
-                size="sm"
-                icon={<Plus className="w-4 h-4" />}
-                onClick={handleNovaFicha}
-              >
-                Preencher Primeira Avaliação
-              </Button>
+              {!readOnly ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Plus className="w-4 h-4" />}
+                  onClick={handleNovaFicha}
+                >
+                  Preencher Primeira Avaliação
+                </Button>
+              ) : (
+                <Link href="/dashboard/pedagogia">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<ExternalLink className="w-4 h-4" />}
+                  >
+                    Abrir Módulo de Pedagogia
+                  </Button>
+                </Link>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -459,22 +496,26 @@ export function PedagogiaSocioemocional({
                           >
                             <Printer className="w-4 h-4" />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleEditarFicha(ficha)}
-                            className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
-                            title="Editar Ficha"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleExcluirFicha(ficha.id)}
-                            className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
-                            title="Excluir Ficha"
-                          >
-                            <AlertCircle className="w-4 h-4" />
-                          </button>
+                          {!readOnly && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleEditarFicha(ficha)}
+                                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
+                                title="Editar Ficha"
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleExcluirFicha(ficha.id)}
+                                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
+                                title="Excluir Ficha"
+                              >
+                                <AlertCircle className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -507,13 +548,15 @@ export function PedagogiaSocioemocional({
                         <MessageSquareHeart className="w-3.5 h-3.5" />
                         Ver Devolutiva à Família
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleEditarFicha(ficha)}
-                        className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold cursor-pointer"
-                      >
-                        Editar Ficha →
-                      </button>
+                      {!readOnly && (
+                        <button
+                          type="button"
+                          onClick={() => handleEditarFicha(ficha)}
+                          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold cursor-pointer"
+                        >
+                          Editar Ficha →
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

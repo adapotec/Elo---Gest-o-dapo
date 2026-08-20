@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +28,7 @@ import {
   HelpCircle,
   FolderKanban,
   UserCheck,
+  ExternalLink,
 } from 'lucide-react';
 
 export interface MetaProjetoItem {
@@ -76,6 +78,7 @@ interface PedagogiaPlanosAulaProps {
   metas: MetaProjetoItem[];
   acoes: AcaoItem[];
   voluntarios?: any[];
+  readOnly?: boolean;
   onRefresh?: () => void;
 }
 
@@ -85,6 +88,7 @@ export function PedagogiaPlanosAula({
   metas = [],
   acoes = [],
   voluntarios = [],
+  readOnly = false,
   onRefresh,
 }: PedagogiaPlanosAulaProps) {
   const [planos, setPlanos] = useState<PlanoAulaData[]>([]);
@@ -382,20 +386,37 @@ export function PedagogiaPlanosAula({
               <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
                 Planos de Aula & Metodologia
               </h3>
+              {readOnly && (
+                <Badge variant="neutral">Modo Somente Visualização</Badge>
+              )}
             </div>
             <p className="text-xs text-[var(--text-muted)]">
-              Planejamento pedagógico vinculado às ações do cronograma e metas de <strong>{projetoNome}</strong> ({planos.length} planos cadastrados).
+              {readOnly
+                ? `Acompanhamento dos planos pedagógicos vinculados a ${projetoNome} (${planos.length} cadastrados). Para criar ou alterar planos e materiais, acesse o módulo de Pedagogia.`
+                : `Planejamento pedagógico vinculado às ações do cronograma e metas de ${projetoNome} (${planos.length} planos cadastrados).`}
             </p>
           </div>
 
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Plus className="w-4 h-4" />}
-            onClick={handleNovoPlano}
-          >
-            Novo Plano de Aula
-          </Button>
+          {!readOnly ? (
+            <Button
+              size="sm"
+              variant="primary"
+              icon={<Plus className="w-4 h-4" />}
+              onClick={handleNovoPlano}
+            >
+              Novo Plano de Aula
+            </Button>
+          ) : (
+            <Link href="/dashboard/pedagogia">
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<ExternalLink className="w-4 h-4" />}
+              >
+                Gerenciar na Pedagogia
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -417,16 +438,30 @@ export function PedagogiaPlanosAula({
             Nenhum Plano de Aula cadastrado para {projetoNome}.
           </p>
           <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto">
-            Clique no botão acima para vincular uma ação cadastrada, definir o encontro e estruturar atividades pedagógicas com mediadores e metas.
+            {readOnly
+              ? 'Nenhum plano de aula ou roteiro foi estruturado ainda para este projeto. Acesse a seção de Pedagogia para planejar novas oficinas.'
+              : 'Clique no botão acima para vincular uma ação cadastrada, definir o encontro e estruturar atividades pedagógicas com mediadores e metas.'}
           </p>
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Plus className="w-4 h-4" />}
-            onClick={handleNovoPlano}
-          >
-            Criar Primeiro Plano de Aula
-          </Button>
+          {!readOnly ? (
+            <Button
+              size="sm"
+              variant="primary"
+              icon={<Plus className="w-4 h-4" />}
+              onClick={handleNovoPlano}
+            >
+              Criar Primeiro Plano de Aula
+            </Button>
+          ) : (
+            <Link href="/dashboard/pedagogia">
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<ExternalLink className="w-4 h-4" />}
+              >
+                Abrir Módulo de Pedagogia
+              </Button>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -473,22 +508,26 @@ export function PedagogiaPlanosAula({
                       >
                         <Printer className="w-4 h-4" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleEditarPlano(plano)}
-                        className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
-                        title="Editar Plano"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleExcluirPlano(plano.id)}
-                        className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
-                        title="Excluir Plano"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!readOnly && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleEditarPlano(plano)}
+                            className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
+                            title="Editar Plano"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleExcluirPlano(plano.id)}
+                            className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-colors cursor-pointer"
+                            title="Excluir Plano"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 

@@ -53,6 +53,14 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-19 — `[UI/UX] & [ARQUITETURA] & [PEDAGOGIA]` 🟡 IMPORTANTE
+
+**Modo Somente Visualização & Acompanhamento de Pedagogia em `/projetos/[id]`**
+- **Separação de Responsabilidades**: A seção de Pedagogia dentro de `projetos/[id]` (Gerenciar Projeto) foi configurada para **modo somente visualização e acompanhamento**.
+- **Segurança Operacional**: Impedida a edição/exclusão direta de planos de aula, materiais, fichas socioemocionais e chamada de frequência dentro de `/projetos/[id]`.
+- **Redirecionamento Claro**: Inclusão de banners contextuais e botões de redirecionamento para o módulo global `/pedagogia` ("Abrir Módulo de Pedagogia" / "Gerenciar na Pedagogia"), onde os materiais e registros são editáveis.
+- **Componentes Adequados**: `PedagogiaPlanosAula`, `PedagogiaSocioemocional` e `PedagogiaFrequencia` receberam a prop `readOnly?: boolean`, ocultando ações de mutação e renderizando badges e dados consolidados com suporte total a visualização e impressão em papel timbrado.
+
 ---
 
 ### 2026-08-19 — `[UI/UX] & [DESIGN SYSTEM] & [REFACTOR]` 🔴 CRÍTICO

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +18,7 @@ import {
   Search,
   CheckCheck,
   FolderKanban,
+  ExternalLink,
 } from 'lucide-react';
 
 interface BeneficiarioInscrito {
@@ -46,6 +48,7 @@ interface PedagogiaFrequenciaProps {
   projetoNome: string;
   acoes: AcaoItem[];
   inscritos: BeneficiarioInscrito[];
+  readOnly?: boolean;
   onRefresh?: () => void;
 }
 
@@ -54,6 +57,7 @@ export function PedagogiaFrequencia({
   projetoNome,
   acoes = [],
   inscritos = [],
+  readOnly = false,
   onRefresh,
 }: PedagogiaFrequenciaProps) {
   // Filtro Mensal de Ações (Default: Mês Vigente ou primeiro mês disponível)
@@ -252,9 +256,14 @@ export function PedagogiaFrequencia({
               <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
                 Frequência & Registro de Presença
               </h3>
+              {readOnly && (
+                <Badge variant="neutral">Modo Somente Visualização</Badge>
+              )}
             </div>
             <p className="text-xs text-[var(--text-muted)]">
-              Controle de presença dos beneficiários nas ações e encontros do projeto <strong>{projetoNome}</strong>
+              {readOnly
+                ? `Acompanhamento de presença dos beneficiários nas ações do projeto ${projetoNome}. Para registrar ou alterar chamadas, acesse o módulo de Pedagogia.`
+                : `Controle de presença dos beneficiários nas ações e encontros do projeto ${projetoNome}`}
             </p>
           </div>
 
@@ -268,15 +277,27 @@ export function PedagogiaFrequencia({
             >
               Exportar Presença
             </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              icon={<Save className="w-4 h-4" />}
-              onClick={handleSalvarFrequencia}
-              disabled={saving || !acaoAtual || totalInscritos === 0}
-            >
-              {saving ? 'Salvando...' : 'Salvar Chamada'}
-            </Button>
+            {!readOnly ? (
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Save className="w-4 h-4" />}
+                onClick={handleSalvarFrequencia}
+                disabled={saving || !acaoAtual || totalInscritos === 0}
+              >
+                {saving ? 'Salvando...' : 'Salvar Chamada'}
+              </Button>
+            ) : (
+              <Link href="/dashboard/pedagogia">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<ExternalLink className="w-4 h-4" />}
+                >
+                  Gerenciar na Pedagogia
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -303,7 +324,7 @@ export function PedagogiaFrequencia({
                   value={filtroMes}
                   onChange={(e) => setFiltroMes(e.target.value)}
                   className="px-2.5 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-semibold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer transition-all shadow-sm"
-                  aria-label="Filtrar por Mês"
+                  aria-label="Selecionar Mês de Referência"
                 >
                   <option value="todos">Todos os Meses ({acoes.length})</option>
                   {mesesDisponiveisAcoes.map((m) => {
@@ -407,22 +428,24 @@ export function PedagogiaFrequencia({
               />
             </div>
 
-            <div className="flex items-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handleMarcarTodos('presente')}
-                className="px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]/50 transition-colors font-semibold cursor-pointer"
-              >
-                Marcar Todos Presentes
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMarcarTodos('falta')}
-                className="px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-rose-500 hover:border-rose-300 transition-colors font-semibold cursor-pointer"
-              >
-                Marcar Todos Ausentes
-              </button>
-            </div>
+            {!readOnly && (
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleMarcarTodos('presente')}
+                  className="px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--color-primary)]/50 transition-colors font-semibold cursor-pointer"
+                >
+                  Marcar Todos Presentes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMarcarTodos('falta')}
+                  className="px-3 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-rose-500 hover:border-rose-300 transition-colors font-semibold cursor-pointer"
+                >
+                  Marcar Todos Ausentes
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -472,54 +495,80 @@ export function PedagogiaFrequencia({
                       </td>
 
                       <td className="py-3 px-3 text-center">
-                        <div className="inline-flex rounded-xl border border-[var(--border-default)] p-1 bg-[var(--bg-elevated)] gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleStatusChange(aluno.id, 'presente')}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
-                              freq.status === 'presente'
-                                ? 'bg-emerald-500 text-white shadow-xs'
-                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                            }`}
-                          >
-                            <CheckCircle2 className="w-3 h-3" />
-                            Presente
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleStatusChange(aluno.id, 'falta')}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
-                              freq.status === 'falta'
-                                ? 'bg-rose-500 text-white shadow-xs'
-                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                            }`}
-                          >
-                            <XCircle className="w-3 h-3" />
-                            Falta
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleStatusChange(aluno.id, 'justificada')}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
-                              freq.status === 'justificada'
-                                ? 'bg-amber-500 text-white shadow-xs'
-                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                            }`}
-                          >
-                            <AlertCircle className="w-3 h-3" />
-                            Justificada
-                          </button>
-                        </div>
+                        {!readOnly ? (
+                          <div className="inline-flex rounded-xl border border-[var(--border-default)] p-1 bg-[var(--bg-elevated)] gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleStatusChange(aluno.id, 'presente')}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
+                                freq.status === 'presente'
+                                  ? 'bg-emerald-500 text-white shadow-xs'
+                                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                              }`}
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              Presente
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleStatusChange(aluno.id, 'falta')}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
+                                freq.status === 'falta'
+                                  ? 'bg-rose-500 text-white shadow-xs'
+                                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                              }`}
+                            >
+                              <XCircle className="w-3 h-3" />
+                              Falta
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleStatusChange(aluno.id, 'justificada')}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
+                                freq.status === 'justificada'
+                                  ? 'bg-amber-500 text-white shadow-xs'
+                                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                              }`}
+                            >
+                              <AlertCircle className="w-3 h-3" />
+                              Justificada
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center justify-center">
+                            {freq.status === 'presente' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Presente
+                              </span>
+                            )}
+                            {freq.status === 'falta' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                                <XCircle className="w-3.5 h-3.5" /> Falta
+                              </span>
+                            )}
+                            {freq.status === 'justificada' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                <AlertCircle className="w-3.5 h-3.5" /> Justificada
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       <td className="py-3 px-3">
-                        <input
-                          type="text"
-                          placeholder={freq.status === 'falta' ? 'Motivo da ausência...' : 'Observação...'}
-                          value={freq.justificativa || ''}
-                          onChange={(e) => handleJustificativaChange(aluno.id, e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                        />
+                        {!readOnly ? (
+                          <input
+                            type="text"
+                            placeholder={freq.status === 'falta' ? 'Motivo da ausência...' : 'Observação...'}
+                            value={freq.justificativa || ''}
+                            onChange={(e) => handleJustificativaChange(aluno.id, e.target.value)}
+                            className="w-full px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                          />
+                        ) : (
+                          <span className="text-xs text-[var(--text-secondary)]">
+                            {freq.justificativa || '—'}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );

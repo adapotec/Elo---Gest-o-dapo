@@ -3253,21 +3253,34 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                           <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">
                             Gestão Pedagógica & Metodologia
                           </h3>
-                          <Badge variant="purple">PEDAGOGIA INTEGRADA</Badge>
+                          <Badge variant="neutral">Acompanhamento & Visualização</Badge>
                         </div>
                         <p className="text-xs text-[var(--text-muted)]">
-                          Planos de aula, acompanhamento socioemocional, registro de frequência e dossiê vinculados a <strong>{formData.nome || 'Projeto'}</strong>.
+                          Visualização consolidada de planos de aula, acompanhamento socioemocional, registro de frequência e dossiê vinculados a <strong>{formData.nome || 'Projeto'}</strong>.
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
                       <Link href="/dashboard/pedagogia">
-                        <Button size="sm" variant="secondary" icon={<ExternalLink className="w-4 h-4" />}>
-                          Abrir Módulo de Pedagogia Global
+                        <Button size="sm" variant="primary" icon={<ExternalLink className="w-4 h-4" />}>
+                          Abrir Módulo de Pedagogia
                         </Button>
                       </Link>
                     </div>
+                  </div>
+
+                  {/* Banner Informativo de Somente Leitura */}
+                  <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-purple-950 dark:text-purple-200">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                      <span>
+                        Esta área é para <strong>acompanhamento e consulta</strong>. Para criar novos planos, editar materiais pedagógicos ou registrar chamadas, acesse a <strong>Pedagogia</strong>.
+                      </span>
+                    </div>
+                    <Link href="/dashboard/pedagogia" className="shrink-0 font-bold text-purple-700 dark:text-purple-300 hover:underline flex items-center gap-1">
+                      Editar na Pedagogia →
+                    </Link>
                   </div>
 
                   {/* Resumo Rápido em Pílulas */}
@@ -3316,6 +3329,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                       metas={metasFormatadas}
                       acoes={acoes}
                       voluntarios={todosVoluntarios}
+                      readOnly={true}
                       onRefresh={loadData}
                     />
                   )}
@@ -3326,6 +3340,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                       projetoNome={formData.nome || 'Projeto Social'}
                       inscritos={inscritosFormatados}
                       voluntarios={todosVoluntarios}
+                      readOnly={true}
                       onRefresh={loadData}
                     />
                   )}
@@ -3336,6 +3351,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                       projetoNome={formData.nome || 'Projeto Social'}
                       acoes={acoes}
                       inscritos={inscritosFormatados}
+                      readOnly={true}
                       onRefresh={loadData}
                     />
                   )}
