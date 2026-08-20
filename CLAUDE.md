@@ -53,17 +53,20 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
-### 2026-08-20 — `[UI/UX] & [AUTH] & [LOGIN]` 🔴 CRÍTICO
+### 2026-08-20 — `[UI/UX] & [AUTH] & [SEGURANÇA]` 🔴 CRÍTICO
 
-**Login Imersivo com Carrossel de Perfis em Curva (Origin Kit) & Detecção Inteligente de 1º Acesso**
-- **VolunteerCarousel (`src/components/auth/VolunteerCarousel.tsx`)**:
-  - Implementação da esteira de perfis em curva trigonométrica inspirada no *Origin Kit Button Carousel*, com `requestAnimationFrame` de alta fluidez.
-  - Carrega dinamicamente a equipe de voluntários ativos do Instituto Ádapo (`public.voluntarios`) e mapeia contas já ativas (`public.profiles`).
-  - Apresenta foto ampliada em alta resolução, iniciais com paleta institucional, nome completo, função (`funcao`/`area_atuacao`) e status da conta.
-- **Fluxo Inteligente de Autenticação (`src/app/(auth)/login/page.tsx`)**:
-  - **Conta Existente**: Ao selecionar o voluntário, o e-mail é vinculado automaticamente e o campo de senha é focado para login rápido em 1 clique.
-  - **Primeiro Acesso**: Se o voluntário ainda não criou senha, a tela ativa o modo de Primeiro Acesso, exibindo o e-mail pré-cadastrado e os campos para definir e confirmar a senha individual.
-  - **Flexibilidade**: Opção de alternar para "Login com outro e-mail não listado" para administradores ou acessos externos.
+**Ciranda Adapete Orbital, Visualização de Senha & Fluxo de Recuperação de Acesso**
+- **Ciranda Adapete (`src/components/auth/VolunteerCarousel.tsx`)**:
+  - Órbita circular perfeitamente concêntrica com posicionamento trigonométrico exato de todos os voluntários cadastrados.
+  - Pré-carregamento imediato assíncrono de todas as fotos de perfil em background, eliminando atrasos.
+  - Logo oficial do ELO (`w-20 h-20`) e títulos centralizados no topo da ciranda com alto contraste.
+  - Informações de orientação abaixo da ciranda sem exposição de e-mails em texto aberto.
+- **Input Global com Visualização de Senha (`src/components/ui/Input.tsx`)**:
+  - Inclusão nativa de botão de alternância de visibilidade (`Eye`/`EyeOff`) em campos de senha com foco e acessibilidade.
+- **Fluxo de Recuperação de Senha ("Esqueceu a senha?")**:
+  - Modal interativo e envio de e-mail de recuperação via `supabase.auth.resetPasswordForEmail()` com link temporário de uso único (OTP).
+- **Varredura de Segurança (Security Audit)**:
+  - Verificação de dependências (`npm audit`: 0 vulnerabilidades), queries parametrizadas (PostgREST) contra SQL Injection e proteção de rotas com middleware SSR.
 
 ---
 

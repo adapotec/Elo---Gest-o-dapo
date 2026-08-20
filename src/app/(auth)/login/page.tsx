@@ -2,11 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { VolunteerCarousel, VoluntarioItem } from '@/components/auth/VolunteerCarousel';
 import {
   ShieldCheck,
@@ -14,11 +12,7 @@ import {
   UserCheck,
   KeyRound,
   AlertCircle,
-  Sparkles,
-  Lock,
   Mail,
-  User,
-  Users,
   CheckCircle2,
   RefreshCw,
 } from 'lucide-react';
@@ -26,7 +20,7 @@ import {
 const FALLBACK_VOLUNTARIOS: VoluntarioItem[] = [
   {
     id: '1',
-    nome_completo: 'Coordenador Geral',
+    nome_completo: 'Coordenação Geral',
     email: 'admin@adapong.org',
     funcao: 'Coordenação Geral',
     area_atuacao: 'Diretoria',
@@ -34,9 +28,9 @@ const FALLBACK_VOLUNTARIOS: VoluntarioItem[] = [
   },
   {
     id: '2',
-    nome_completo: 'Educador Social',
+    nome_completo: 'Pedagogia & Oficinas',
     email: 'pedagogia@adapong.org',
-    funcao: 'Pedagogia & Oficinas',
+    funcao: 'Pedagogia',
     area_atuacao: 'Projetos Sociais',
     hasAccount: false,
   },
@@ -44,15 +38,15 @@ const FALLBACK_VOLUNTARIOS: VoluntarioItem[] = [
     id: '3',
     nome_completo: 'Comunicação & Mídia',
     email: 'comunicacao@adapong.org',
-    funcao: 'Comunicação & Redes',
+    funcao: 'Comunicação',
     area_atuacao: 'Marketing',
     hasAccount: false,
   },
   {
     id: '4',
-    nome_completo: 'Gestor de Recursos',
+    nome_completo: 'Gestão de Recursos',
     email: 'recursos@adapong.org',
-    funcao: 'Parcerias & Doações',
+    funcao: 'Parcerias',
     area_atuacao: 'Captação',
     hasAccount: false,
   },
@@ -62,12 +56,12 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  // Estados de voluntários e carrossel
+  // Estados de voluntários e ciranda
   const [voluntarios, setVoluntarios] = useState<VoluntarioItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [loadingVoluntarios, setLoadingVoluntarios] = useState<boolean>(true);
 
-  // Modo manual vs carrossel
+  // Modo manual vs ciranda
   const [useManualEmail, setUseManualEmail] = useState<boolean>(false);
 
   // Estados do formulário
@@ -77,10 +71,51 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [showForgotModal, setShowForgotModal] = useState<boolean>(false);
+  const [forgotEmail, setForgotEmail] = useState<string>('');
+  const [forgotLoading, setForgotLoading] = useState<boolean>(false);
+  const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
+  const [forgotError, setForgotError] = useState<string | null>(null);
 
   // Status de primeiro acesso detectado
   const selectedVoluntario = voluntarios[selectedIndex] || null;
   const isFirstAccess = selectedVoluntario ? !selectedVoluntario.hasAccount : false;
+
+  // Atualiza email de recuperação quando o voluntário muda
+  useEffect(() => {
+    if (email) setForgotEmail(email);
+  }, [email]);
+
+  // Recuperação de senha via Supabase Auth
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail || !forgotEmail.includes('@')) {
+      setForgotError('Por favor, informe um e-mail válido.');
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotError(null);
+    setForgotSuccess(null);
+
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+        redirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard/perfil`,
+      });
+
+      if (resetErr) {
+        throw resetErr;
+      }
+
+      setForgotSuccess(
+        `Link de redefinição enviado com sucesso para ${forgotEmail}! Verifique sua caixa de entrada e siga as instruções.`
+      );
+    } catch (err: any) {
+      setForgotError(err.message || 'Não foi possível enviar o e-mail de recuperação.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   // Carrega voluntários do banco de dados e cruza com os profiles existentes
   useEffect(() => {
@@ -89,7 +124,7 @@ export default function LoginPage() {
         setLoadingVoluntarios(true);
 
         // 1. Busca voluntários ativos
-        const { data: volData, error: volErr } = await supabase
+        const { data: volData } = await supabase
           .from('voluntarios')
           .select('id, nome_completo, email, funcao, area_atuacao, avatar_url, status')
           .eq('status', 'ativo')
@@ -141,7 +176,7 @@ export default function LoginPage() {
     fetchVoluntarios();
   }, []);
 
-  // Quando o usuário seleciona um voluntário no carrossel
+  // Quando o usuário seleciona um voluntário na ciranda
   const handleSelectVoluntario = (vol: VoluntarioItem, index: number) => {
     setSelectedIndex(index);
     setEmail(vol.email);
@@ -219,7 +254,6 @@ export default function LoginPage() {
 
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
-          // Se já está registrado, tenta autenticar diretamente
           const { error: signInErr } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password,
@@ -238,7 +272,6 @@ export default function LoginPage() {
         throw signUpError;
       }
 
-      // Tenta login automático imediatamente após criar a senha
       const { error: autoLoginErr } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -260,50 +293,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[var(--bg-primary)] p-4 sm:p-6 lg:p-8 relative select-none overflow-x-hidden">
-      {/* Glows de Fundo Institucionais */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[var(--color-primary-soft)] rounded-full blur-3xl opacity-30 pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[var(--color-accent-purple)]/10 rounded-full blur-3xl opacity-30 pointer-events-none" />
+    <div className="min-h-screen flex flex-col justify-between bg-[var(--bg-primary)] p-4 sm:p-6 lg:p-8 select-none">
+      <div />
 
-      {/* Botão de Tema no Topo */}
-      <div className="flex items-center justify-between max-w-6xl mx-auto w-full z-10">
-        <div className="flex items-center gap-2.5">
-          <img
-            src="/logo/elo-social-gestao-adapo.svg"
-            alt="Logo Instituto Ádapo"
-            className="w-8 h-8 rounded-xl object-contain shadow-xs"
-          />
-          <div className="flex flex-col">
-            <span className="font-display font-bold text-xs sm:text-sm text-[var(--text-primary)] leading-tight">
-              Instituto Ádapo
-            </span>
-            <span className="text-[10px] font-semibold text-[var(--color-primary)] leading-tight">
-              Sistema ELO
-            </span>
-          </div>
-        </div>
-
-        <ThemeToggle />
-      </div>
-
-      {/* ── CONTEÚDO CENTRAL: CARROSSEL DE PERFIS + CARD DE ACESSO ── */}
-      <div className="flex-1 flex items-center justify-center my-6 z-10 w-full max-w-5xl mx-auto">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-3xl border border-[var(--border-default)] shadow-[var(--shadow-card)]">
+      {/* ── CONTEÚDO CENTRAL: CIRANDA DE PERFIS + CARD DE ACESSO ── */}
+      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-5xl mx-auto py-4">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-2xl border border-[var(--border-default)] shadow-[var(--shadow-card)]">
           
-          {/* COLUNA ESQUERDA (CARROSSEL INTERATIVO ORIGIN KIT) */}
+          {/* COLUNA ESQUERDA: LOGO + CIRANDA ADAPETE */}
           <div className="lg:col-span-6 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-[var(--border-default)] pb-6 lg:pb-0 lg:pr-8">
-            <div className="w-full text-center space-y-1 mb-2">
-              <span className="text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider flex items-center justify-center gap-1">
-                <Users className="w-3.5 h-3.5" />
-                Selecione seu Perfil
-              </span>
-              <p className="text-xs text-[var(--text-muted)]">
-                Gire a esteira para localizar seu cadastro na equipe
-              </p>
-            </div>
-
             {loadingVoluntarios ? (
-              <div className="py-16 flex flex-col items-center justify-center gap-3 text-xs text-[var(--text-muted)]">
+              <div className="py-20 flex flex-col items-center justify-center gap-3 text-xs text-[var(--text-muted)]">
                 <RefreshCw className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
                 <span>Carregando equipe do Instituto Ádapo...</span>
               </div>
@@ -312,48 +312,44 @@ export default function LoginPage() {
                 voluntarios={voluntarios}
                 selectedIndex={selectedIndex}
                 onSelectVoluntario={handleSelectVoluntario}
-                buttonCount={7}
-                buttonSize={44}
-                curve={5}
-                gap={22}
               />
             )}
 
             {/* Alternar para digitação de outro e-mail */}
-            <div className="mt-4 pt-3 border-t border-[var(--border-default)]/60 w-full text-center">
+            <div className="mt-3 pt-3 border-t border-[var(--border-default)]/60 w-full text-center">
               <button
                 type="button"
                 onClick={() => setUseManualEmail(!useManualEmail)}
                 className="text-xs text-[var(--text-secondary)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5"
               >
                 <Mail className="w-3.5 h-3.5" />
-                {useManualEmail ? 'Voltar para seleção pelo carrossel' : 'Entrar com outro e-mail não listado'}
+                {useManualEmail ? 'Voltar para seleção pela Ciranda' : 'Entrar com outro e-mail institucional'}
               </button>
             </div>
           </div>
 
-          {/* COLUNA DIREITA (FORMULÁRIO INTELIGENTE: LOGIN VS 1º ACESSO) */}
+          {/* COLUNA DIREITA: FORMULÁRIO DE LOGIN / PRIMEIRO ACESSO */}
           <div className="lg:col-span-6 flex flex-col justify-center space-y-5 lg:pl-2">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-xs font-bold mb-2">
-                <Sparkles className="w-3.5 h-3.5" />
-                {isFirstAccess && !useManualEmail ? 'Primeiro Acesso Detectado' : 'Acesso Seguro'}
+                <UserCheck className="w-3.5 h-3.5" />
+                {isFirstAccess && !useManualEmail ? 'Primeiro Acesso Detectado' : 'Acesso ao Sistema'}
               </div>
 
               <h2 className="font-display font-bold text-xl sm:text-2xl text-[var(--text-primary)]">
                 {useManualEmail
                   ? 'Acesso Institucional'
                   : isFirstAccess
-                  ? `Criar Senha de Acesso`
-                  : `Olá, ${selectedVoluntario?.nome_completo?.split(' ')[0] || 'Voluntário'}! 👋`}
+                  ? 'Criar Senha de Acesso'
+                  : `Olá, ${selectedVoluntario?.nome_completo?.split(' ')[0] || 'Voluntário'}`}
               </h2>
 
               <p className="text-xs text-[var(--text-secondary)] mt-1">
                 {useManualEmail
-                  ? 'Informe seu e-mail e senha cadastrados para acessar o sistema.'
+                  ? 'Informe seu e-mail institucional e senha para entrar no sistema.'
                   : isFirstAccess
                   ? 'Seu cadastro foi localizado na equipe! Crie sua senha individual para ativar sua conta.'
-                  : 'Insira sua senha de voluntário para entrar no painel operacional.'}
+                  : 'Insira sua senha de voluntário para acessar o painel de gestão.'}
               </p>
             </div>
 
@@ -389,7 +385,7 @@ export default function LoginPage() {
                 </div>
 
                 <Input
-                  label="Criar Nova Senha"
+                  label="Criar Nova Senha *"
                   type="password"
                   placeholder="Mínimo 6 caracteres"
                   value={password}
@@ -398,7 +394,7 @@ export default function LoginPage() {
                 />
 
                 <Input
-                  label="Confirmar Senha"
+                  label="Confirmar Senha *"
                   type="password"
                   placeholder="Repita a senha criada"
                   value={confirmPassword}
@@ -420,7 +416,7 @@ export default function LoginPage() {
               <form onSubmit={handleLogin} className="space-y-4">
                 {useManualEmail ? (
                   <Input
-                    label="E-mail de Acesso"
+                    label="E-mail de Acesso *"
                     type="email"
                     placeholder="seu.email@adapong.org"
                     value={email}
@@ -435,7 +431,7 @@ export default function LoginPage() {
                         E-mail de Acesso
                       </span>
                       <span className="text-[10px] text-[var(--color-success)] font-bold flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" />
+                        <ShieldCheck className="w-3 h-3" />
                         Conta Ativa
                       </span>
                     </label>
@@ -448,14 +444,31 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                <Input
-                  label="Sua Senha"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-sm font-medium text-[var(--text-secondary)]">
+                      Sua Senha <span className="text-[var(--color-primary)]">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotModal(true);
+                        setForgotError(null);
+                        setForgotSuccess(null);
+                      }}
+                      className="text-xs text-[var(--color-primary)] hover:underline font-semibold cursor-pointer"
+                    >
+                      Esqueceu a senha?
+                    </button>
+                  </div>
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
 
                 <Button
                   type="submit"
@@ -463,12 +476,12 @@ export default function LoginPage() {
                   disabled={loading}
                   icon={<ArrowRight className="w-4 h-4" />}
                 >
-                  {loading ? 'Entrando no Sistema...' : 'Entrar no Sistema'}
+                  {loading ? 'Entrando...' : 'Entrar no Sistema'}
                 </Button>
               </form>
             )}
 
-            {/* Aviso de Segurança e Acesso Restrito */}
+            {/* Aviso de Segurança Institucional */}
             <div className="pt-3 border-t border-[var(--border-default)] flex items-center justify-center gap-2 text-xs text-[var(--text-muted)]">
               <ShieldCheck className="w-4 h-4 text-[var(--color-success)]" />
               <span>Acesso restrito à equipe e voluntários do Instituto Ádapo</span>
@@ -478,9 +491,97 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* ── MODAL DE RECUPERAÇÃO DE SENHA (ESQUECI MINHA SENHA) ── */}
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-xs font-bold">
+                  <KeyRound className="w-3.5 h-3.5" />
+                  Recuperação de Acesso
+                </div>
+                <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">
+                  Redefinir Senha
+                </h3>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Enviaremos um link de acesso seguro para o seu e-mail cadastrado.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(false)}
+                className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
+                aria-label="Fechar modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            {forgotError && (
+              <div className="p-3 rounded-xl bg-[var(--color-danger-soft)] text-[var(--color-danger)] text-xs font-medium flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{forgotError}</span>
+              </div>
+            )}
+
+            {forgotSuccess && (
+              <div className="p-3.5 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)] text-xs font-medium flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{forgotSuccess}</span>
+              </div>
+            )}
+
+            {!forgotSuccess && (
+              <form onSubmit={handleForgotPassword} className="space-y-4 pt-1">
+                <Input
+                  label="Seu E-mail Cadastrado *"
+                  type="email"
+                  placeholder="exemplo@adapong.org"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  required
+                />
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowForgotModal(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={forgotLoading}
+                    icon={<Mail className="w-4 h-4" />}
+                  >
+                    {forgotLoading ? 'Enviando...' : 'Enviar Link de Redefinição'}
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {forgotSuccess && (
+              <div className="pt-2 flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setShowForgotModal(false)}
+                >
+                  Concluir & Voltar ao Login
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Rodapé Oficial */}
-      <footer className="text-center text-xs text-[var(--text-muted)] z-10">
-        &copy; {new Date().getFullYear()} Instituto Ádapo — ELO Sistema de Gestão Institucional. Todos os direitos reservados.
+      <footer className="text-center text-xs text-[var(--text-muted)] py-2">
+        &copy; {new Date().getFullYear()} Instituto Ádapo — Todos os direitos reservados.
       </footer>
     </div>
   );
