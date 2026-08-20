@@ -53,6 +53,20 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-20 — `[UI/UX] & [DASHBOARD]` 🔴 CRÍTICO
+
+**Cockpit Operacional Orientado à Ação, Alertas & Acolhimento em `/dashboard` (Opção A)**
+- **Banner de Boas-Vindas Humanizado**: Saudação contextual dinâmica (*Bom dia ☀️ / Boa tarde 🌤️ / Boa noite 🌙*), avatar do usuário autenticado, data de hoje por extenso e badges de função.
+- **Trilho de Alertas Prioritários (Soft Bento Horizontal)**: Pílulas de atenção rápida conectadas aos dados reais do Supabase (estoque baixo, projetos em planejamento, fichas socioemocionais do mês e status geral).
+- **4 KPIs Executivos com Micro-Indicadores**: Total de Beneficiários Ativos, Encontros do Mês, Projetos Ativos e Quantidade de Voluntários.
+- **Próximas Ações do Cronograma (Próximos 7 dias)**: Lista das oficinas e encontros com badges de projeto e link direto para ver o projeto ou o calendário.
+- **Painel de Aniversariantes do Mês**: Lista de acolhimento comunitário com aniversariantes (beneficiários e voluntários) ordenados pelo dia.
+- **Painel de Galeria & Pastas Google Drive**: Acesso rápido a fotos das oficinas, termos de imagem, documentos oficiais e apostilas na nuvem.
+- **Logs de Últimas Movimentações**: Linha do tempo visual em tempo real com ícones coloridos das últimas operações registradas no sistema.
+- **Atalhos Rápidos de 1 Clique**: Acesso direto para Nova Inscrição, Plano de Aula, Registrar Doação, Movimentar Estoque e Calendário.
+
+---
+
 ### 2026-08-20 — `[UI/UX] & [LAYOUT & NAVEGAÇÃO]` 🔴 CRÍTICO
 
 **Topbar com Configurações e Perfil Fixos & Sidebar Compacta sem Scroll Vertical**
