@@ -53,6 +53,33 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-20 — `[UI/UX] & [AUTH] & [LOGIN]` 🔴 CRÍTICO
+
+**Login Imersivo com Carrossel de Perfis em Curva (Origin Kit) & Detecção Inteligente de 1º Acesso**
+- **VolunteerCarousel (`src/components/auth/VolunteerCarousel.tsx`)**:
+  - Implementação da esteira de perfis em curva trigonométrica inspirada no *Origin Kit Button Carousel*, com `requestAnimationFrame` de alta fluidez.
+  - Carrega dinamicamente a equipe de voluntários ativos do Instituto Ádapo (`public.voluntarios`) e mapeia contas já ativas (`public.profiles`).
+  - Apresenta foto ampliada em alta resolução, iniciais com paleta institucional, nome completo, função (`funcao`/`area_atuacao`) e status da conta.
+- **Fluxo Inteligente de Autenticação (`src/app/(auth)/login/page.tsx`)**:
+  - **Conta Existente**: Ao selecionar o voluntário, o e-mail é vinculado automaticamente e o campo de senha é focado para login rápido em 1 clique.
+  - **Primeiro Acesso**: Se o voluntário ainda não criou senha, a tela ativa o modo de Primeiro Acesso, exibindo o e-mail pré-cadastrado e os campos para definir e confirmar a senha individual.
+  - **Flexibilidade**: Opção de alternar para "Login com outro e-mail não listado" para administradores ou acessos externos.
+
+---
+
+### 2026-08-20 — `[UI/UX] & [DESIGN SYSTEM] & [SIDEBAR]` 🔴 CRÍTICO
+
+**Barra Lateral de Navegação Estilo Instagram Web & Adaptação Fluida de Layout**
+- **Comportamento Instagram Web**: Sidebar compacta por padrão (`w-[72px]`) com ícones e avatares centralizados, expandindo suavemente no hover (`w-64`) com animação contínua e sem quebra de fluxo.
+- **Redução de Carga Cognitiva**: Foco total no conteúdo principal das páginas com menu discreto e expansão sob demanda, mantendo opção de fixar aberta se desejado.
+- **Adaptação Fluida de Layout**:
+  - `src/app/dashboard/layout.tsx`: `main` com `flex-1 min-w-0 transition-all duration-300 ease-in-out` para expandir e comprimir suavemente com o estado da barra.
+  - `src/app/dashboard/pedagogia/page.tsx`: Container expandido de `max-w-6xl` para `w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 transition-all duration-300`.
+  - `src/app/dashboard/projetos/page.tsx` & `projetos/[id]/page.tsx`: Containers padronizados para `w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 transition-all duration-300`.
+- **Efeito nos Modais e Painéis**: Grids, modais retráteis e gavetas se adaptam preenchendo 100% da largura extra disponível quando a barra está recolhida.
+
+---
+
 ### 2026-08-19 — `[UI/UX] & [ARQUITETURA] & [PEDAGOGIA]` 🟡 IMPORTANTE
 
 **Modo Somente Visualização & Acompanhamento de Pedagogia em `/projetos/[id]`**

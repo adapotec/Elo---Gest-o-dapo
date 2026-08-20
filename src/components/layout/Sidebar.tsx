@@ -17,8 +17,6 @@ import {
   LogOut,
   X,
   HelpCircle,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
   Calendar,
@@ -29,7 +27,8 @@ import {
   Layers,
   Settings,
   Sliders,
-  User,
+  Pin,
+  PinOff,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { createClient } from '@/lib/supabase/client';
@@ -92,7 +91,14 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [showInfoPopover, setShowInfoPopover] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  // Estado de Hover estilo Instagram Web (recolhido por padrão, expande no mouse over)
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  
+  // A barra está expandida se estiver em hover ou se o usuário a fixou
+  const isExpanded = isPinned || isHovered;
+
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [userProfile, setUserProfile] = useState<{
     name: string;
@@ -149,7 +155,6 @@ export function Sidebar() {
   }, []);
 
   const toggleGroup = (groupName: string) => {
-    if (isCollapsed) setIsCollapsed(false);
     setOpenGroups((prev) => ({ ...prev, [groupName]: !prev[groupName] }));
   };
 
@@ -166,29 +171,44 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`${isCollapsed ? 'w-20' : 'w-64'
-        } bg-[var(--bg-sidebar)] border-r border-[var(--border-default)] flex flex-col h-screen sticky top-0 z-30 shrink-0 transition-all duration-300 ease-in-out select-none`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setShowInfoPopover(false);
+      }}
+      className={`bg-[var(--bg-sidebar)] border-r border-[var(--border-default)] flex flex-col h-screen sticky top-0 z-40 shrink-0 select-none transition-all duration-300 ease-in-out ${
+        isExpanded
+          ? 'w-64 shadow-2xl'
+          : 'w-[72px] shadow-xs'
+      }`}
+      aria-label="Menu de Navegação Principal"
     >
-      {/* Brand / Header (Fixo na parte superior) */}
+      {/* ── Topo: Brand / Logo Oficial (Instagram Web Style) ── */}
       <div className="p-3 border-b border-[var(--border-default)] relative shrink-0 bg-[var(--bg-sidebar)] z-20">
-        <div className="flex items-center justify-between min-h-[48px]">
+        <div className="flex items-center min-h-[48px]">
           <Link
             href="/dashboard"
-            className={`flex items-center gap-2.5 min-w-0 ${isCollapsed ? 'justify-center w-full' : ''}`}
+            className={`flex items-center gap-3 w-full transition-all ${
+              !isExpanded ? 'justify-center px-0' : 'px-1 min-w-0'
+            }`}
+            title="Ir para o Painel Inicial"
           >
             {/* Logo Oficial do Sistema ELO Social em SVG */}
-            <Image
-              src="/logo/elo-social-gestao-adapo.svg"
-              alt="Logo ELO Social - Instituto Ádapo"
-              width={38}
-              height={38}
-              className="w-9 h-9 rounded-xl object-contain shrink-0"
-              priority
-            />
-            {!isCollapsed && (
-              <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h1 className="font-display font-bold text-base leading-tight text-[var(--text-primary)]">
+            <div className="relative shrink-0 flex items-center justify-center">
+              <Image
+                src="/logo/elo-social-gestao-adapo.svg"
+                alt="Logo ELO Social - Instituto Ádapo"
+                width={36}
+                height={36}
+                className="w-9 h-9 rounded-xl object-contain shrink-0 transition-transform duration-200 hover:scale-105"
+                priority
+              />
+            </div>
+
+            {isExpanded && (
+              <div className="flex flex-col min-w-0 flex-1 overflow-hidden animate-in fade-in duration-200">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <h1 className="font-display font-bold text-sm leading-tight text-[var(--text-primary)] truncate whitespace-nowrap">
                     Instituto Ádapo
                   </h1>
                   <button
@@ -198,36 +218,23 @@ export function Sidebar() {
                       e.stopPropagation();
                       setShowInfoPopover((prev) => !prev);
                     }}
-                    className="w-4 h-4 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] flex items-center justify-center text-[10px] font-bold transition-colors shrink-0"
+                    className="w-4 h-4 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] flex items-center justify-center text-[10px] font-bold transition-colors shrink-0 cursor-pointer"
                     title="Sobre o Sistema Elo"
                     aria-label="Sobre o Sistema Elo"
                   >
                     ?
                   </button>
                 </div>
-                <span className="text-[11px] font-semibold text-[var(--color-primary)] truncate leading-tight">
+                <span className="text-[11px] font-semibold text-[var(--color-primary)] truncate leading-tight whitespace-nowrap">
                   ELO - Gestão Institucional
                 </span>
               </div>
             )}
           </Link>
-
-          {!isCollapsed && <ThemeToggle />}
         </div>
 
-        {/* Botão Minimizar / Expandir */}
-        <button
-          type="button"
-          onClick={() => setIsCollapsed((prev) => !prev)}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-strong)] text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] flex items-center justify-center shadow-md transition-colors z-40"
-          title={isCollapsed ? 'Expandir menu' : 'Minimizar menu'}
-          aria-label={isCollapsed ? 'Expandir menu' : 'Minimizar menu'}
-        >
-          {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-        </button>
-
         {/* Balão Explicativo Popover */}
-        {showInfoPopover && !isCollapsed && (
+        {showInfoPopover && isExpanded && (
           <div className="absolute top-16 left-3 right-3 z-50 p-4 rounded-xl bg-[#2B2118] text-[#F3EDE4] shadow-2xl border border-[var(--border-strong)] text-xs animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-start justify-between gap-2 mb-2">
               <span className="font-bold text-[var(--raw-amarelo)] text-[11px] uppercase tracking-wider flex items-center gap-1">
@@ -237,26 +244,26 @@ export function Sidebar() {
               <button
                 type="button"
                 onClick={() => setShowInfoPopover(false)}
-                className="text-gray-400 hover:text-white transition-colors p-0.5 rounded hover:bg-white/10"
+                className="text-gray-400 hover:text-white transition-colors p-0.5 rounded hover:bg-white/10 cursor-pointer"
                 aria-label="Fechar explicação"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <p className="text-[11px] leading-relaxed opacity-95">
-              O Sistema Elo conecta voluntários, recursos e projetos, formando o vínculo que viabiliza o impacto social do Instituto Ádapo, firmando o vinculo dos adapetes.
+              O Sistema Elo conecta voluntários, recursos e projetos, formando o vínculo que viabiliza o impacto social do Instituto Ádapo, firmando o vínculo dos adapetes.
             </p>
           </div>
         )}
       </div>
 
-      {/* Navigation Menu (Área Rolável com Custom Scrollbar) */}
+      {/* ── Menu de Navegação Rolável ── */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1 custom-scrollbar">
-        <nav className="space-y-0.5">
+        <nav className="space-y-1">
           {navigationItems.map((item) => {
             const Icon = item.icon;
 
-            // Se for item agrupador (Recursos ou Configurações)
+            // Se for item agrupador (Voluntários, Recursos, Configurações)
             if (item.children) {
               const isGroupActive = item.children.some(
                 (child) => pathname === child.href || pathname.startsWith(child.href)
@@ -269,30 +276,37 @@ export function Sidebar() {
                   <button
                     type="button"
                     onClick={() => toggleGroup(item.name)}
-                    title={isCollapsed ? item.name : undefined}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] font-medium transition-all group relative ${isCollapsed ? 'justify-center px-0' : ''
-                      } ${isGroupActive
+                    title={!isExpanded ? item.name : undefined}
+                    className={`w-full flex items-center rounded-xl text-[13px] font-medium transition-all group relative cursor-pointer ${
+                      !isExpanded
+                        ? 'justify-center h-11 w-11 mx-auto'
+                        : 'justify-between px-3 py-2.5'
+                    } ${
+                      isGroupActive
                         ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-semibold'
                         : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
-                      }`}
+                    }`}
                   >
-                    {isGroupActive && (
+                    {isGroupActive && isExpanded && (
                       <span
-                        className="absolute left-0 top-1 bottom-1 w-1 rounded-r-full"
+                        className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
                         style={{ backgroundColor: item.color }}
                       />
                     )}
-                    <div className="flex items-center gap-2.5 min-w-0">
+
+                    <div className={`flex items-center gap-3 min-w-0 ${!isExpanded ? 'justify-center' : ''}`}>
                       <Icon
-                        className={`w-4 h-4 shrink-0 transition-colors ${isGroupActive
-                          ? 'text-[var(--color-primary)]'
-                          : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
-                          }`}
+                        className={`w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110 ${
+                          isGroupActive
+                            ? 'text-[var(--color-primary)]'
+                            : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
+                        }`}
+                        style={{ color: isGroupActive ? item.color : undefined }}
                       />
-                      {!isCollapsed && <span className="truncate">{item.name}</span>}
+                      {isExpanded && <span className="truncate">{item.name}</span>}
                     </div>
 
-                    {!isCollapsed && (
+                    {isExpanded && (
                       <span className="text-[var(--text-muted)] group-hover:text-[var(--text-primary)] shrink-0 ml-1">
                         {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </span>
@@ -300,8 +314,8 @@ export function Sidebar() {
                   </button>
 
                   {/* Sub-itens Expansíveis */}
-                  {isOpen && !isCollapsed && (
-                    <div className="pl-3 ml-3 space-y-0.5 border-l border-[var(--border-default)] my-1">
+                  {isOpen && isExpanded && (
+                    <div className="pl-3 ml-3 space-y-0.5 border-l border-[var(--border-default)] my-1 animate-in fade-in slide-in-from-top-1 duration-150">
                       {item.children.map((child) => {
                         const isChildActive = pathname === child.href || pathname.startsWith(child.href);
                         const ChildIcon = child.icon;
@@ -310,16 +324,18 @@ export function Sidebar() {
                           <Link
                             key={child.href}
                             href={child.href}
-                            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all group ${isChildActive
-                              ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold'
-                              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
-                              }`}
+                            className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all group ${
+                              isChildActive
+                                ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold'
+                                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                            }`}
                           >
                             <ChildIcon
-                              className={`w-3.5 h-3.5 shrink-0 ${isChildActive
-                                ? 'text-[var(--color-primary)]'
-                                : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
-                                }`}
+                              className={`w-4 h-4 shrink-0 ${
+                                isChildActive
+                                  ? 'text-[var(--color-primary)]'
+                                  : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
+                              }`}
                             />
                             <span className="truncate">{child.name}</span>
                           </Link>
@@ -340,70 +356,46 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href!}
-                title={isCollapsed ? item.name : undefined}
-                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-all group relative ${isCollapsed ? 'justify-center px-0' : ''
-                  } ${isActive
+                title={!isExpanded ? item.name : undefined}
+                className={`flex items-center rounded-xl text-[13px] font-medium transition-all group relative cursor-pointer ${
+                  !isExpanded
+                    ? 'justify-center h-11 w-11 mx-auto'
+                    : 'gap-3 px-3 py-2.5'
+                } ${
+                  isActive
                     ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-semibold'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
+                }`}
               >
-                {isActive && (
+                {isActive && isExpanded && (
                   <span
-                    className="absolute left-0 top-1 bottom-1 w-1 rounded-r-full"
+                    className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
                     style={{ backgroundColor: item.color }}
                   />
                 )}
                 <Icon
-                  className={`w-4 h-4 shrink-0 transition-colors ${isActive
-                    ? 'text-[var(--color-primary)]'
-                    : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
-                    }`}
+                  className={`w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110 ${
+                    isActive
+                      ? 'text-[var(--color-primary)]'
+                      : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
+                  }`}
+                  style={{ color: isActive ? item.color : undefined }}
                 />
-                {!isCollapsed && <span className="truncate">{item.name}</span>}
+                {isExpanded && <span className="truncate">{item.name}</span>}
               </Link>
             );
           })}
         </nav>
       </div>
 
-      {/* Footer / Perfil do Usuário Logado & Botão Deslogar */}
+      {/* ── Rodapé: Perfil do Usuário & Ações (Estilo Instagram Web) ── */}
       <div className="p-3 border-t border-[var(--border-default)] bg-[var(--bg-sidebar)] shrink-0 z-20">
-        {isCollapsed ? (
-          <div className="flex flex-col items-center gap-3">
-            <ThemeToggle />
+        {!isExpanded ? (
+          <div className="flex flex-col items-center gap-2 py-1">
             <Link
               href="/dashboard/perfil"
-              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--color-primary)] transition-colors rounded-lg"
-              title="Meu Perfil"
-            >
-              {userProfile?.avatarUrl ? (
-                <img
-                  src={userProfile.avatarUrl}
-                  alt={userProfile.name}
-                  className="w-7 h-7 rounded-full object-cover shrink-0 border border-[var(--border-default)]"
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-[var(--color-primary)] text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
-                  {userProfile?.name?.charAt(0).toUpperCase() || 'A'}
-                </div>
-              )}
-            </Link>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="p-2 text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors rounded-lg cursor-pointer"
-              title="Sair / Encerrar Sessão"
-              aria-label="Sair do sistema"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-2">
-            <Link
-              href="/dashboard/perfil"
-              className="flex items-center gap-2.5 overflow-hidden hover:opacity-85 transition-opacity min-w-0"
-              title="Acessar Perfil & Personalização"
+              className="p-1 rounded-full text-[var(--text-muted)] hover:ring-2 hover:ring-[var(--color-primary)] transition-all"
+              title={userProfile?.name ? `Perfil: ${userProfile.name}` : 'Meu Perfil'}
             >
               {userProfile?.avatarUrl ? (
                 <img
@@ -416,7 +408,37 @@ export function Sidebar() {
                   {userProfile?.name?.charAt(0).toUpperCase() || 'A'}
                 </div>
               )}
-              <div className="truncate min-w-0">
+            </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="p-2 text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors rounded-xl cursor-pointer"
+              title="Sair / Encerrar Sessão"
+              aria-label="Sair do sistema"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3 animate-in fade-in duration-200">
+            {/* Card do Usuário */}
+            <Link
+              href="/dashboard/perfil"
+              className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-colors min-w-0"
+              title="Acessar Perfil & Personalização"
+            >
+              {userProfile?.avatarUrl ? (
+                <img
+                  src={userProfile.avatarUrl}
+                  alt={userProfile.name}
+                  className="w-9 h-9 rounded-full object-cover shrink-0 border border-[var(--border-default)] shadow-xs"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-[var(--color-primary)] text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                  {userProfile?.name?.charAt(0).toUpperCase() || 'A'}
+                </div>
+              )}
+              <div className="truncate min-w-0 flex-1">
                 <p className="text-xs font-semibold text-[var(--text-primary)] truncate leading-tight">
                   {userProfile?.name || 'Voluntário Ádapo'}
                 </p>
@@ -425,15 +447,38 @@ export function Sidebar() {
                 </p>
               </div>
             </Link>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="p-1.5 text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors rounded-lg shrink-0 cursor-pointer"
-              title="Sair / Encerrar Sessão"
-              aria-label="Sair do sistema"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+
+            {/* Barra de Ações Rápidas do Rodapé */}
+            <div className="flex items-center justify-between pt-1 border-t border-[var(--border-default)]/60 text-xs">
+              <ThemeToggle />
+              
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setIsPinned((prev) => !prev)}
+                  className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1 font-medium ${
+                    isPinned
+                      ? 'text-[var(--color-primary)] bg-[var(--color-primary-soft)]'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                  }`}
+                  title={isPinned ? 'Desafixar menu (retrair ao sair)' : 'Fixar menu aberto'}
+                  aria-label={isPinned ? 'Desafixar menu' : 'Fixar menu'}
+                >
+                  {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                  <span className="text-[11px]">{isPinned ? 'Fixado' : 'Fixar'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors rounded-lg shrink-0 cursor-pointer"
+                  title="Sair / Encerrar Sessão"
+                  aria-label="Sair do sistema"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

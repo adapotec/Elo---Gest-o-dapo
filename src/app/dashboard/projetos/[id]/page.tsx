@@ -1749,7 +1749,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
         }
       />
 
-      <div className="p-8 max-w-6xl space-y-6 flex-1 overflow-y-auto">
+      <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto transition-all duration-300">
         {successMsg && (
           <div className="p-4 rounded-xl bg-[var(--color-success-soft)] text-[var(--color-success)] text-sm font-medium border border-[var(--color-success)]/20 flex items-center gap-2">
             <CheckCircle className="w-4 h-4" />

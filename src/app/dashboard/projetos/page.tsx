@@ -230,7 +230,7 @@ export default function ProjetosPage() {
         }
       />
 
-      <div className="p-8 space-y-6 flex-1 overflow-y-auto">
+      <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto transition-all duration-300">
         {/* Cards de Métricas Principais (Lei de Miller: 4 blocos de alto nível) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center justify-between">

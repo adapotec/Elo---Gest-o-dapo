@@ -11,8 +11,8 @@ export default function DashboardLayout({
       {/* Sidebar Navegação Fixa */}
       <Sidebar />
 
-      {/* Área Central de Conteúdo */}
-      <main className="flex-1 flex flex-col min-w-0">
+      {/* Área Central de Conteúdo com adaptação fluida */}
+      <main className="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out">
         {children}
       </main>
     </div>
