@@ -53,6 +53,19 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-20 — `[UI/UX] & [PROJETOS] & [PEDAGOGIA]` 🔴 CRÍTICO
+
+**Painel Executivo de Acompanhamento Pedagógico em `/projetos/[id]` & Extração Timbrada**
+- **Componente `ProjetoPedagogiaResumo.tsx` (`src/components/dashboard/projetos/ProjetoPedagogiaResumo.tsx`)**:
+  - Transforma a aba de Pedagogia em `/projetos/[id]` em um **Dashboard Executivo de Acompanhamento & Consulta** (sem duplicação desnecessária de telas operacionais completas).
+  - **4 Indicadores Bento**: Total de Planos Criados, Frequência Média (% de presença), Fichas Socioemocionais e Alunos Atendidos.
+  - **Planos de Aula do Projeto**: Cards limpos com ementa colapsável (accordion) e botão com 1 clique para extrair o **Plano de Aula em Papel Timbrado Oficial (PDF/Impressão)**.
+  - **Frequência & Presença**: Panorama de presença por encontro e exportação de **Lista de Chamada Timbrada**.
+  - **Acompanhamento Socioemocional**: Resumo das observações dos alunos e exportação de **Fichas Socioemocionais Timbradas**.
+  - **Divisão de Responsabilidades**: A edição e criação de novos materiais continua centralizada em `/pedagogia`, com botões claros de redirecionamento e orientação.
+
+---
+
 ### 2026-08-20 — `[UI/UX] & [AUTH] & [SEGURANÇA]` 🔴 CRÍTICO
 
 **Ciranda Adapete Orbital, Visualização de Senha & Fluxo de Recuperação de Acesso**
