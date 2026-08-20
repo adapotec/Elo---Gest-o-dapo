@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from './ThemeToggle';
+import { useMobileNav } from './MobileNavContext';
 import {
   Search,
   Bell,
@@ -17,6 +18,7 @@ import {
   ChevronDown,
   ExternalLink,
   Sparkles,
+  Menu,
 } from 'lucide-react';
 
 interface TopbarProps {
@@ -35,6 +37,7 @@ interface UserProfile {
 export function Topbar({ title, subtitle, action }: TopbarProps) {
   const router = useRouter();
   const supabase = createClient();
+  const { toggleMobileNav } = useMobileNav();
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -126,25 +129,35 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
   };
 
   return (
-    <header className="min-h-[64px] py-3 px-4 sm:px-6 border-b border-[var(--border-default)] bg-[var(--bg-elevated)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sticky top-0 z-30 shadow-xs backdrop-blur-md">
-      {/* ── LADO ESQUERDO: LOGO DO ÁDAPO + TÍTULO & SUBTÍTULO DA PÁGINA ── */}
-      <div className="flex items-center gap-3.5 min-w-0">
+    <header className="min-h-[60px] sm:min-h-[64px] py-2.5 px-3 sm:px-6 border-b border-[var(--border-default)] bg-[var(--bg-elevated)] flex items-center justify-between gap-2 sm:gap-4 sticky top-0 z-30 shadow-xs backdrop-blur-md">
+      {/* ── LADO ESQUERDO: HAMBÚRGUER (MOBILE) + LOGO DO ÁDAPO + TÍTULO DA PÁGINA ── */}
+      <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 flex-1 sm:flex-initial">
+        {/* Botão Hambúrguer Mobile (Touch Target >= 44px) */}
+        <button
+          type="button"
+          onClick={toggleMobileNav}
+          className="md:hidden p-2 -ml-1 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="Abrir menu de navegação lateral"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
         <Link href="/dashboard" className="shrink-0 flex items-center" title="Instituto Ádapo">
           <img
             src="/logo/logo-adapo-completa-preta.svg"
             alt="Instituto Ádapo"
-            className="h-9 md:h-10 w-auto object-contain shrink-0 dark:brightness-0 dark:invert transition-all hover:opacity-90"
+            className="h-8 sm:h-9 md:h-10 w-auto object-contain shrink-0 dark:brightness-0 dark:invert transition-all hover:opacity-90"
           />
         </Link>
 
-        <div className="min-w-0">
+        <div className="min-w-0 hidden sm:block">
           {title && (
-            <h2 className="font-display font-bold text-lg md:text-xl text-[var(--text-primary)] leading-snug">
+            <h2 className="font-display font-bold text-sm sm:text-base md:text-xl text-[var(--text-primary)] leading-tight truncate">
               {title}
             </h2>
           )}
           {subtitle && (
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed mt-0.5">
+            <p className="text-[11px] sm:text-xs text-[var(--text-muted)] leading-tight truncate mt-0.5 hidden md:block">
               {subtitle}
             </p>
           )}
@@ -152,7 +165,7 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
       </div>
 
       {/* ── LADO DIREITO: BUSCA + AÇÕES + CONFIGURAÇÕES + PERFIL FIXOS ── */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap sm:flex-nowrap ml-auto">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 ml-auto">
         {/* Campo de Busca Global */}
         <div className="relative w-36 lg:w-48 hidden md:block">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
@@ -168,12 +181,12 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
 
         {/* Notificações */}
         <button
-          className="p-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors relative shrink-0 cursor-pointer"
+          className="p-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors relative shrink-0 cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
           aria-label="Notificações do sistema"
           title="Notificações"
         >
           <Bell className="w-4 h-4" />
-          <span className="w-2 h-2 rounded-full bg-[var(--color-primary)] absolute top-1.5 right-1.5" />
+          <span className="w-2 h-2 rounded-full bg-[var(--color-primary)] absolute top-2 right-2" />
         </button>
 
         {/* ── MENU 1: CONFIGURAÇÕES DO SISTEMA (DROPDOWN) ── */}
@@ -184,7 +197,7 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
               setShowSettingsMenu((prev) => !prev);
               setShowProfileMenu(false);
             }}
-            className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+            className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center min-h-[40px] min-w-[40px] ${
               showSettingsMenu
                 ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-xs'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
@@ -196,7 +209,7 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
           </button>
 
           {showSettingsMenu && (
-            <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-32px)] rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
               <div className="px-3 py-2 border-b border-[var(--border-default)] mb-1">
                 <p className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">
                   Configurações do Elo
@@ -286,7 +299,7 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
           </button>
 
           {showProfileMenu && (
-            <div className="absolute right-0 mt-2 w-72 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-3">
+            <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-32px)] rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-3">
               {/* Header do Perfil */}
               <div className="flex items-center gap-3 pb-3 border-b border-[var(--border-default)]">
                 {userProfile?.avatarUrl ? (

@@ -93,7 +93,7 @@ export function VolunteerCarousel({
       <div className="flex flex-col items-center justify-center text-center gap-1 mb-3 w-full">
         {/* Logo do Elo */}
         <EloLogo className="w-16 h-16 sm:w-18 sm:h-18 drop-shadow-xs transition-all duration-300" />
-        
+
         <div className="flex flex-col items-center text-center min-w-0 space-y-0.5">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-[10px] font-bold uppercase tracking-widest border border-[var(--color-primary)]/20">
             Instituto Ádapo
@@ -102,14 +102,14 @@ export function VolunteerCarousel({
             ELO <span className="font-medium text-[var(--text-muted)]">| Gestão Integrada</span>
           </h1>
           <p className="text-[11px] text-[var(--color-primary)] font-semibold italic">
-            "Dando linha pra sonhar"
+            Plataforma de Gestão Adapete
           </p>
         </div>
       </div>
 
-      {/* ── CONTAINER DA CIRANDA ORBITAL ── */}
+      {/* ── CONTAINER DA CIRANDA ORBITAL (ESCALA RESPONSIVA FLUIDA) ── */}
       <div
-        className="relative flex items-center justify-center shrink-0 my-1"
+        className="relative flex items-center justify-center shrink-0 my-1 scale-[0.88] xs:scale-95 sm:scale-100 origin-center transition-transform"
         style={{ width: CONTAINER_SIZE, height: CONTAINER_SIZE }}
       >
         {/* Linha da Órbita Circular em SVG perfeitamente concêntrica */}
@@ -228,7 +228,7 @@ export function VolunteerCarousel({
       {/* ── DESTAQUE PRINCIPAL: NOME E FUNÇÃO DO PERFIL SELECIONADO (HIERARQUIA FORTE) ── */}
       <div className="text-center space-y-1.5 mt-3 max-w-[340px]">
         <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)] leading-none">
-          Perfil Selecionado
+          Selecione o seu perfil na ciranda
         </p>
 
         <h2 className="font-display font-extrabold text-xl sm:text-2xl text-[var(--text-primary)] leading-tight tracking-tight px-2">

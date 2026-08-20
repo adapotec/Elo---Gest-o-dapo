@@ -32,15 +32,15 @@ export function DataTable<T>({
   loading = false,
 }: DataTableProps<T>) {
   return (
-    <div className="w-full overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
-      <table className="w-full text-left border-collapse text-xs sm:text-sm">
+    <div className="w-full overflow-x-auto rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] custom-scrollbar">
+      <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-full">
         <thead>
           <tr className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50">
             {columns.map((col) => (
               <th
                 key={col.key}
                 style={col.width ? { width: col.width, minWidth: col.width } : undefined}
-                className={`py-3.5 px-4 font-bold text-[11px] text-[var(--text-secondary)] uppercase tracking-wider ${
+                className={`py-3.5 px-3 sm:px-4 font-bold text-[11px] text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap ${
                   col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'
                 } ${col.headerClassName || ''}`}
               >
@@ -55,13 +55,13 @@ export function DataTable<T>({
               <td colSpan={columns.length} className="py-12 text-center text-[var(--text-muted)]">
                 <div className="flex flex-col items-center gap-2">
                   <div className="w-6 h-6 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs">Carregando dados...</span>
+                  <span className="text-xs font-medium">Carregando dados...</span>
                 </div>
               </td>
             </tr>
           ) : data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="py-12 text-center text-xs text-[var(--text-muted)]">
+              <td colSpan={columns.length} className="py-12 text-center text-xs text-[var(--text-muted)] font-medium">
                 {emptyMessage}
               </td>
             </tr>
@@ -74,15 +74,15 @@ export function DataTable<T>({
                 <tr
                   key={id}
                   onClick={() => onRowClick && onRowClick(item)}
-                  className={`transition-colors ${
-                    onRowClick ? 'cursor-pointer hover:bg-[var(--bg-secondary)]/60' : ''
+                  className={`transition-colors min-h-[44px] ${
+                    onRowClick ? 'cursor-pointer hover:bg-[var(--bg-secondary)]/60 active:bg-[var(--bg-secondary)]' : ''
                   } ${isSelected ? 'bg-[var(--color-primary)]/10 font-medium' : ''}`}
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
                       style={col.width ? { width: col.width } : undefined}
-                      className={`py-3 px-4 text-[var(--text-primary)] ${
+                      className={`py-3 px-3 sm:px-4 text-[var(--text-primary)] ${
                         col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'
                       } ${col.className || ''}`}
                     >

@@ -21,8 +21,8 @@ export default function ParceirosPage() {
         }
       />
 
-      <div className="p-8 max-w-5xl space-y-6 flex-1 overflow-y-auto">
-        <div className="p-8 rounded-3xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] text-center space-y-6">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-5xl space-y-6 flex-1 overflow-y-auto">
+        <div className="p-6 sm:p-8 rounded-3xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] text-center space-y-6">
           <div className="w-16 h-16 rounded-2xl bg-[#1C9C82]/10 text-[#1C9C82] flex items-center justify-center mx-auto shadow-inner">
             <Building2 className="w-8 h-8" />
           </div>

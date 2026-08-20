@@ -53,6 +53,25 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-20 — `[UI/UX] & [MOBILE & RESPONSIVIDADE GLOBAL]` 🔴 CRÍTICO
+
+**Responsividade Touch-First Completa (Mobile, Tablet e Desktop)**
+- **Mobile Drawer com Contexto (`MobileNavContext.tsx` & `Sidebar.tsx`)**:
+  - Em telas móveis (`< 768px`), a barra lateral fixa fica oculta para liberar 100% da viewport.
+  - Ao tocar no botão Hambúrguer na Topbar, a Sidebar abre como uma **Gaveta Deslizante lateral (Mobile Drawer)** com backdrop escuro, fechamento automático ao navegar ou tocar fora, e bloqueio de scroll no body.
+  - Em telas `>= 768px`, mantém o comportamento original de barra compacta/expandida com hover e pinagem.
+- **Topbar Touch-First (`Topbar.tsx`)**:
+  - Botão de menu hambúrguer visível no mobile com área de toque mínima de **44x44px** (Fitts' Law / Touch Psychology).
+  - Dropdowns de Configurações e Perfil com largura contida (`max-w-[calc(100vw-32px)]`) para não vazar a tela em smartphones compactos (320px–375px).
+- **Ciranda Responsiva (`VolunteerCarousel.tsx`)**:
+  - Escala fluida adaptativa (`scale-[0.88] xs:scale-95 sm:scale-100`) para visualização perfeita a partir de 320px sem overflow horizontal.
+- **Componentes Base & Páginas**:
+  - `DataTable.tsx`: Rolagem horizontal com aceleração por hardware e touch target seguro.
+  - `DetailPanel.tsx`: Backdrop escuro no mobile e ocupação fluida `w-full sm:max-w-lg`.
+  - Páginas internas migradas de `p-8` estático para `p-4 sm:p-6 lg:p-8`.
+
+---
+
 ### 2026-08-20 — `[UI/UX] & [AUTH & LOGIN FLOW]` 🔴 CRÍTICO
 
 **Fluxo de Acesso Progressivo em 2 Etapas (`src/app/(auth)/login/page.tsx`)**

@@ -176,7 +176,7 @@ export default function NovoVoluntarioPage() {
         }
       />
 
-      <div className="p-8 max-w-4xl space-y-6 flex-1 overflow-y-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl space-y-6 flex-1 overflow-y-auto">
         {error && (
           <div className="p-4 rounded-xl bg-[var(--color-danger-soft)] text-[var(--color-danger)] text-sm font-medium border border-[var(--color-danger)]/20">
             {error}

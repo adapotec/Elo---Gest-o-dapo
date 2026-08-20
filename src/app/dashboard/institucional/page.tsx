@@ -217,7 +217,7 @@ export default function InstitucionalPage() {
         }
       />
 
-      <div className="p-8 max-w-6xl space-y-6 flex-1 overflow-y-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-6xl space-y-6 flex-1 overflow-y-auto">
         {/* Cards de Resumo */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="p-4 flex items-center gap-4 border-l-4 border-l-[#F2632D]">

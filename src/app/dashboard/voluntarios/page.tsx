@@ -177,7 +177,7 @@ export default function VoluntariosPage() {
         }
       />
 
-      <div className="p-8 space-y-6 flex-1 overflow-y-auto">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto">
         {/* Barra de Filtros */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)]">
           <div className="relative w-full md:w-80">
