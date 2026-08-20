@@ -332,11 +332,11 @@ export default function LoginPage() {
                 />
 
                 {/* Botão de Prosseguir para Autenticação / Primeiro Acesso */}
-                <div className="mt-6 w-full max-w-[320px] space-y-3 flex flex-col items-center">
+                <div className="mt-5 w-full max-w-[340px] space-y-3.5 flex flex-col items-center">
                   <Button
                     type="button"
-                    size="md"
-                    className="w-full shadow-md font-bold text-sm py-2.5 flex items-center justify-center gap-2"
+                    size="lg"
+                    className="w-full shadow-lg hover:shadow-xl font-bold text-sm sm:text-base py-3 flex items-center justify-center gap-2 rounded-xl transition-all"
                     onClick={() => {
                       setStep('login');
                       setPassword('');
@@ -360,7 +360,7 @@ export default function LoginPage() {
                       setError(null);
                       setSuccessMsg(null);
                     }}
-                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5 pt-1"
+                    className="text-xs text-[var(--text-muted)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5 pt-0.5"
                   >
                     <Mail className="w-3.5 h-3.5" />
                     <span>Não está na ciranda? Entrar com outro e-mail</span>

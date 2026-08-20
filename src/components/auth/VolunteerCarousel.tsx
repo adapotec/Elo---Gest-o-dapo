@@ -89,23 +89,27 @@ export function VolunteerCarousel({
 
   return (
     <div className="relative w-full flex flex-col items-center justify-center select-none pt-1 pb-1">
-      {/* ── LOGO DO ELO + NOME + DESCRIÇÃO DA PLATAFORMA (CENTRALIZADOS NO TOPO DA CIRANDA) ── */}
-      <div className="flex flex-col items-center justify-center text-center gap-1.5 mb-2 w-full">
-        {/* 👉 TAMANHO DA LOGO: Altere as classes 'w-20 h-20' abaixo para o tamanho desejado (ex: w-12 h-12, w-16 h-16, w-20 h-20) */}
-        <EloLogo className="w-20 h-20 drop-shadow-xs transition-all duration-300" />
-        <div className="flex flex-col items-center text-center min-w-0">
-          <h1 className="font-display font-bold text-base sm:text-lg text-[var(--text-primary)] leading-tight">
-            ELO - Gestão Integrada
+      {/* ── LOGO DO ELO + BRANDING INSTITUCIONAL (TOPO ELEGANTE E EQUILIBRADO) ── */}
+      <div className="flex flex-col items-center justify-center text-center gap-1 mb-3 w-full">
+        {/* Logo do Elo */}
+        <EloLogo className="w-16 h-16 sm:w-18 sm:h-18 drop-shadow-xs transition-all duration-300" />
+        
+        <div className="flex flex-col items-center text-center min-w-0 space-y-0.5">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-[10px] font-bold uppercase tracking-widest border border-[var(--color-primary)]/20">
+            Instituto Ádapo
+          </div>
+          <h1 className="font-display font-extrabold text-lg sm:text-xl text-[var(--text-primary)] tracking-tight">
+            ELO <span className="font-medium text-[var(--text-muted)]">| Gestão Integrada</span>
           </h1>
-          <span className="text-[11px] font-semibold text-[var(--color-primary)] leading-tight">
-            Plataforma de gestão do Instituto Ádapo
-          </span>
+          <p className="text-[11px] text-[var(--color-primary)] font-semibold italic">
+            "Dando linha pra sonhar"
+          </p>
         </div>
       </div>
 
       {/* ── CONTAINER DA CIRANDA ORBITAL ── */}
       <div
-        className="relative flex items-center justify-center shrink-0 my-2"
+        className="relative flex items-center justify-center shrink-0 my-1"
         style={{ width: CONTAINER_SIZE, height: CONTAINER_SIZE }}
       >
         {/* Linha da Órbita Circular em SVG perfeitamente concêntrica */}
@@ -154,7 +158,7 @@ export function VolunteerCarousel({
               )}
             </div>
 
-            {/* Badge de Status Oficial (Sem emojis) */}
+            {/* Badge de Status Oficial */}
             <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[9px] font-bold shadow-sm flex items-center gap-1 border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-primary)]">
               {activeVoluntario?.hasAccount ? (
                 <>
@@ -221,19 +225,19 @@ export function VolunteerCarousel({
         })}
       </div>
 
-      {/* ── TEXTO DE ORIENTAÇÃO, NOME E FUNÇÃO (SEM EMAIL EXPOSTO) ── */}
-      <div className="text-center space-y-1 mt-2 max-w-[300px]">
-        <p className="text-[11px] text-[var(--text-secondary)] leading-tight">
-          Selecione seu perfil na Ciranda para acessar
+      {/* ── DESTAQUE PRINCIPAL: NOME E FUNÇÃO DO PERFIL SELECIONADO (HIERARQUIA FORTE) ── */}
+      <div className="text-center space-y-1.5 mt-3 max-w-[340px]">
+        <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)] leading-none">
+          Perfil Selecionado
         </p>
 
-        <h3 className="font-display font-bold text-base sm:text-lg text-[var(--text-primary)] leading-tight truncate pt-1">
+        <h2 className="font-display font-extrabold text-xl sm:text-2xl text-[var(--text-primary)] leading-tight tracking-tight px-2">
           {activeVoluntario?.nome_completo || 'Voluntário'}
-        </h3>
+        </h2>
 
         <div className="flex items-center justify-center gap-1.5 flex-wrap pt-0.5">
           <span
-            className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-white shadow-xs truncate max-w-[240px]"
+            className="px-3 py-0.5 rounded-full text-xs font-bold text-white shadow-xs truncate max-w-[260px]"
             style={{ backgroundColor: activeColor }}
           >
             {activeVoluntario?.funcao || activeVoluntario?.area_atuacao || 'Equipe Ádapo'}
