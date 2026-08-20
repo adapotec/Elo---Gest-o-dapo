@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Plus_Jakarta_Sans, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
@@ -23,13 +23,60 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: 'swap',
 });
 
+export const viewport: Viewport = {
+  themeColor: '#F2632D',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
-  title: 'Sistema ELO — Instituto Ádapo',
-  description: 'Sistema de Gestão Interna da ONG Instituto Ádapo',
+  title: {
+    default: 'ELO — Gestão Integrada | Instituto Ádapo',
+    template: '%s | ELO — Instituto Ádapo',
+  },
+  description:
+    'Sistema ELO de Gestão Integrada do Instituto Ádapo. Plataforma para controle de projetos sociais, acompanhamento pedagógico, gestão de voluntários, beneficiários e captação de recursos.',
+  applicationName: 'Sistema ELO',
+  authors: [{ name: 'Instituto Ádapo', url: 'https://adapo.org.br' }],
+  keywords: [
+    'Instituto Ádapo',
+    'Sistema ELO',
+    'Gestão Integrada',
+    'ONG',
+    'Projetos Sociais',
+    'Pedagogia Social',
+    'Voluntariado',
+    'Impacto Social',
+    'Governança Institucional',
+  ],
   icons: {
-    icon: '/logo/logo-favicon.png',
-    shortcut: '/logo/logo-favicon.png',
+    icon: [
+      { url: '/logo/elo-social-gestao-adapo.svg', type: 'image/svg+xml' },
+      { url: '/logo/logo-favicon.png', type: 'image/png' },
+    ],
+    shortcut: '/logo/elo-social-gestao-adapo.svg',
     apple: '/logo/logo-favicon.png',
+  },
+  openGraph: {
+    title: 'ELO — Gestão Integrada | Instituto Ádapo',
+    description:
+      'Plataforma de Gestão Integrada, Acompanhamento Pedagógico e Governança do Instituto Ádapo.',
+    siteName: 'Sistema ELO — Instituto Ádapo',
+    images: [
+      {
+        url: '/logo/elo-social-gestao-adapo.svg',
+        width: 1200,
+        height: 1200,
+        alt: 'Logo Sistema ELO — Instituto Ádapo',
+      },
+    ],
+    locale: 'pt_BR',
+    type: 'website',
+  },
+  robots: {
+    index: false,
+    follow: false,
   },
 };
 
