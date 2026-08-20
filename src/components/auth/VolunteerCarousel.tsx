@@ -52,12 +52,12 @@ export function VolunteerCarousel({
   const N = voluntarios.length;
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
-  // Dimensões exatas e coordenadas matemáticas da Ciranda
-  const CONTAINER_SIZE = 290;
-  const CENTER = CONTAINER_SIZE / 2; // 145px
-  const ORBIT_RADIUS = 105; // Raio exato da órbita
-  const NODE_SIZE = 36; // Tamanho de cada bolinha na órbita (36x36px)
-  const NODE_HALF = NODE_SIZE / 2; // 18px
+  // ── Dimensões ampliadas e coordenadas matemáticas da Ciranda ──
+  const CONTAINER_SIZE = 340;
+  const CENTER = CONTAINER_SIZE / 2; // 170px
+  const ORBIT_RADIUS = 125; // Raio da órbita expandido
+  const NODE_SIZE = 42; // Tamanho ampliado de cada bolinha na órbita (42x42px)
+  const NODE_HALF = NODE_SIZE / 2; // 21px
 
   // Pré-carregamento imediato em background de todas as fotos
   useEffect(() => {
@@ -90,9 +90,9 @@ export function VolunteerCarousel({
   return (
     <div className="relative w-full flex flex-col items-center justify-center select-none pt-1 pb-1">
       {/* ── LOGO DO ELO + BRANDING INSTITUCIONAL (TOPO ELEGANTE E EQUILIBRADO) ── */}
-      <div className="flex flex-col items-center justify-center text-center gap-1 mb-3 w-full">
-        {/* Logo do Elo */}
-        <EloLogo className="w-16 h-16 sm:w-18 sm:h-18 drop-shadow-xs transition-all duration-300" />
+      <div className="flex flex-col items-center justify-center text-center gap-1.5 mb-2 w-full">
+        {/* Logo do Elo Ampliada */}
+        <EloLogo className="w-16 h-16 sm:w-20 sm:h-20 drop-shadow-xs transition-all duration-300" />
 
         <div className="flex flex-col items-center text-center min-w-0 space-y-0.5">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-[10px] font-bold uppercase tracking-widest border border-[var(--color-primary)]/20">
@@ -107,9 +107,9 @@ export function VolunteerCarousel({
         </div>
       </div>
 
-      {/* ── CONTAINER DA CIRANDA ORBITAL (ESCALA RESPONSIVA FLUIDA) ── */}
+      {/* ── CONTAINER DA CIRANDA ORBITAL (AMPLIADA & RESPONSIVA) ── */}
       <div
-        className="relative flex items-center justify-center shrink-0 my-1 scale-[0.88] xs:scale-95 sm:scale-100 origin-center transition-transform"
+        className="relative flex items-center justify-center shrink-0 my-2 scale-[0.85] xs:scale-[0.92] sm:scale-100 origin-center transition-transform"
         style={{ width: CONTAINER_SIZE, height: CONTAINER_SIZE }}
       >
         {/* Linha da Órbita Circular em SVG perfeitamente concêntrica */}
@@ -124,14 +124,14 @@ export function VolunteerCarousel({
             fill="none"
             stroke="var(--border-strong)"
             strokeWidth="1.5"
-            strokeDasharray="4 4"
-            className="opacity-50"
+            strokeDasharray="5 5"
+            className="opacity-60"
           />
         </svg>
 
-        {/* ── NÓ CENTRAL (PERFIL ATIVO SELECIONADO - DESIGN LIMPO E NÍTIDO) ── */}
+        {/* ── NÓ CENTRAL AMPLIADO (PERFIL ATIVO SELECIONADO) ── */}
         <div className="relative z-20 flex flex-col items-center justify-center">
-          <div className="relative w-24 h-24 sm:w-26 sm:h-26 rounded-full bg-[var(--bg-elevated)] border-2 border-[var(--border-strong)] shadow-md flex items-center justify-center p-1 transition-all duration-200">
+          <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-[var(--bg-elevated)] border-3 border-[var(--border-strong)] shadow-lg flex items-center justify-center p-1.5 transition-all duration-200">
             <div className="w-full h-full rounded-full overflow-hidden bg-[var(--bg-secondary)] flex items-center justify-center relative">
               {activeVoluntario?.avatar_url && loadedImages[activeVoluntario.avatar_url] ? (
                 <img
@@ -143,14 +143,14 @@ export function VolunteerCarousel({
                 />
               ) : activeVoluntario?.avatar_url ? (
                 <div
-                  className="w-full h-full flex items-center justify-center text-white font-display font-bold text-2xl"
+                  className="w-full h-full flex items-center justify-center text-white font-display font-bold text-3xl"
                   style={{ backgroundColor: activeColor }}
                 >
                   {getInitials(activeVoluntario.nome_completo)}
                 </div>
               ) : (
                 <div
-                  className="w-full h-full flex items-center justify-center text-white font-display font-bold text-2xl"
+                  className="w-full h-full flex items-center justify-center text-white font-display font-bold text-3xl"
                   style={{ backgroundColor: activeColor }}
                 >
                   {getInitials(activeVoluntario?.nome_completo || 'Ádapo')}
@@ -159,15 +159,15 @@ export function VolunteerCarousel({
             </div>
 
             {/* Badge de Status Oficial */}
-            <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full text-[9px] font-bold shadow-sm flex items-center gap-1 border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-primary)]">
+            <div className="absolute -bottom-1 -right-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm flex items-center gap-1 border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-primary)]">
               {activeVoluntario?.hasAccount ? (
                 <>
-                  <ShieldCheck className="w-2.5 h-2.5 text-[var(--color-success)]" />
+                  <ShieldCheck className="w-3 h-3 text-[var(--color-success)]" />
                   <span className="text-[var(--color-success)]">Ativo</span>
                 </>
               ) : (
                 <>
-                  <UserCheck className="w-2.5 h-2.5 text-[var(--color-primary)]" />
+                  <UserCheck className="w-3 h-3 text-[var(--color-primary)]" />
                   <span className="text-[var(--color-primary)]">1º Acesso</span>
                 </>
               )}
@@ -190,10 +190,11 @@ export function VolunteerCarousel({
               type="button"
               onClick={() => handleSelect(idx)}
               title={`${vol.nome_completo} (${vol.funcao || 'Voluntário'})`}
-              className={`absolute rounded-full transition-all duration-200 cursor-pointer flex items-center justify-center ${isActive
-                ? 'z-30 ring-2 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--bg-elevated)] scale-110 shadow-sm'
-                : 'z-10 opacity-80 hover:opacity-100 hover:scale-108 hover:z-20 border border-[var(--border-strong)] bg-[var(--bg-secondary)] shadow-xs'
-                }`}
+              className={`absolute rounded-full transition-all duration-200 cursor-pointer flex items-center justify-center ${
+                isActive
+                  ? 'z-30 ring-3 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--bg-elevated)] scale-115 shadow-md'
+                  : 'z-10 opacity-80 hover:opacity-100 hover:scale-110 hover:z-20 border border-[var(--border-strong)] bg-[var(--bg-secondary)] shadow-xs'
+              }`}
               style={{
                 left: `${x}px`,
                 top: `${y}px`,
@@ -213,7 +214,7 @@ export function VolunteerCarousel({
                   />
                 ) : (
                   <div
-                    className="w-full h-full flex items-center justify-center text-white font-bold text-[11px]"
+                    className="w-full h-full flex items-center justify-center text-white font-bold text-xs"
                     style={{ backgroundColor: volColor }}
                   >
                     {getInitials(vol.nome_completo)}
@@ -225,8 +226,8 @@ export function VolunteerCarousel({
         })}
       </div>
 
-      {/* ── DESTAQUE PRINCIPAL: NOME E FUNÇÃO DO PERFIL SELECIONADO (HIERARQUIA FORTE) ── */}
-      <div className="text-center space-y-1.5 mt-3 max-w-[340px]">
+      {/* ── DESTAQUE PRINCIPAL: NOME E FUNÇÃO DO PERFIL SELECIONADO ── */}
+      <div className="text-center space-y-1.5 mt-2 max-w-[380px]">
         <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)] leading-none">
           Selecione o seu perfil na ciranda
         </p>
@@ -237,7 +238,7 @@ export function VolunteerCarousel({
 
         <div className="flex items-center justify-center gap-1.5 flex-wrap pt-0.5">
           <span
-            className="px-3 py-0.5 rounded-full text-xs font-bold text-white shadow-xs truncate max-w-[260px]"
+            className="px-3.5 py-1 rounded-full text-xs font-bold text-white shadow-xs truncate max-w-[280px]"
             style={{ backgroundColor: activeColor }}
           >
             {activeVoluntario?.funcao || activeVoluntario?.area_atuacao || 'Equipe Ádapo'}

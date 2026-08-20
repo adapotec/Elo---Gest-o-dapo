@@ -166,20 +166,27 @@ export default function LoginPage() {
           });
 
           setVoluntarios(list);
-          if (list[0]) {
-            setEmail(list[0].email);
+          // Sorteia um voluntário aleatório a cada atualização da página
+          const randomIndex = Math.floor(Math.random() * list.length);
+          setSelectedIndex(randomIndex);
+          if (list[randomIndex]) {
+            setEmail(list[randomIndex].email);
           }
         } else {
           setVoluntarios(FALLBACK_VOLUNTARIOS);
-          if (FALLBACK_VOLUNTARIOS[0]) {
-            setEmail(FALLBACK_VOLUNTARIOS[0].email);
+          const randomIndex = Math.floor(Math.random() * FALLBACK_VOLUNTARIOS.length);
+          setSelectedIndex(randomIndex);
+          if (FALLBACK_VOLUNTARIOS[randomIndex]) {
+            setEmail(FALLBACK_VOLUNTARIOS[randomIndex].email);
           }
         }
       } catch (err) {
         console.error('Erro ao carregar voluntários no login:', err);
         setVoluntarios(FALLBACK_VOLUNTARIOS);
-        if (FALLBACK_VOLUNTARIOS[0]) {
-          setEmail(FALLBACK_VOLUNTARIOS[0].email);
+        const randomIndex = Math.floor(Math.random() * FALLBACK_VOLUNTARIOS.length);
+        setSelectedIndex(randomIndex);
+        if (FALLBACK_VOLUNTARIOS[randomIndex]) {
+          setEmail(FALLBACK_VOLUNTARIOS[randomIndex].email);
         }
       } finally {
         setLoadingVoluntarios(false);
@@ -314,7 +321,7 @@ export default function LoginPage() {
       <div />
 
       {/* ── CONTEÚDO CENTRAL: FLUXO EM ETAPAS (CIRANDA -> LOGIN) ── */}
-      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-lg mx-auto py-4 z-10">
+      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-lg sm:max-w-[540px] mx-auto py-4 z-10">
         
         {/* ========================================================================= */}
         {/* ETAPA 1: VISUALIZAÇÃO E SELEÇÃO NA CIRANDA ADAPETE */}
