@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { EloLogo } from '@/components/ui/EloLogo';
 import {
   BarChart3,
@@ -14,10 +13,6 @@ import {
   FolderKanban,
   Gift,
   Package,
-  ShieldCheck,
-  LogOut,
-  X,
-  HelpCircle,
   ChevronDown,
   ChevronUp,
   Calendar,
@@ -26,13 +21,11 @@ import {
   Megaphone,
   Building2,
   Layers,
-  Settings,
-  Sliders,
   Pin,
   PinOff,
+  HelpCircle,
+  X,
 } from 'lucide-react';
-import { ThemeToggle } from './ThemeToggle';
-import { createClient } from '@/lib/supabase/client';
 
 interface MenuItemChild {
   name: string;
@@ -77,20 +70,10 @@ const navigationItems: MenuItem[] = [
   { name: 'Calendário Geral', href: '/dashboard/calendario', icon: Calendar, color: '#E85D04' },
   { name: 'Indicadores Sociais', href: '/dashboard/indicadores', icon: BarChart3, color: '#3B82F6' },
   { name: 'Gestão Institucional', href: '/dashboard/institucional', icon: Landmark, color: '#6D28D9' },
-  {
-    name: 'Configurações',
-    icon: Settings,
-    color: '#4A1B57',
-    children: [
-      { name: 'Usuários & Acesso', href: '/dashboard/usuarios', icon: ShieldCheck, color: '#4A1B57' },
-      { name: 'Perfil & Personalização', href: '/dashboard/perfil', icon: Sliders, color: '#F2632D' },
-    ],
-  },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [showInfoPopover, setShowInfoPopover] = useState(false);
   
   // Estado de Hover estilo Instagram Web (recolhido por padrão, expande no mouse over)
@@ -101,11 +84,6 @@ export function Sidebar() {
   const isExpanded = isPinned || isHovered;
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const [userProfile, setUserProfile] = useState<{
-    name: string;
-    email: string;
-    avatarUrl: string | null;
-  } | null>(null);
 
   // Inicializa e mantém os grupos abertos caso navegue em uma de suas sub-rotas
   useEffect(() => {
@@ -121,53 +99,8 @@ export function Sidebar() {
     });
   }, [pathname]);
 
-  // Carrega informações completas do perfil logado (incluindo foto/avatar)
-  useEffect(() => {
-    async function loadProfile() {
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('nome_completo, email, avatar_url')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          if (profile) {
-            setUserProfile({
-              name: profile.nome_completo || 'Voluntário Ádapo',
-              email: profile.email || user.email || 'voluntario@adapong.org',
-              avatarUrl: profile.avatar_url || null,
-            });
-          } else {
-            setUserProfile({
-              name: user.email?.split('@')[0] || 'Voluntário',
-              email: user.email || 'voluntario@adapong.org',
-              avatarUrl: null,
-            });
-          }
-        }
-      } catch (err) {
-        console.error('Erro ao carregar perfil no Sidebar:', err);
-      }
-    }
-    loadProfile();
-  }, []);
-
   const toggleGroup = (groupName: string) => {
     setOpenGroups((prev) => ({ ...prev, [groupName]: !prev[groupName] }));
-  };
-
-  const handleLogout = async () => {
-    try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      router.push('/login');
-    } catch (err) {
-      console.error('Erro ao encerrar sessão:', err);
-      router.push('/login');
-    }
   };
 
   return (
@@ -382,97 +315,41 @@ export function Sidebar() {
         </nav>
       </div>
 
-      {/* ── Rodapé: Perfil do Usuário & Ações (Estilo Instagram Web) ── */}
-      <div className="p-3 border-t border-[var(--border-default)] bg-[var(--bg-sidebar)] shrink-0 z-20">
+      {/* ── Rodapé: Controle de Fixação da Barra (Sem scroll) ── */}
+      <div className="p-2.5 border-t border-[var(--border-default)] bg-[var(--bg-sidebar)] shrink-0 z-20">
         {!isExpanded ? (
-          <div className="flex flex-col items-center gap-2 py-1">
-            <Link
-              href="/dashboard/perfil"
-              className="p-1 rounded-full text-[var(--text-muted)] hover:ring-2 hover:ring-[var(--color-primary)] transition-all"
-              title={userProfile?.name ? `Perfil: ${userProfile.name}` : 'Meu Perfil'}
-            >
-              {userProfile?.avatarUrl ? (
-                <img
-                  src={userProfile.avatarUrl}
-                  alt={userProfile.name}
-                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-[var(--border-default)] shadow-xs"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
-                  {userProfile?.name?.charAt(0).toUpperCase() || 'A'}
-                </div>
-              )}
-            </Link>
+          <div className="flex flex-col items-center justify-center py-0.5">
             <button
               type="button"
-              onClick={handleLogout}
-              className="p-2 text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors rounded-xl cursor-pointer"
-              title="Sair / Encerrar Sessão"
-              aria-label="Sair do sistema"
+              onClick={() => setIsPinned((prev) => !prev)}
+              className={`p-2 rounded-xl text-xs transition-colors cursor-pointer flex items-center justify-center ${
+                isPinned
+                  ? 'text-[var(--color-primary)] bg-[var(--color-primary-soft)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+              }`}
+              title={isPinned ? 'Desafixar menu (retrair ao sair)' : 'Fixar menu aberto'}
+              aria-label={isPinned ? 'Desafixar menu' : 'Fixar menu'}
             >
-              <LogOut className="w-4 h-4" />
+              {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
             </button>
           </div>
         ) : (
-          <div className="space-y-3 animate-in fade-in duration-200">
-            {/* Card do Usuário */}
-            <Link
-              href="/dashboard/perfil"
-              className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-[var(--bg-secondary)] transition-colors min-w-0"
-              title="Acessar Perfil & Personalização"
+          <div className="flex items-center justify-between px-2 py-1 animate-in fade-in duration-150">
+            <span className="text-[11px] font-medium text-[var(--text-muted)]">Navegação</span>
+            <button
+              type="button"
+              onClick={() => setIsPinned((prev) => !prev)}
+              className={`px-2.5 py-1.5 rounded-xl text-xs transition-colors cursor-pointer flex items-center gap-1.5 font-semibold ${
+                isPinned
+                  ? 'text-[var(--color-primary)] bg-[var(--color-primary-soft)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+              }`}
+              title={isPinned ? 'Desafixar menu (retrair ao sair)' : 'Fixar menu aberto'}
+              aria-label={isPinned ? 'Desafixar menu' : 'Fixar menu'}
             >
-              {userProfile?.avatarUrl ? (
-                <img
-                  src={userProfile.avatarUrl}
-                  alt={userProfile.name}
-                  className="w-9 h-9 rounded-full object-cover shrink-0 border border-[var(--border-default)] shadow-xs"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-[var(--color-primary)] text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
-                  {userProfile?.name?.charAt(0).toUpperCase() || 'A'}
-                </div>
-              )}
-              <div className="truncate min-w-0 flex-1">
-                <p className="text-xs font-semibold text-[var(--text-primary)] truncate leading-tight">
-                  {userProfile?.name || 'Voluntário Ádapo'}
-                </p>
-                <p className="text-[10px] text-[var(--text-muted)] truncate leading-tight font-mono-data">
-                  {userProfile?.email || 'voluntario@adapong.org'}
-                </p>
-              </div>
-            </Link>
-
-            {/* Barra de Ações Rápidas do Rodapé */}
-            <div className="flex items-center justify-between pt-1 border-t border-[var(--border-default)]/60 text-xs">
-              <ThemeToggle />
-              
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setIsPinned((prev) => !prev)}
-                  className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1 font-medium ${
-                    isPinned
-                      ? 'text-[var(--color-primary)] bg-[var(--color-primary-soft)]'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                  }`}
-                  title={isPinned ? 'Desafixar menu (retrair ao sair)' : 'Fixar menu aberto'}
-                  aria-label={isPinned ? 'Desafixar menu' : 'Fixar menu'}
-                >
-                  {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
-                  <span className="text-[11px]">{isPinned ? 'Fixado' : 'Fixar'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors rounded-lg shrink-0 cursor-pointer"
-                  title="Sair / Encerrar Sessão"
-                  aria-label="Sair do sistema"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+              {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+              <span className="text-[11px]">{isPinned ? 'Menu Fixado' : 'Fixar Menu'}</span>
+            </button>
           </div>
         )}
       </div>

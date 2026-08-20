@@ -53,6 +53,18 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-20 — `[UI/UX] & [LAYOUT & NAVEGAÇÃO]` 🔴 CRÍTICO
+
+**Topbar com Configurações e Perfil Fixos & Sidebar Compacta sem Scroll Vertical**
+- **Topbar Unificada (`src/components/layout/Topbar.tsx`)**:
+  - Centraliza no canto superior direito de todas as páginas o acesso ao **Perfil do Usuário** (Avatar, Nome, E-mail, Cargo/Role, Link para Meu Perfil, Troca de Tema Claro/Escuro e Logout) e ao menu de **Configurações do Sistema** (Personalização de Tema, Usuários & Controle de Acesso para Administradores, Gestão Institucional Ádapo).
+  - Menus suspensos com fechamento automático ao clicar fora (*click outside handler*).
+- **Sidebar Enxuta (`src/components/layout/Sidebar.tsx`)**:
+  - Removido o grupo de configurações e o rodapé duplicado de usuário.
+  - Elimina completamente o scroll vertical quando a barra lateral está recolhida ou expandida, mantendo controle de fixação (`Pin`/`PinOff`).
+
+---
+
 ### 2026-08-20 — `[UI/UX] & [DESIGN SYSTEM]` 🔴 CRÍTICO
 
 **Componente SVG Vetorial Dinâmico `EloLogo` Adaptado ao Tema do Sistema**
