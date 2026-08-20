@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { EloLogo } from '@/components/ui/EloLogo';
 import {
   BarChart3,
   LayoutDashboard,
@@ -193,16 +194,9 @@ export function Sidebar() {
             }`}
             title="Ir para o Painel Inicial"
           >
-            {/* Logo Oficial do Sistema ELO Social em SVG */}
+            {/* Logo Oficial do Sistema ELO Social Dinâmico em SVG (segue o tema) */}
             <div className="relative shrink-0 flex items-center justify-center">
-              <Image
-                src="/logo/elo-social-gestao-adapo.svg"
-                alt="Logo ELO Social - Instituto Ádapo"
-                width={36}
-                height={36}
-                className="w-9 h-9 rounded-xl object-contain shrink-0 transition-transform duration-200 hover:scale-105"
-                priority
-              />
+              <EloLogo className="w-9 h-9 shrink-0 drop-shadow-xs transition-transform duration-200 hover:scale-105" />
             </div>
 
             {isExpanded && (

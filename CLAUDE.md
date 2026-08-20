@@ -53,6 +53,17 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-20 — `[UI/UX] & [DESIGN SYSTEM]` 🔴 CRÍTICO
+
+**Componente SVG Vetorial Dinâmico `EloLogo` Adaptado ao Tema do Sistema**
+- **Componente `EloLogo.tsx` (`src/components/ui/EloLogo.tsx`)**:
+  - Converte o SVG vetorial do símbolo do ELO em um componente React dinâmico.
+  - O preenchimento dos arcos e conexões do glifo consome diretamente a variável CSS `var(--color-primary)` (ou prop `color`), adaptando-se em tempo real a qualquer mudança de tema (Laranja Ádapo `#F2632D`, Roxo, Verde, Dark/Light Mode).
+  - Tipografia interna com alto contraste (`#ffffff` ou `textColor`).
+  - Aplicado no topo da Ciranda Adapete (`VolunteerCarousel.tsx`) e na barra de navegação lateral (`Sidebar.tsx`).
+
+---
+
 ### 2026-08-20 — `[UI/UX] & [PROJETOS] & [PEDAGOGIA]` 🔴 CRÍTICO
 
 **Painel Executivo de Acompanhamento Pedagógico em `/projetos/[id]` & Extração Timbrada**

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { ShieldCheck, UserCheck } from 'lucide-react';
+import { EloLogo } from '@/components/ui/EloLogo';
 
 export interface VoluntarioItem {
   id: string;
@@ -90,12 +91,8 @@ export function VolunteerCarousel({
     <div className="relative w-full flex flex-col items-center justify-center select-none pt-1 pb-1">
       {/* ── LOGO DO ELO + NOME + DESCRIÇÃO DA PLATAFORMA (CENTRALIZADOS NO TOPO DA CIRANDA) ── */}
       <div className="flex flex-col items-center justify-center text-center gap-1.5 mb-2 w-full">
-        {/* 👉 TAMANHO DA LOGO: Altere as classes 'w-12 h-12' abaixo para o tamanho desejado (ex: w-10 h-10, w-14 h-14, w-16 h-16) */}
-        <img
-          src="/logo/elo-social-gestao-adapo.svg"
-          alt="Logo Sistema ELO - Instituto Ádapo"
-          className="w-20 h-20 rounded-xl object-contain drop-shadow-xs"
-        />
+        {/* 👉 TAMANHO DA LOGO: Altere as classes 'w-20 h-20' abaixo para o tamanho desejado (ex: w-12 h-12, w-16 h-16, w-20 h-20) */}
+        <EloLogo className="w-20 h-20 drop-shadow-xs transition-all duration-300" />
         <div className="flex flex-col items-center text-center min-w-0">
           <h1 className="font-display font-bold text-base sm:text-lg text-[var(--text-primary)] leading-tight">
             ELO - Gestão Integrada
