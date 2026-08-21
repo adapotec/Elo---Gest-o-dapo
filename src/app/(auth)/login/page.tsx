@@ -62,6 +62,30 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+const STORAGE_KEY_ACCOUNTS = 'elo_registered_accounts';
+
+function getStoredRegisteredEmails(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ACCOUNTS);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed.map((e: string) => String(e).toLowerCase().trim()).filter(Boolean) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function storeRegisteredEmail(email: string) {
+  if (typeof window === 'undefined' || !email) return;
+  try {
+    const cleanEmail = email.toLowerCase().trim();
+    const set = getStoredRegisteredEmails();
+    set.add(cleanEmail);
+    localStorage.setItem(STORAGE_KEY_ACCOUNTS, JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -156,9 +180,12 @@ export default function LoginPage() {
           .from('profiles')
           .select('email, nome_completo, id, avatar_url');
 
-        const profEmails = new Set(
-          (profData || []).map((p: any) => p.email?.toLowerCase().trim()).filter(Boolean)
-        );
+        const storedEmails = getStoredRegisteredEmails();
+
+        const profEmails = new Set([
+          ...(profData || []).map((p: any) => p.email?.toLowerCase().trim()).filter(Boolean),
+          ...storedEmails,
+        ]);
         const profNames = new Set(
           (profData || []).map((p: any) => p.nome_completo?.toLowerCase().trim()).filter(Boolean)
         );
@@ -232,8 +259,9 @@ export default function LoginPage() {
     setSuccessMsg(null);
 
     try {
+      const cleanEmail = email.trim();
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: cleanEmail,
         password,
       });
 
@@ -246,6 +274,9 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+
+      // Persiste no cache de contas registradas
+      storeRegisteredEmail(cleanEmail);
 
       setSuccessMsg('Autenticado com sucesso! Entrando no ELO...');
       setTimeout(() => {
@@ -277,10 +308,11 @@ export default function LoginPage() {
     setSuccessMsg(null);
 
     try {
+      const cleanEmail = email.trim();
       const nomeCompleto = selectedVoluntario?.nome_completo || 'Voluntário Ádapo';
 
       const { error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: cleanEmail,
         password,
         options: {
           data: {
@@ -291,15 +323,21 @@ export default function LoginPage() {
       });
 
       if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          // Atualiza lista local para marcar este voluntário como com conta ativa
+        if (signUpError.message.toLowerCase().includes('already registered')) {
+          // Marca esta conta como registrada no cache e na lista local
+          storeRegisteredEmail(cleanEmail);
           setVoluntarios((prev) =>
-            prev.map((v, i) => (i === selectedIndex ? { ...v, hasAccount: true } : v))
+            prev.map((v) =>
+              v.email?.toLowerCase().trim() === cleanEmail.toLowerCase()
+                ? { ...v, hasAccount: true }
+                : v
+            )
           );
           setAuthModeOverride('login');
 
+          // Tenta logar diretamente com a senha informada
           const { error: signInErr } = await supabase.auth.signInWithPassword({
-            email: email.trim(),
+            email: cleanEmail,
             password,
           });
 
@@ -316,13 +354,18 @@ export default function LoginPage() {
         throw signUpError;
       }
 
-      // Atualiza lista local
+      // Sucesso no cadastro
+      storeRegisteredEmail(cleanEmail);
       setVoluntarios((prev) =>
-        prev.map((v, i) => (i === selectedIndex ? { ...v, hasAccount: true } : v))
+        prev.map((v) =>
+          v.email?.toLowerCase().trim() === cleanEmail.toLowerCase()
+            ? { ...v, hasAccount: true }
+            : v
+        )
       );
 
       const { error: autoLoginErr } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: cleanEmail,
         password,
       });
 
@@ -550,6 +593,20 @@ export default function LoginPage() {
                 >
                   {loading ? 'Ativando Conta...' : 'Ativar Minha Conta & Entrar'}
                 </Button>
+
+                {/* Alternância para quem já possui senha */}
+                <div className="pt-2 text-center border-t border-[var(--border-default)]/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthModeOverride('login');
+                      setError(null);
+                    }}
+                    className="text-xs text-[var(--color-primary)] hover:underline font-semibold cursor-pointer"
+                  >
+                    Já criou sua senha antes? Fazer login com senha
+                  </button>
+                </div>
               </form>
             ) : (
               /* FORMULÁRIO 2: LOGIN DE CONTA EXISTENTE (DIRETO PARA QUEM JÁ TEM CONTA) */
@@ -610,6 +667,22 @@ export default function LoginPage() {
                 >
                   {loading ? 'Verificando...' : 'Entrar no Sistema'}
                 </Button>
+
+                {/* Alternância para primeiro acesso caso necessário */}
+                {!useManualEmail && (
+                  <div className="pt-2 text-center border-t border-[var(--border-default)]/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthModeOverride('first_access');
+                        setError(null);
+                      }}
+                      className="text-xs text-[var(--text-muted)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer"
+                    >
+                      Primeiro acesso no ELO? Crie sua senha aqui
+                    </button>
+                  </div>
+                )}
               </form>
             )}
           </div>

@@ -501,7 +501,7 @@ ALTER TABLE public.recessos_voluntarios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.configuracoes_recesso ENABLE ROW LEVEL SECURITY;
 
 -- Permissões de Usuários/Perfis
-CREATE POLICY "Leitura total profiles para autenticados" ON public.profiles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Leitura total profiles" ON public.profiles FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Atualização própria de profile" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
 
 -- Permissões operacionais internas

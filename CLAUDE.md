@@ -53,6 +53,19 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-21 — `[AUTH] & [LOGIN FLOW] & [RLS]` 🟢 RESOLVIDO
+
+**Correção de Persistência de Contas Ativas no Login (`/login`)**
+- **Causa Raiz Identificada**: A tabela `profiles` possuía política RLS que permitia `SELECT` apenas para usuários autenticados (`authenticated`). Quando um usuário não autenticado acessava `/login`, a consulta `supabase.from('profiles')` retornava vazio (`[]`), fazendo com que todos os voluntários fossem tratados como "Primeiro Acesso".
+- **Migration RLS Criada (`supabase/migrations/20260821_fix_profiles_rls_login.sql`)**: Adicionada política `Leitura publica profiles` para permitir leitura `TO anon, authenticated` na tabela `profiles`.
+- **Cache Local & Persistência Inteligente (`src/app/(auth)/login/page.tsx`)**:
+  - Implementado armazenamento de e-mails de contas registradas no `localStorage` (`elo_registered_accounts`).
+  - Cruzamento de `voluntarios` com `profiles` e com o cache local para identificar contas ativas mesmo antes da execução da migration.
+  - No `handleCreatePassword`, caso o Supabase Auth retorne `User already registered`, o sistema faz auto-login imediato com a senha digitada e redireciona para o dashboard, marcando a conta como ativa.
+  - Adicionado botão de alternância explícito no formulário ("Já criou sua senha antes? Fazer login com senha" / "Primeiro acesso no ELO? Crie sua senha aqui").
+
+---
+
 ### 2026-08-20 — `[UI/UX] & [MOBILE & RESPONSIVIDADE GLOBAL]` 🔴 CRÍTICO
 
 **Responsividade Touch-First Completa (Mobile, Tablet e Desktop)**
