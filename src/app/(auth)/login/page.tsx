@@ -175,14 +175,18 @@ export default function LoginPage() {
           .eq('status', 'ativo')
           .order('nome_completo', { ascending: true });
 
-        // 2. Busca profiles para saber quem já tem conta ativa (por email e por nome)
+        // 2. Busca e-mails com conta registrada via RPC seguro (Zero-Trust Least Privilege)
+        const { data: rpcEmails } = await supabase.rpc('get_registered_emails');
+
+        // Fallback adicional caso haja profiles acessíveis (ex: usuário autenticado)
         const { data: profData } = await supabase
           .from('profiles')
-          .select('email, nome_completo, id, avatar_url');
+          .select('email, nome_completo');
 
         const storedEmails = getStoredRegisteredEmails();
 
-        const profEmails = new Set([
+        const registeredEmailsSet = new Set<string>([
+          ...(rpcEmails || []).map((r: any) => (typeof r === 'string' ? r : r.email)?.toLowerCase().trim()).filter(Boolean),
           ...(profData || []).map((p: any) => p.email?.toLowerCase().trim()).filter(Boolean),
           ...storedEmails,
         ]);
@@ -194,7 +198,7 @@ export default function LoginPage() {
           const list: VoluntarioItem[] = volData.map((v: any) => {
             const vEmail = v.email?.toLowerCase().trim();
             const vName = v.nome_completo?.toLowerCase().trim();
-            const hasAcc = profEmails.has(vEmail) || profNames.has(vName);
+            const hasAcc = registeredEmailsSet.has(vEmail) || profNames.has(vName);
 
             return {
               id: v.id,
