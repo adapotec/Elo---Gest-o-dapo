@@ -53,6 +53,21 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-21 — `[PROJETOS] & [STATUS & FIXAÇÃO & ORDENAÇÃO]` 🟢 IMPLEMENTADO
+
+**Status "Em Planejamento", Fixação no Topo e Ordenação por Movimentação em `/projetos`**
+- **Novo Status "Em Planejamento" (`em_planejamento`)**:
+  - Migration aplicada no Supabase (`projetos_sociais_status_check` atualizado para `('planejado', 'em_planejamento', 'ativo', 'concluido', 'cancelado')`).
+  - Formulário de Novo Projeto (`/projetos/novo`), Gerenciamento (`/projetos/[id]`) e Listagem (`/projetos`) integrados.
+- **Fixação no Topo (Pin to Top)**:
+  - Adicionada coluna `is_pinned BOOLEAN DEFAULT FALSE` na tabela `projetos_sociais`.
+  - Botão interativo de Fixar/Desafixar direto no card/tabela e no painel lateral de detalhes com persistência em tempo real.
+  - Projetos fixados ganham selo visual e prioridade absoluta no topo da listagem.
+- **Ordenação Dinâmica de Projetos**:
+  - Filtro por **Última Movimentação (mais recentemente atualizados)** como padrão, Data de Criação, Nome (A-Z / Z-A) e Data de Início.
+
+---
+
 ### 2026-08-21 — `[PROJETOS] & [DATABASE] & [BUGFIX]` 🟢 RESOLVIDO
 
 **Correção de Salvamento e Atualização de Projetos Sociais (`/projetos/[id]`)**

@@ -37,6 +37,7 @@ import {
   Feather,
   Camera,
   Cpu,
+  Pin,
 } from 'lucide-react';
 
 const ICONES_MAP: { [key: string]: any } = {
@@ -69,10 +70,12 @@ interface Projeto {
   tipo: string;
   data_inicio: string;
   data_fim: string | null;
-  status: 'planejado' | 'ativo' | 'concluido' | 'cancelado';
+  status: 'planejado' | 'em_planejamento' | 'ativo' | 'concluido' | 'cancelado';
   cor_identificacao: string;
   icone: string;
   created_at: string;
+  updated_at?: string;
+  is_pinned?: boolean;
   num_beneficiarios?: number;
   num_voluntarios?: number;
 }
@@ -82,12 +85,13 @@ export default function ProjetosPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [sortBy, setSortBy] = useState('recente');
   const [selectedProjeto, setSelectedProjeto] = useState<Projeto | null>(null);
 
   const fetchProjetos = async () => {
     setLoading(true);
     const supabase = createClient();
-    let query = supabase.from('projetos_sociais').select('*').order('created_at', { ascending: false });
+    let query = supabase.from('projetos_sociais').select('*');
 
     if (statusFilter !== 'todos') {
       query = query.eq('status', statusFilter);
@@ -101,7 +105,12 @@ export default function ProjetosPage() {
             supabase.from('inscricoes').select('*', { count: 'exact', head: true }).eq('projeto_id', p.id),
             supabase.from('alocacoes_voluntarios').select('*', { count: 'exact', head: true }).eq('projeto_id', p.id),
           ]);
-          return { ...p, num_beneficiarios: numBen || 0, num_voluntarios: numVol || 0 };
+          return {
+            ...p,
+            is_pinned: Boolean(p.is_pinned),
+            num_beneficiarios: numBen || 0,
+            num_voluntarios: numVol || 0,
+          };
         })
       );
       setProjetos(proyectosComContagem as Projeto[]);
@@ -113,11 +122,60 @@ export default function ProjetosPage() {
     fetchProjetos();
   }, [statusFilter]);
 
-  const filteredProjetos = projetos.filter(
-    (p) =>
-      p.nome.toLowerCase().includes(search.toLowerCase()) ||
-      (p.descricao && p.descricao.toLowerCase().includes(search.toLowerCase()))
-  );
+  const handleTogglePin = async (projetoId: string, newPinned: boolean) => {
+    setProjetos((prev) =>
+      prev.map((p) => (p.id === projetoId ? { ...p, is_pinned: newPinned } : p))
+    );
+    if (selectedProjeto?.id === projetoId) {
+      setSelectedProjeto((prev) => (prev ? { ...prev, is_pinned: newPinned } : null));
+    }
+
+    try {
+      const supabase = createClient();
+      await supabase
+        .from('projetos_sociais')
+        .update({ is_pinned: newPinned, updated_at: new Date().toISOString() })
+        .eq('id', projetoId);
+    } catch (err) {
+      console.error('Erro ao alternar fixação do projeto:', err);
+    }
+  };
+
+  const filteredAndSortedProjetos = [...projetos]
+    .filter(
+      (p) =>
+        p.nome.toLowerCase().includes(search.toLowerCase()) ||
+        (p.descricao && p.descricao.toLowerCase().includes(search.toLowerCase()))
+    )
+    .sort((a, b) => {
+      const aPinned = Boolean(a.is_pinned);
+      const bPinned = Boolean(b.is_pinned);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+
+      if (sortBy === 'recente') {
+        const timeA = new Date(a.updated_at || a.created_at).getTime();
+        const timeB = new Date(b.updated_at || b.created_at).getTime();
+        return timeB - timeA;
+      }
+      if (sortBy === 'criacao') {
+        const timeA = new Date(a.created_at).getTime();
+        const timeB = new Date(b.created_at).getTime();
+        return timeB - timeA;
+      }
+      if (sortBy === 'nome_asc') {
+        return a.nome.localeCompare(b.nome, 'pt-BR');
+      }
+      if (sortBy === 'nome_desc') {
+        return b.nome.localeCompare(a.nome, 'pt-BR');
+      }
+      if (sortBy === 'data_inicio') {
+        const timeA = new Date(a.data_inicio).getTime();
+        const timeB = new Date(b.data_inicio).getTime();
+        return timeB - timeA;
+      }
+      return 0;
+    });
 
   const columns: Column<Projeto>[] = [
     {
@@ -127,6 +185,21 @@ export default function ProjetosPage() {
         const IconComp = ICONES_MAP[item.icone] || FolderKanban;
         return (
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTogglePin(item.id, !item.is_pinned);
+              }}
+              title={item.is_pinned ? 'Desafixar do topo' : 'Fixar no topo'}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
+                item.is_pinned
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] opacity-40 hover:opacity-100'
+              }`}
+            >
+              <Pin className={`w-3.5 h-3.5 ${item.is_pinned ? 'fill-current rotate-45' : ''}`} />
+            </button>
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm transition-transform hover:scale-105"
               style={{ backgroundColor: item.cor_identificacao || '#F2632D' }}
@@ -134,7 +207,14 @@ export default function ProjetosPage() {
               <IconComp className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-semibold text-[var(--text-primary)]">{item.nome}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-[var(--text-primary)]">{item.nome}</p>
+                {item.is_pinned && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    Fixado
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] text-[var(--text-muted)] line-clamp-1 max-w-[280px]">
                 {item.descricao || 'Sem descrição'}
               </p>
@@ -180,12 +260,22 @@ export default function ProjetosPage() {
       header: 'Status',
       render: (item) => {
         const variants = {
-          planejado: 'warning',
           ativo: 'success',
+          em_planejamento: 'primary',
+          planejado: 'warning',
           concluido: 'neutral',
           cancelado: 'danger',
         } as const;
-        return <Badge variant={variants[item.status]}>{item.status.toUpperCase()}</Badge>;
+
+        const labels = {
+          ativo: 'ATIVO',
+          em_planejamento: 'EM PLANEJAMENTO',
+          planejado: 'PLANEJADO',
+          concluido: 'CONCLUÍDO',
+          cancelado: 'CANCELADO',
+        } as const;
+
+        return <Badge variant={variants[item.status] || 'neutral'}>{labels[item.status] || item.status.toUpperCase()}</Badge>;
       },
     },
     {
@@ -231,7 +321,6 @@ export default function ProjetosPage() {
       />
 
       <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto transition-all duration-300">
-        {/* Cards de Métricas Principais (Lei de Miller: 4 blocos de alto nível) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center justify-between">
             <div className="space-y-1">
@@ -250,7 +339,7 @@ export default function ProjetosPage() {
             <div className="space-y-1">
               <span className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1">
                 Projetos Ativos
-                <FieldInfo text="Projetos em fase de execução comunitária e atendimento socioeducativo." />
+                <FieldInfo text="Projetos em execução neste momento." />
               </span>
               <p className="font-display text-2xl font-bold text-[var(--color-success)]">{projetosAtivos}</p>
             </div>
@@ -262,10 +351,10 @@ export default function ProjetosPage() {
           <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center justify-between">
             <div className="space-y-1">
               <span className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1">
-                Beneficiários
-                <FieldInfo text="Total acumulado de crianças e adolescentes matriculados nos projetos sociais." />
+                Total de Beneficiários
+                <FieldInfo text="Crianças e jovens matriculados nos projetos sociais." />
               </span>
-              <p className="font-display text-2xl font-bold text-[var(--text-primary)]">{totalBeneficiarios}</p>
+              <p className="font-display text-2xl font-bold text-[var(--color-primary)]">{totalBeneficiarios}</p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center">
               <Users className="w-5 h-5" />
@@ -275,8 +364,8 @@ export default function ProjetosPage() {
           <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center justify-between">
             <div className="space-y-1">
               <span className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1">
-                Voluntários Atuantes
-                <FieldInfo text="Equipe operacional e oficineiros ativamente alocados na gestão dos projetos." />
+                Equipe Alocada
+                <FieldInfo text="Voluntários participando ativamente dos projetos." />
               </span>
               <p className="font-display text-2xl font-bold text-[var(--color-accent-purple)]">{totalVoluntarios}</p>
             </div>
@@ -286,13 +375,12 @@ export default function ProjetosPage() {
           </div>
         </div>
 
-        {/* Barra de Filtros Padronizada */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)]">
           <div className="relative w-full md:w-80">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
-              placeholder="Buscar por nome do projeto..."
+              placeholder="Buscar por nome ou descrição..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-3.5 py-2.5 rounded-xl text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
@@ -300,27 +388,44 @@ export default function ProjetosPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <Select
-              options={[
-                { value: 'todos', label: 'Todos os Status' },
-                { value: 'ativo', label: 'Ativo' },
-                { value: 'planejado', label: 'Planejado' },
-                { value: 'concluido', label: 'Concluído' },
-                { value: 'cancelado', label: 'Cancelado' },
-              ]}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            />
+            <div className="w-full sm:w-auto">
+              <Select
+                options={[
+                  { value: 'recente', label: '⚡ Última Movimentação' },
+                  { value: 'criacao', label: '📅 Data de Criação' },
+                  { value: 'nome_asc', label: '🔤 Nome (A-Z)' },
+                  { value: 'nome_desc', label: '🔤 Nome (Z-A)' },
+                  { value: 'data_inicio', label: '🚩 Data de Início' },
+                ]}
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              />
+            </div>
+
+            <div className="w-full sm:w-auto">
+              <Select
+                options={[
+                  { value: 'todos', label: 'Todos os Status' },
+                  { value: 'ativo', label: 'Ativo' },
+                  { value: 'em_planejamento', label: 'Em Planejamento' },
+                  { value: 'planejado', label: 'Planejado' },
+                  { value: 'concluido', label: 'Concluído' },
+                  { value: 'cancelado', label: 'Cancelado' },
+                ]}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Tabela de Dados */}
+        {/* Tabela de Dados com Destaque de Fixados */}
         {loading ? (
           <div className="p-12 text-center text-sm text-[var(--text-muted)]">Carregando projetos...</div>
         ) : (
           <DataTable
             columns={columns}
-            data={filteredProjetos}
+            data={filteredAndSortedProjetos}
             keyExtractor={(p) => p.id}
             onRowClick={(p) => setSelectedProjeto(p)}
             selectedRowId={selectedProjeto?.id}
@@ -338,14 +443,39 @@ export default function ProjetosPage() {
       >
         {selectedProjeto && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <Badge variant={selectedProjeto.status === 'ativo' ? 'success' : 'warning'}>
-                {selectedProjeto.status.toUpperCase()}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <Badge
+                variant={
+                  selectedProjeto.status === 'ativo'
+                    ? 'success'
+                    : selectedProjeto.status === 'em_planejamento'
+                    ? 'primary'
+                    : selectedProjeto.status === 'concluido'
+                    ? 'neutral'
+                    : selectedProjeto.status === 'cancelado'
+                    ? 'danger'
+                    : 'warning'
+                }
+              >
+                {selectedProjeto.status === 'em_planejamento'
+                  ? 'EM PLANEJAMENTO'
+                  : selectedProjeto.status === 'concluido'
+                  ? 'CONCLUÍDO'
+                  : selectedProjeto.status.toUpperCase()}
               </Badge>
+
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={selectedProjeto.is_pinned ? 'primary' : 'secondary'}
+                  icon={<Pin className={`w-3.5 h-3.5 ${selectedProjeto.is_pinned ? 'fill-current rotate-45' : ''}`} />}
+                  onClick={() => handleTogglePin(selectedProjeto.id, !selectedProjeto.is_pinned)}
+                >
+                  {selectedProjeto.is_pinned ? 'Fixado no Topo' : 'Fixar no Topo'}
+                </Button>
                 <Link href={`/dashboard/projetos/${selectedProjeto.id}`}>
                   <Button size="sm" variant="secondary" icon={<Edit className="w-3.5 h-3.5" />}>
-                    Gerenciar Projeto
+                    Gerenciar
                   </Button>
                 </Link>
                 <Button

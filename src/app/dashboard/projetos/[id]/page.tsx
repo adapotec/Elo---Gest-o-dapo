@@ -1806,8 +1806,24 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="font-display font-bold text-xl text-[var(--text-primary)]">{formData.nome}</h2>
-                  <Badge variant={formData.status === 'ativo' ? 'success' : 'warning'}>
-                    {formData.status.toUpperCase()}
+                  <Badge
+                    variant={
+                      formData.status === 'ativo'
+                        ? 'success'
+                        : formData.status === 'em_planejamento'
+                        ? 'primary'
+                        : formData.status === 'concluido'
+                        ? 'neutral'
+                        : formData.status === 'cancelado'
+                        ? 'danger'
+                        : 'warning'
+                    }
+                  >
+                    {formData.status === 'em_planejamento'
+                      ? 'EM PLANEJAMENTO'
+                      : formData.status === 'concluido'
+                      ? 'CONCLUÍDO'
+                      : formData.status.toUpperCase()}
                   </Badge>
                 </div>
                 <p className="text-xs text-[var(--text-muted)] mt-1">
@@ -1856,6 +1872,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                     value={formData.status}
                     onChange={handleChange}
                     options={[
+                      { value: 'em_planejamento', label: 'Em Planejamento' },
                       { value: 'planejado', label: 'Planejado' },
                       { value: 'ativo', label: 'Ativo' },
                       { value: 'concluido', label: 'Concluído' },

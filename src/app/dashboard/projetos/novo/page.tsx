@@ -42,6 +42,7 @@ import {
 import Link from 'next/link';
 
 const STATUS_PROJETO_OPTIONS = [
+  { value: 'em_planejamento', label: 'Em Planejamento' },
   { value: 'planejado', label: 'Planejado' },
   { value: 'ativo', label: 'Ativo' },
   { value: 'concluido', label: 'Concluído' },
