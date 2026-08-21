@@ -705,12 +705,35 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   const handleSaveDadosInstituto = async () => {
     setSavingInstituto(true);
     const supabase = createClient();
-    if (dadosInstituto.id) {
-      await supabase.from('dados_instituto').update(dadosInstituto).eq('id', dadosInstituto.id);
-    } else {
-      await supabase.from('dados_instituto').insert([dadosInstituto]);
+    try {
+      if (dadosInstituto.id) {
+        await supabase
+          .from('dados_instituto')
+          .update({
+            razao_social: dadosInstituto.razao_social || 'Instituto Ádapo',
+            cnpj: dadosInstituto.cnpj || '00.000.000/0001-00',
+            endereco: dadosInstituto.endereco || '',
+            telefone: dadosInstituto.telefone || '',
+            email: dadosInstituto.email || '',
+            presidente: dadosInstituto.presidente || '',
+          })
+          .eq('id', dadosInstituto.id);
+      } else {
+        const { id: _, ...payloadSemId } = dadosInstituto;
+        const { data: newInst } = await supabase
+          .from('dados_instituto')
+          .insert([payloadSemId])
+          .select('id')
+          .maybeSingle();
+        if (newInst) {
+          setDadosInstituto((prev: any) => ({ ...prev, id: newInst.id }));
+        }
+      }
+    } catch (instErr) {
+      console.error('Erro ao salvar dados do instituto:', instErr);
+    } finally {
+      setSavingInstituto(false);
     }
-    setSavingInstituto(false);
   };
 
   // Salvar Progresso Geral do Projeto & Institucional
@@ -724,17 +747,29 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
 
     const supabase = createClient();
 
+    // Sanitização e formatação rigorosa dos dados para evitar 400 (Bad Request) no Postgres
+    const sanitizedProjectPayload = {
+      ...formData,
+      data_fim: formData.data_fim ? formData.data_fim : null,
+      data_inicio: formData.data_inicio || new Date().toISOString().split('T')[0],
+      responsavel_escrita_id: formData.responsavel_escrita_id ? formData.responsavel_escrita_id : null,
+      num_beneficiarios_diretos: Number(formData.num_beneficiarios_diretos) || 0,
+      num_beneficiarios_indiretos: Number(formData.num_beneficiarios_indiretos) || 0,
+      diagnostico_detalhado: {
+        ...diagnosticoData,
+        responsavel_diagnostico_id: diagnosticoData.responsavel_diagnostico_id ? diagnosticoData.responsavel_diagnostico_id : null,
+        data_diagnostico: diagnosticoData.data_diagnostico ? diagnosticoData.data_diagnostico : null,
+      },
+      estrutura_objetivos: objetivosEspecificos,
+      ods_selecionadas: odsFormatted,
+      despesas_financeiras: despesas,
+      updated_at: new Date().toISOString(),
+    };
+
     // Salvar Dados do Projeto
     const { error: updateError } = await supabase
       .from('projetos_sociais')
-      .update({
-        ...formData,
-        diagnostico_detalhado: diagnosticoData,
-        estrutura_objetivos: objetivosEspecificos,
-        ods_selecionadas: odsFormatted,
-        despesas_financeiras: despesas,
-        updated_at: new Date().toISOString(),
-      })
+      .update(sanitizedProjectPayload)
       .eq('id', id);
 
     // Salvar Dados Institucionais

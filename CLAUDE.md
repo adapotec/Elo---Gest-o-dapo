@@ -53,6 +53,17 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-21 — `[PROJETOS] & [DATABASE] & [BUGFIX]` 🟢 RESOLVIDO
+
+**Correção de Salvamento e Atualização de Projetos Sociais (`/projetos/[id]`)**
+- **Causa Raiz**: O payload enviado no `update` de `projetos_sociais` passava strings vazias `""` para campos do tipo `DATE` (`data_fim`, `data_diagnostico`) e `UUID` (`responsavel_escrita_id`, `responsavel_diagnostico_id`). O PostgreSQL/PostgREST rejeitava a tipagem estrita com erro `400 (Bad Request)`.
+- **Solução Aplicada (`src/app/dashboard/projetos/[id]/page.tsx`)**:
+  - Sanitização de campos de data e UUID para converter strings vazias em `null`.
+  - Coerção de números (`num_beneficiarios_diretos`, `num_beneficiarios_indiretos`).
+  - Sanitização no salvamento dos dados institucionais (`dados_instituto`).
+
+---
+
 ### 2026-08-21 — `[SECURITY] & [AUTH] & [ZERO-TRUST HARDENING]` 🟢 IMPLEMENTADO
 
 **Endurecimento de Segurança e Princípio do Menor Privilégio (Zero-Trust)**
