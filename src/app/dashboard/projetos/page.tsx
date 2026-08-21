@@ -391,11 +391,11 @@ export default function ProjetosPage() {
             <div className="w-full sm:w-auto">
               <Select
                 options={[
-                  { value: 'recente', label: '⚡ Última Movimentação' },
-                  { value: 'criacao', label: '📅 Data de Criação' },
-                  { value: 'nome_asc', label: '🔤 Nome (A-Z)' },
-                  { value: 'nome_desc', label: '🔤 Nome (Z-A)' },
-                  { value: 'data_inicio', label: '🚩 Data de Início' },
+                  { value: 'recente', label: 'Última Movimentação' },
+                  { value: 'criacao', label: 'Data de Criação' },
+                  { value: 'nome_asc', label: 'Nome (A-Z)' },
+                  { value: 'nome_desc', label: 'Nome (Z-A)' },
+                  { value: 'data_inicio', label: 'Data de Início' },
                 ]}
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}

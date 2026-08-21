@@ -3325,7 +3325,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                 </div>
 
                 <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
-                  💡 O módulo de Comunicação (<strong>/comunicacao</strong>) gerencia o acervo gráfico do projeto e o consentimento de imagem dos participantes.
+                  O módulo de Comunicação (<strong>/comunicacao</strong>) gerencia o acervo gráfico do projeto e o consentimento de imagem dos participantes.
                 </div>
               </div>
 
@@ -3462,7 +3462,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                 </div>
 
                 <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
-                  💡 O módulo de Parceiros (<strong>/parceiros</strong>) registra acordos institucionais e repasses de verbas vinculados a este projeto.
+                  O módulo de Parceiros (<strong>/parceiros</strong>) registra acordos institucionais e repasses de verbas vinculados a este projeto.
                 </div>
               </div>
 

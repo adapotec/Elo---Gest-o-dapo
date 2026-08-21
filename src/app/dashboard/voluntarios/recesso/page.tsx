@@ -659,7 +659,7 @@ export default function RecessoPage() {
                             <td className="px-4 py-3 text-center">
                               {individualRec ? (
                                 <Badge variant="primary">
-                                  📅 {formatDateBR(individualRec.data_folga)}
+                                  {formatDateBR(individualRec.data_folga)}
                                 </Badge>
                               ) : (
                                 <span className="text-[var(--text-muted)] flex items-center justify-center gap-1">
@@ -719,7 +719,7 @@ export default function RecessoPage() {
                         </p>
                       </div>
                       <Badge variant={diaFamiliaAtivo ? 'success' : 'danger'} className="text-sm px-4 py-1.5">
-                        {diaFamiliaAtivo ? '✅ ATIVO' : '⚠️ DESATIVADO'}
+                        {diaFamiliaAtivo ? 'ATIVO' : 'DESATIVADO'}
                       </Badge>
                     </div>
 
