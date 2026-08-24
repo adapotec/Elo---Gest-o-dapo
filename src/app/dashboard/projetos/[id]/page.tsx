@@ -338,6 +338,9 @@ export default function DetalheProjetoPage({ params }: { params: Promise<{ id: s
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState(false);
   const [showDiagnosticoPrint, setShowDiagnosticoPrint] = useState(false);
+  const [showPlanoTrabalhoPrint, setShowPlanoTrabalhoPrint] = useState(false);
+  const [diagnosticoMode, setDiagnosticoMode] = useState<'view' | 'edit'>('view');
+  const [planejamentoMode, setPlanejamentoMode] = useState<'view' | 'edit'>('view');
 
   // Modal/Header retrátil de dados básicos e dados institucionais (Inicia fechado por padrão)
   const [showHeaderModal, setShowHeaderModal] = useState(false);
@@ -2027,235 +2030,493 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
 
               {/* SUB-TELA GESTÃO: DIAGNÓSTICO */}
               {gestaoSubTab === 'diagnostico' && (
-                <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
-                  <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
-                    <div>
-                      <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
-                        Diagnóstico da Comunidade & Contexto Social
-                      </h3>
-                      <p className="text-xs text-[var(--text-muted)]">Mapeamento de potencialidades, vulnerabilidades territoriais e demandas comunitárias</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} onClick={() => setShowDiagnosticoPrint(true)}>
-                        Exportar PDF
-                      </Button>
-                      <Badge variant="warning">Diagnóstico</Badge>
-                    </div>
-                  </div>
-
-                  {/* Bloco A: Metadados Territoriais */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input label="Bairro" name="bairro" value={diagnosticoData.bairro} onChange={handleDiagnosticoChange} placeholder="Ex: Comunidade Sol Nascente" />
-                    <Input label="Município" name="municipio" value={diagnosticoData.municipio} onChange={handleDiagnosticoChange} placeholder="Ex: São Paulo" />
-                    <Input label="Estado (UF)" name="estado" value={diagnosticoData.estado} onChange={handleDiagnosticoChange} placeholder="SP" />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input label="Data do Diagnóstico" type="date" name="data_diagnostico" value={diagnosticoData.data_diagnostico} onChange={handleDiagnosticoChange} />
-                    <Select
-                      label="Responsável pelo Diagnóstico"
-                      options={[
-                        { value: '', label: 'Selecione o voluntário responsável...' },
-                        ...todosVoluntarios.map((v) => ({ value: v.id, label: `${v.nome_completo} (${v.area_atuacao || 'Operacional'})` })),
-                      ]}
-                      value={diagnosticoData.responsavel_diagnostico_id}
-                      onChange={(e) => setDiagnosticoData({ ...diagnosticoData, responsavel_diagnostico_id: e.target.value })}
-                    />
-                  </div>
-
-                  {/* Separador */}
-                  <div className="border-t border-[var(--border-default)] pt-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-4">Conteúdo do Diagnóstico Social</p>
-                  </div>
-
-                  {/* 3 Blocos Temáticos de Diagnóstico (Lei de Miller & Divulgação Progressiva) */}
-                  <div className="space-y-5">
-                    {/* Bloco 1: Contexto e Metodologia */}
-                    <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-4">
-                      <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
-                        <FileText className="w-4 h-4 text-[var(--color-primary)]" />
-                        <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
-                          1. Contexto & Enquadramento Metodológico
-                        </h4>
+                <div className="space-y-6">
+                  {/* MODO DE VISUALIZAÇÃO (LEITURA EXECUTIVA LIMPA) */}
+                  {diagnosticoMode === 'view' && (
+                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-6">
+                      {/* Header do Diagnóstico em Modo Leitura */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border-default)] pb-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <ClipboardList className="w-5 h-5 text-[var(--color-primary)]" />
+                            <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                              Diagnóstico da Comunidade &amp; Contexto Social
+                            </h3>
+                          </div>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            Mapeamento de potencialidades territoriais, vulnerabilidades e demandas comunitárias
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="neutral" className="gap-1">
+                            <Eye className="w-3 h-3" />
+                            Modo de Leitura
+                          </Badge>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={<Download className="w-4 h-4" />}
+                            onClick={() => setShowDiagnosticoPrint(true)}
+                          >
+                            Exportar PDF
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={<Edit3 className="w-4 h-4" />}
+                            onClick={() => setDiagnosticoMode('edit')}
+                          >
+                            Editar Diagnóstico
+                          </Button>
+                        </div>
                       </div>
 
-                      <div className="space-y-3">
+                      {/* Faixa de Metadados Territoriais */}
+                      <div className="p-4 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                         <div>
-                          <div className="flex items-center mb-1">
-                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Introdução & Histórico Territorial</label>
-                            <FieldInfo text="Contextualização histórica do território, dinâmica comunitária e características da ocupação urbana/social." />
-                          </div>
-                          <textarea
-                            name="introducao"
-                            value={diagnosticoData.introducao}
-                            onChange={handleDiagnosticoChange}
-                            rows={3}
-                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                            placeholder="Descreva o contexto do bairro, histórico de ocupação territorial e dinâmicas comunitárias..."
-                          />
+                          <span className="text-[11px] font-semibold text-[var(--text-muted)] block">Território / Bairro</span>
+                          <span className="font-bold text-[var(--text-primary)]">{diagnosticoData.bairro || 'Não informado'}</span>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <div className="flex items-center mb-1">
-                              <label className="text-xs font-semibold text-[var(--text-secondary)]">Objetivo do Diagnóstico</label>
-                              <FieldInfo text="Finalidade da pesquisa de campo e o que se pretende identificar para nortear o plano de trabalho." />
-                            </div>
-                            <textarea
-                              name="objetivo"
-                              value={diagnosticoData.objetivo}
-                              onChange={handleDiagnosticoChange}
-                              rows={3}
-                              className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                              placeholder="O que se busca identificar e compreender com este diagnóstico..."
-                            />
-                          </div>
-
-                          <div>
-                            <div className="flex items-center mb-1">
-                              <label className="text-xs font-semibold text-[var(--text-secondary)]">Metodologia de Coleta</label>
-                              <FieldInfo text="Instrumentos aplicados: visitas domiciliares, rodas de conversa, entrevistas com lideranças e observação." />
-                            </div>
-                            <textarea
-                              name="metodologia"
-                              value={diagnosticoData.metodologia}
-                              onChange={handleDiagnosticoChange}
-                              rows={3}
-                              className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                              placeholder="Visitas domiciliares, rodas de conversa, entrevistas, observação participante..."
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bloco 2: Perfil Comunitário & Territorial */}
-                    <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-4">
-                      <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
-                        <Users className="w-4 h-4 text-[var(--color-accent-purple)]" />
-                        <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
-                          2. Perfil Territorial & Socioeconômico
-                        </h4>
-                      </div>
-
-                      <div className="space-y-3">
                         <div>
-                          <div className="flex items-center mb-1">
-                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Público Prioritário Mapeado</label>
-                            <FieldInfo text="Faixas etárias e grupos comunitários em situação de vulnerabilidade que demandam intervenção direta." />
-                          </div>
-                          <textarea
-                            name="publico_possivel"
-                            value={diagnosticoData.publico_possivel}
-                            onChange={handleDiagnosticoChange}
-                            rows={2}
-                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                            placeholder="Crianças, jovens, mulheres chefes de família, idosos em situação de isolamento..."
-                          />
+                          <span className="text-[11px] font-semibold text-[var(--text-muted)] block">Município / UF</span>
+                          <span className="font-bold text-[var(--text-primary)]">{diagnosticoData.municipio ? `${diagnosticoData.municipio} - ${diagnosticoData.estado}` : 'Não informado'}</span>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <div className="flex items-center mb-1">
-                              <label className="text-xs font-semibold text-[var(--text-secondary)]">Situação Habitacional & Urbana</label>
-                              <FieldInfo text="Infraestrutura básica, saneamento, tipo de edificações e acessibilidade territorial." />
-                            </div>
-                            <textarea
-                              name="situacao_habitacional"
-                              value={diagnosticoData.situacao_habitacional}
-                              onChange={handleDiagnosticoChange}
-                              rows={3}
-                              className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                              placeholder="Regularização fundiária, saneamento, energia elétrica, vias de acesso..."
-                            />
-                          </div>
-
-                          <div>
-                            <div className="flex items-center mb-1">
-                              <label className="text-xs font-semibold text-[var(--text-secondary)]">Condições Socioeconômicas</label>
-                              <FieldInfo text="Nível de renda, taxa de informalidade, dependência de auxílios governamentais e vulnerabilidade alimentar." />
-                            </div>
-                            <textarea
-                              name="situacao_socioeconomica"
-                              value={diagnosticoData.situacao_socioeconomica}
-                              onChange={handleDiagnosticoChange}
-                              rows={3}
-                              className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                              placeholder="Renda média familiar, nível de emprego/informalidade, acesso a programas sociais..."
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Bloco 3: Potencialidades, Vulnerabilidades & Recomendações */}
-                    <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-4">
-                      <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
-                        <Scale className="w-4 h-4 text-[var(--color-success)]" />
-                        <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
-                          3. Potencialidades, Riscos & Recomendações
-                        </h4>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <div className="flex items-center mb-1">
-                              <label className="text-xs font-semibold text-[var(--color-success)]">Principais Potencialidades Comunitárias</label>
-                              <FieldInfo text="Redes de apoio existentes, lideranças ativas, vocação cultural/artística e espaços coletivos." />
-                            </div>
-                            <textarea
-                              name="principais_potencialidades"
-                              value={diagnosticoData.principais_potencialidades}
-                              onChange={handleDiagnosticoChange}
-                              rows={3}
-                              className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-success)] transition-colors"
-                              placeholder="Redes de solidariedade, coletivos culturais, comércio local, equipamentos públicos..."
-                            />
-                          </div>
-
-                          <div>
-                            <div className="flex items-center mb-1">
-                              <label className="text-xs font-semibold text-[var(--color-danger)]">Principais Vulnerabilidades & Ameaças</label>
-                              <FieldInfo text="Fatores de risco social: evasão escolar, desnutrição, violência e ausência de serviços essenciais." />
-                            </div>
-                            <textarea
-                              name="principais_vulnerabilidades"
-                              value={diagnosticoData.principais_vulnerabilidades}
-                              onChange={handleDiagnosticoChange}
-                              rows={3}
-                              className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-danger)] transition-colors"
-                              placeholder="Insegurança alimentar, desemprego, violência urbana, evasão escolar..."
-                            />
-                          </div>
-                        </div>
-
                         <div>
-                          <div className="flex items-center mb-1">
-                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Outras Recomendações & Observações</label>
-                            <FieldInfo text="Diretrizes propostas pela equipe para fundamentar a escolha das ações socioeducativas." />
-                          </div>
-                          <textarea
-                            name="outras_informacoes"
-                            value={diagnosticoData.outras_informacoes}
-                            onChange={handleDiagnosticoChange}
-                            rows={2}
-                            className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                            placeholder="Recomendações técnicas da equipe, articulações locais e considerações finais..."
-                          />
+                          <span className="text-[11px] font-semibold text-[var(--text-muted)] block">Data da Coleta</span>
+                          <span className="font-bold text-[var(--text-primary)]">
+                            {diagnosticoData.data_diagnostico
+                              ? new Date(diagnosticoData.data_diagnostico + 'T12:00:00').toLocaleDateString('pt-BR')
+                              : 'Não informada'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-semibold text-[var(--text-muted)] block">Responsável Técnico</span>
+                          <span className="font-bold text-[var(--text-primary)]">
+                            {todosVoluntarios.find((v) => v.id === diagnosticoData.responsavel_diagnostico_id)?.nome_completo || 'Não atribuído'}
+                          </span>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Barra de Ações do Diagnóstico */}
-                  <div className="flex items-center justify-between pt-4 border-t border-[var(--border-default)]">
-                    <p className="text-[11px] text-[var(--text-muted)]">
-                      Os dados do diagnóstico são salvos junto ao projeto via botão flutuante "Salvar Alterações".
-                    </p>
-                    <Button variant="secondary" size="sm" icon={<Download className="w-4 h-4" />} onClick={() => setShowDiagnosticoPrint(true)}>
-                      Exportar Diagnóstico (PDF)
-                    </Button>
-                  </div>
+                      {/* Verificação se todos os campos estão vazios */}
+                      {!diagnosticoData.introducao &&
+                      !diagnosticoData.objetivo &&
+                      !diagnosticoData.metodologia &&
+                      !diagnosticoData.publico_possivel &&
+                      !diagnosticoData.situacao_habitacional &&
+                      !diagnosticoData.situacao_socioeconomica &&
+                      !diagnosticoData.principais_potencialidades &&
+                      !diagnosticoData.principais_vulnerabilidades &&
+                      !diagnosticoData.outras_informacoes ? (
+                        <div className="p-8 text-center border-2 border-dashed border-[var(--border-default)] rounded-xl space-y-3 bg-[var(--bg-secondary)]/20">
+                          <ClipboardList className="w-8 h-8 text-[var(--text-muted)] mx-auto opacity-50" />
+                          <div className="space-y-1">
+                            <p className="font-bold text-sm text-[var(--text-primary)]">Nenhum diagnóstico preenchido ainda</p>
+                            <p className="text-xs text-[var(--text-muted)]">
+                              Clique no botão abaixo para iniciar o mapeamento territorial e socioeducativo deste projeto.
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            icon={<Edit3 className="w-3.5 h-3.5" />}
+                            onClick={() => setDiagnosticoMode('edit')}
+                          >
+                            Preencher Diagnóstico
+                          </Button>
+                        </div>
+                      ) : (
+                        /* 3 Blocos de Leitura Estruturada */
+                        <div className="space-y-5">
+                          {/* Bloco 1: Contexto e Enquadramento Metodológico */}
+                          <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-4">
+                            <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                              <FileText className="w-4 h-4 text-[var(--color-primary)]" />
+                              <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                                1. Contexto &amp; Enquadramento Metodológico
+                              </h4>
+                            </div>
+
+                            <div className="space-y-3 text-xs leading-relaxed">
+                              {diagnosticoData.introducao && (
+                                <div className="space-y-1">
+                                  <span className="font-bold text-[var(--text-secondary)] block">Introdução &amp; Histórico Territorial:</span>
+                                  <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                    {diagnosticoData.introducao}
+                                  </p>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {diagnosticoData.objetivo && (
+                                  <div className="space-y-1">
+                                    <span className="font-bold text-[var(--text-secondary)] block">Objetivo do Diagnóstico:</span>
+                                    <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                      {diagnosticoData.objetivo}
+                                    </p>
+                                  </div>
+                                )}
+                                {diagnosticoData.metodologia && (
+                                  <div className="space-y-1">
+                                    <span className="font-bold text-[var(--text-secondary)] block">Metodologia de Coleta:</span>
+                                    <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                      {diagnosticoData.metodologia}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Bloco 2: Perfil Territorial & Socioeconômico */}
+                          <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-4">
+                            <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                              <Users className="w-4 h-4 text-[var(--color-accent-purple)]" />
+                              <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                                2. Perfil Territorial &amp; Socioeconômico
+                              </h4>
+                            </div>
+
+                            <div className="space-y-3 text-xs leading-relaxed">
+                              {diagnosticoData.publico_possivel && (
+                                <div className="space-y-1">
+                                  <span className="font-bold text-[var(--text-secondary)] block">Público Prioritário Mapeado:</span>
+                                  <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                    {diagnosticoData.publico_possivel}
+                                  </p>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {diagnosticoData.situacao_habitacional && (
+                                  <div className="space-y-1">
+                                    <span className="font-bold text-[var(--text-secondary)] block">Situação Habitacional &amp; Urbana:</span>
+                                    <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                      {diagnosticoData.situacao_habitacional}
+                                    </p>
+                                  </div>
+                                )}
+                                {diagnosticoData.situacao_socioeconomica && (
+                                  <div className="space-y-1">
+                                    <span className="font-bold text-[var(--text-secondary)] block">Condições Socioeconômicas:</span>
+                                    <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                      {diagnosticoData.situacao_socioeconomica}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Bloco 3: Potencialidades, Vulnerabilidades & Recomendações */}
+                          <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-4">
+                            <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                              <Scale className="w-4 h-4 text-[var(--color-success)]" />
+                              <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                                3. Potencialidades, Riscos &amp; Recomendações
+                              </h4>
+                            </div>
+
+                            <div className="space-y-3 text-xs leading-relaxed">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {diagnosticoData.principais_potencialidades && (
+                                  <div className="p-3.5 rounded-xl bg-[var(--color-success-soft)]/20 border border-[var(--color-success)]/30 space-y-1">
+                                    <span className="font-bold text-[var(--color-success)] block">Principais Potencialidades:</span>
+                                    <p className="text-[var(--text-primary)] whitespace-pre-wrap">
+                                      {diagnosticoData.principais_potencialidades}
+                                    </p>
+                                  </div>
+                                )}
+                                {diagnosticoData.principais_vulnerabilidades && (
+                                  <div className="p-3.5 rounded-xl bg-[var(--color-danger-soft)]/20 border border-[var(--color-danger)]/30 space-y-1">
+                                    <span className="font-bold text-[var(--color-danger)] block">Principais Vulnerabilidades &amp; Ameaças:</span>
+                                    <p className="text-[var(--text-primary)] whitespace-pre-wrap">
+                                      {diagnosticoData.principais_vulnerabilidades}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {diagnosticoData.outras_informacoes && (
+                                <div className="space-y-1 pt-1">
+                                  <span className="font-bold text-[var(--text-secondary)] block">Outras Recomendações &amp; Observações:</span>
+                                  <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                    {diagnosticoData.outras_informacoes}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* MODO DE EDIÇÃO DO DIAGNÓSTICO */}
+                  {diagnosticoMode === 'edit' && (
+                    <div className="p-6 rounded-2xl border border-[var(--color-primary)]/40 bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-default)] pb-4">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Edit3 className="w-5 h-5 text-[var(--color-primary)]" />
+                            <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                              Editando Diagnóstico da Comunidade
+                            </h3>
+                          </div>
+                          <p className="text-xs text-[var(--text-muted)]">Preencha os campos territoriais e analíticos do território</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={<Eye className="w-4 h-4" />}
+                            onClick={() => setDiagnosticoMode('view')}
+                          >
+                            Voltar à Visualização
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={<Save className="w-4 h-4" />}
+                            onClick={async () => {
+                              await handleSaveProgress();
+                              setDiagnosticoMode('view');
+                            }}
+                            disabled={saving}
+                          >
+                            {saving ? 'Salvando...' : 'Salvar e Visualizar'}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Bloco A: Metadados Territoriais */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Input label="Bairro" name="bairro" value={diagnosticoData.bairro} onChange={handleDiagnosticoChange} placeholder="Ex: Comunidade Sol Nascente" />
+                        <Input label="Município" name="municipio" value={diagnosticoData.municipio} onChange={handleDiagnosticoChange} placeholder="Ex: São Paulo" />
+                        <Input label="Estado (UF)" name="estado" value={diagnosticoData.estado} onChange={handleDiagnosticoChange} placeholder="SP" />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input label="Data do Diagnóstico" type="date" name="data_diagnostico" value={diagnosticoData.data_diagnostico} onChange={handleDiagnosticoChange} />
+                        <Select
+                          label="Responsável pelo Diagnóstico"
+                          options={[
+                            { value: '', label: 'Selecione o voluntário responsável...' },
+                            ...todosVoluntarios.map((v) => ({ value: v.id, label: `${v.nome_completo} (${v.area_atuacao || 'Operacional'})` })),
+                          ]}
+                          value={diagnosticoData.responsavel_diagnostico_id}
+                          onChange={(e) => setDiagnosticoData({ ...diagnosticoData, responsavel_diagnostico_id: e.target.value })}
+                        />
+                      </div>
+
+                      {/* Separador */}
+                      <div className="border-t border-[var(--border-default)] pt-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-4">Conteúdo do Diagnóstico Social</p>
+                      </div>
+
+                      {/* 3 Blocos Temáticos de Formulário */}
+                      <div className="space-y-5">
+                        {/* Bloco 1: Contexto e Metodologia */}
+                        <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-4">
+                          <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                            <FileText className="w-4 h-4 text-[var(--color-primary)]" />
+                            <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                              1. Contexto &amp; Enquadramento Metodológico
+                            </h4>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <label className="text-xs font-semibold text-[var(--text-secondary)]">Introdução &amp; Histórico Territorial</label>
+                                <FieldInfo text="Contextualização histórica do território, dinâmica comunitária e características da ocupação urbana/social." />
+                              </div>
+                              <textarea
+                                name="introducao"
+                                value={diagnosticoData.introducao}
+                                onChange={handleDiagnosticoChange}
+                                rows={3}
+                                className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                placeholder="Descreva o contexto do bairro, histórico de ocupação territorial e dinâmicas comunitárias..."
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <div className="flex items-center mb-1">
+                                  <label className="text-xs font-semibold text-[var(--text-secondary)]">Objetivo do Diagnóstico</label>
+                                  <FieldInfo text="Finalidade da pesquisa de campo e o que se pretende identificar para nortear o plano de trabalho." />
+                                </div>
+                                <textarea
+                                  name="objetivo"
+                                  value={diagnosticoData.objetivo}
+                                  onChange={handleDiagnosticoChange}
+                                  rows={3}
+                                  className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                  placeholder="O que se busca identificar e compreender com este diagnóstico..."
+                                />
+                              </div>
+
+                              <div>
+                                <div className="flex items-center mb-1">
+                                  <label className="text-xs font-semibold text-[var(--text-secondary)]">Metodologia de Coleta</label>
+                                  <FieldInfo text="Instrumentos aplicados: visitas domiciliares, rodas de conversa, entrevistas com lideranças e observação." />
+                                </div>
+                                <textarea
+                                  name="metodologia"
+                                  value={diagnosticoData.metodologia}
+                                  onChange={handleDiagnosticoChange}
+                                  rows={3}
+                                  className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                  placeholder="Visitas domiciliares, rodas de conversa, entrevistas, observação participante..."
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bloco 2: Perfil Comunitário & Territorial */}
+                        <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-4">
+                          <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                            <Users className="w-4 h-4 text-[var(--color-accent-purple)]" />
+                            <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                              2. Perfil Territorial &amp; Socioeconômico
+                            </h4>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <label className="text-xs font-semibold text-[var(--text-secondary)]">Público Prioritário Mapeado</label>
+                                <FieldInfo text="Faixas etárias e grupos comunitários em situação de vulnerabilidade que demandam intervenção direta." />
+                              </div>
+                              <textarea
+                                name="publico_possivel"
+                                value={diagnosticoData.publico_possivel}
+                                onChange={handleDiagnosticoChange}
+                                rows={2}
+                                className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                placeholder="Crianças, jovens, mulheres chefes de família, idosos em situação de isolamento..."
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <div className="flex items-center mb-1">
+                                  <label className="text-xs font-semibold text-[var(--text-secondary)]">Situação Habitacional &amp; Urbana</label>
+                                  <FieldInfo text="Infraestrutura básica, saneamento, tipo de edificações e acessibilidade territorial." />
+                                </div>
+                                <textarea
+                                  name="situacao_habitacional"
+                                  value={diagnosticoData.situacao_habitacional}
+                                  onChange={handleDiagnosticoChange}
+                                  rows={3}
+                                  className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                  placeholder="Regularização fundiária, saneamento, energia elétrica, vias de acesso..."
+                                />
+                              </div>
+
+                              <div>
+                                <div className="flex items-center mb-1">
+                                  <label className="text-xs font-semibold text-[var(--text-secondary)]">Condições Socioeconômicas</label>
+                                  <FieldInfo text="Nível de renda, taxa de informalidade, dependência de auxílios governamentais e vulnerabilidade alimentar." />
+                                </div>
+                                <textarea
+                                  name="situacao_socioeconomica"
+                                  value={diagnosticoData.situacao_socioeconomica}
+                                  onChange={handleDiagnosticoChange}
+                                  rows={3}
+                                  className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                  placeholder="Renda média familiar, nível de emprego/informalidade, acesso a programas sociais..."
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bloco 3: Potencialidades, Vulnerabilidades & Recomendações */}
+                        <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-4">
+                          <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                            <Scale className="w-4 h-4 text-[var(--color-success)]" />
+                            <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                              3. Potencialidades, Riscos &amp; Recomendações
+                            </h4>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <div className="flex items-center mb-1">
+                                  <label className="text-xs font-semibold text-[var(--color-success)]">Principais Potencialidades Comunitárias</label>
+                                  <FieldInfo text="Redes de apoio existentes, lideranças ativas, vocação cultural/artística e espaços coletivos." />
+                                </div>
+                                <textarea
+                                  name="principais_potencialidades"
+                                  value={diagnosticoData.principais_potencialidades}
+                                  onChange={handleDiagnosticoChange}
+                                  rows={3}
+                                  className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-success)] transition-colors"
+                                  placeholder="Redes de solidariedade, coletivos culturais, comércio local, equipamentos públicos..."
+                                />
+                              </div>
+
+                              <div>
+                                <div className="flex items-center mb-1">
+                                  <label className="text-xs font-semibold text-[var(--color-danger)]">Principais Vulnerabilidades &amp; Ameaças</label>
+                                  <FieldInfo text="Fatores de risco social: evasão escolar, desnutrição, violência e ausência de serviços essenciais." />
+                                </div>
+                                <textarea
+                                  name="principais_vulnerabilidades"
+                                  value={diagnosticoData.principais_vulnerabilidades}
+                                  onChange={handleDiagnosticoChange}
+                                  rows={3}
+                                  className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-danger)] transition-colors"
+                                  placeholder="Insegurança alimentar, desemprego, violência urbana, evasão escolar..."
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <label className="text-xs font-semibold text-[var(--text-secondary)]">Outras Recomendações &amp; Observações</label>
+                                <FieldInfo text="Diretrizes propostas pela equipe para fundamentar a escolha das ações socioeducativas." />
+                              </div>
+                              <textarea
+                                name="outras_informacoes"
+                                value={diagnosticoData.outras_informacoes}
+                                onChange={handleDiagnosticoChange}
+                                rows={2}
+                                className="w-full p-3 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                placeholder="Recomendações técnicas da equipe, articulações locais e considerações finais..."
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Barra de Ações do Rodapé do Modo de Edição */}
+                      <div className="flex items-center justify-between pt-4 border-t border-[var(--border-default)]">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={<Eye className="w-4 h-4" />}
+                          onClick={() => setDiagnosticoMode('view')}
+                        >
+                          Voltar à Visualização
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          icon={<Save className="w-4 h-4" />}
+                          onClick={async () => {
+                            await handleSaveProgress();
+                            setDiagnosticoMode('view');
+                          }}
+                          disabled={saving}
+                        >
+                          {saving ? 'Salvando...' : 'Salvar Alterações'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2279,7 +2540,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                   {/* 1. Introdução */}
                   {diagnosticoData.introducao && (
                     <div className="timbrado-avoid-break">
-                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">1. Introdução & Histórico Territorial</h4>
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-[#F2632D] mb-1">1. Introdução &amp; Histórico Territorial</h4>
                       <p className="whitespace-pre-wrap">{diagnosticoData.introducao}</p>
                     </div>
                   )}
@@ -2353,459 +2614,896 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
               {/* SUB-TELA GESTÃO: PLANEJAMENTO */}
               {gestaoSubTab === 'planejamento' && (
                 <div className="space-y-6">
-                  {/* SELETOR DE SEÇÕES DO PLANEJAMENTO */}
-                  <div className="flex items-center gap-2 bg-[var(--bg-elevated)] p-1.5 rounded-xl border border-[var(--border-default)] overflow-x-auto">
-                    <button
-                      type="button"
-                      onClick={() => setPlanejamentoSection('apresentacao')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${planejamentoSection === 'apresentacao' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
-                    >
-                      Apresentação & Justificativa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPlanejamentoSection('objetivos')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${planejamentoSection === 'objetivos' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
-                    >
-                      Objetivos & Metas ({objetivosEspecificos.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPlanejamentoSection('ods')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${planejamentoSection === 'ods' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
-                    >
-                      Alinhamento ODS
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPlanejamentoSection('metodologia')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${planejamentoSection === 'metodologia' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
-                    >
-                      Metodologia & Resultados
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPlanejamentoSection('orcamento')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${planejamentoSection === 'orcamento' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
-                    >
-                      Orçamento & Despesas ({despesas.length})
-                    </button>
-                  </div>
-
-                  {/* SEÇÃO PLANEJAMENTO: APRESENTAÇÃO & JUSTIFICATIVA */}
-                  {planejamentoSection === 'apresentacao' && (
-                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
-                      <div className="border-b border-[var(--border-default)] pb-3">
-                        <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
-                          Apresentação, Justificativa & Público-Alvo
-                        </h3>
-                        <p className="text-xs text-[var(--text-muted)]">Fundamentação conceitual, relevância social, público participante e território de atuação</p>
-                      </div>
-
-                      <div className="space-y-4">
-                        {/* 1. Apresentação */}
-                        <div>
-                          <div className="flex items-center mb-1">
-                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Apresentação do Projeto</label>
-                            <FieldInfo text="Apresentação detalhada da proposta institucional, histórico da iniciativa e escopo geral das atividades." />
-                          </div>
-                          <textarea
-                            name="apresentacao"
-                            value={formData.apresentacao}
-                            onChange={handleChange}
-                            rows={4}
-                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                            placeholder="Apresentação detalhada da proposta, histórico da iniciativa e escopo geral das atividades..."
-                          />
-                        </div>
-
-                        {/* 2. Justificativa Social */}
-                        <div>
-                          <div className="flex items-center mb-1">
-                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Justificativa Social</label>
-                            <FieldInfo text="Relevância da ação socioeducativa, problema territorial a ser enfrentado, direitos garantidos e impacto comunitário." />
-                          </div>
-                          <textarea
-                            name="justificativa"
-                            value={formData.justificativa}
-                            onChange={handleChange}
-                            rows={4}
-                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                            placeholder="Relevância da ação, problema social a ser enfrentado, direitos a serem garantidos e impacto comunitário esperado..."
-                          />
-                        </div>
-
-                        {/* 3. Público-Alvo & Critérios */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <div className="flex items-center mb-1">
-                              <label className="text-xs font-semibold text-[var(--text-secondary)]">Público-Alvo</label>
-                              <FieldInfo text="Perfil detalhado do público participante: faixa etária, gênero, recorte racial e vulnerabilidade social." />
-                            </div>
-                            <textarea
-                              name="publico_alvo"
-                              value={formData.publico_alvo}
-                              onChange={handleChange}
-                              rows={3}
-                              className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                              placeholder="Perfil detalhado do público: faixa etária, gênero, condições de vulnerabilidade..."
-                            />
-                          </div>
-
-                          <div>
-                            <div className="flex items-center mb-1">
-                              <label className="text-xs font-semibold text-[var(--text-secondary)]">Critérios de Ingresso e Permanência</label>
-                              <FieldInfo text="Requisitos de acesso, processo de acolhimento, frequência mínima exigida e compromissos familiares." />
-                            </div>
-                            <textarea
-                              name="ingresso_permanencia"
-                              value={formData.ingresso_permanencia}
-                              onChange={handleChange}
-                              rows={3}
-                              className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                              placeholder="Requisitos de acesso, frequência mínima exigida, critérios de continuidade..."
-                            />
-                          </div>
-                        </div>
-
-                        {/* 4. Localidade da Execução */}
-                        <div>
-                          <div className="flex items-center mb-1">
-                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Localidade da Execução & Território</label>
-                            <FieldInfo text="Endereço dos polos de atendimento, equipamentos parceiros, abrangência geográfica e infraestrutura local." />
-                          </div>
-                          <textarea
-                            name="localidade"
-                            value={formData.localidade}
-                            onChange={handleChange}
-                            rows={3}
-                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                            placeholder="Endereço ou polos de atendimento, equipamentos comunitários parceiros, abrangência geográfica..."
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* SEÇÃO PLANEJAMENTO: OBJETIVOS & METAS */}
-                  {planejamentoSection === 'objetivos' && (
+                  {/* MODO DE VISUALIZAÇÃO CONSOLIDADA (LEITURA EXECUTIVA LIMPA) */}
+                  {planejamentoMode === 'view' && (
                     <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-6">
-                      <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
-                        <div>
+                      {/* Header do Plano de Trabalho em Modo Leitura */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border-default)] pb-4">
+                        <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <Target className="w-5 h-5 text-[var(--color-primary)]" />
+                            <FolderKanban className="w-5 h-5 text-[var(--color-primary)]" />
                             <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
-                              Objetivo Geral & Objetivos Específicos com Metas
+                              Plano de Trabalho Institucional
                             </h3>
                           </div>
-                          <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                            Estruturação de metas quantitativas e qualitativas com procedimentos de coleta
+                          <p className="text-xs text-[var(--text-muted)]">
+                            Estrutura integrada: dados institucionais, justificativa, metas, ODS, metodologia e orçamento
                           </p>
                         </div>
-                        <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={handleAddObjetivoEspecifico}>
-                          Adicionar Objetivo
-                        </Button>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <label className="text-xs font-semibold text-[var(--text-secondary)]">Objetivo Geral do Projeto</label>
-                          <FieldInfo text="Declaração ampla do propósito central e da transformação social pretendida pelo projeto." />
-                        </div>
-                        <textarea
-                          name="objetivo_geral"
-                          value={formData.objetivo_geral}
-                          onChange={handleChange}
-                          rows={2}
-                          className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
-                          placeholder="Ex: Promover a inclusão social e o fortalecimento de vínculos comunitários de 100 crianças e adolescentes..."
-                        />
-                      </div>
-
-                      {objetivosEspecificos.length === 0 ? (
-                        <div className="p-8 text-center border-2 border-dashed border-[var(--border-default)] rounded-xl space-y-2 bg-[var(--bg-secondary)]/30">
-                          <p className="text-xs text-[var(--text-muted)] italic">
-                            Nenhum objetivo específico cadastrado. Clique no botão acima para estruturar as metas do projeto.
-                          </p>
-                          <Button size="sm" variant="secondary" icon={<Plus className="w-3.5 h-3.5" />} onClick={handleAddObjetivoEspecifico}>
-                            Cadastrar 1º Objetivo
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="neutral" className="gap-1">
+                            <Eye className="w-3 h-3" />
+                            Modo de Leitura
+                          </Badge>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={<Download className="w-4 h-4" />}
+                            onClick={() => setShowPlanoTrabalhoPrint(true)}
+                          >
+                            Exportar Plano de Trabalho (PDF)
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={<Edit3 className="w-4 h-4" />}
+                            onClick={() => setPlanejamentoMode('edit')}
+                          >
+                            Editar Plano de Trabalho
                           </Button>
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {objetivosEspecificos.map((obj, objIdx) => (
-                            <div key={obj.id} className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3.5">
-                              {/* Header do Objetivo */}
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                                  <span className="w-6 h-6 rounded-lg bg-[var(--color-primary)] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                                    {objIdx + 1}
-                                  </span>
-                                  <div className="flex-1 min-w-0">
-                                    <Input
-                                      placeholder="Título ou descrição do Objetivo Específico..."
-                                      value={obj.titulo_objetivo}
-                                      onChange={(e) => handleUpdateObjetivoTitulo(objIdx, e.target.value)}
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <Button size="sm" variant="secondary" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => handleAddMetaToObjetivo(objIdx)}>
-                                    Nova Meta
-                                  </Button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveObjetivoEspecifico(objIdx)}
-                                    className="text-[var(--color-danger)] p-1.5 hover:bg-[var(--color-danger)]/10 rounded-lg transition-colors"
-                                    title="Excluir Objetivo"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Lista de Metas */}
-                              {obj.metas.length > 0 && (
-                                <div className="pl-4 sm:pl-6 space-y-2.5 border-l-2 border-[var(--color-primary)]/40">
-                                  {obj.metas.map((meta, metaIdx) => (
-                                    <div key={meta.id} className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] grid grid-cols-1 md:grid-cols-4 gap-2.5 text-xs shadow-sm">
-                                      <div className="md:col-span-2">
-                                        <Input
-                                          label="Descrição da Meta"
-                                          value={meta.descricao_meta}
-                                          onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'descricao_meta', e.target.value)}
-                                          placeholder="Ex: Atingir 95% de frequência nas oficinas socioeducativas"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Input
-                                          label="Procedimento de Coleta"
-                                          value={meta.procedimento_coleta}
-                                          onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'procedimento_coleta', e.target.value)}
-                                          placeholder="Ex: Lista de presença / Formulário"
-                                        />
-                                      </div>
-                                      <div className="flex items-end gap-1.5">
-                                        <div className="flex-1 min-w-0">
-                                          <Input
-                                            label="Responsável"
-                                            value={meta.responsavel_coleta}
-                                            onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'responsavel_coleta', e.target.value)}
-                                            placeholder="Ex: Educador / Coordenador"
-                                          />
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveMeta(objIdx, metaIdx)}
-                                          className="text-[var(--color-danger)] p-2 hover:bg-[var(--color-danger)]/10 rounded-xl transition-colors shrink-0 mb-0.5"
-                                          title="Remover Meta"
-                                        >
-                                          <X className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* SEÇÃO PLANEJAMENTO: ODS */}
-                  {planejamentoSection === 'ods' && (
-                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
-                      <div className="border-b border-[var(--border-default)] pb-3">
-                        <div className="flex items-center gap-2">
-                          <Compass className="w-5 h-5 text-[var(--color-primary)]" />
-                          <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
-                            Alinhamento aos Objetivos de Desenvolvimento Sustentável (ODS)
-                          </h3>
-                        </div>
-                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                          Associe as metas globais da ONU/Agenda 2030 às ações e impactos gerados pelo projeto
-                        </p>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {ODS_INSTITUCIONAIS.map((ods) => {
-                          const isSelected = odsState[ods.key]?.selected || false;
-
-                          return (
-                            <div
-                              key={ods.key}
-                              className={`p-4 rounded-xl border transition-all space-y-2.5 ${
-                                isSelected
-                                  ? 'bg-[var(--bg-elevated)] border-[var(--color-primary)] shadow-sm'
-                                  : 'bg-[var(--bg-secondary)]/30 border-[var(--border-default)]'
-                              }`}
+                      {/* 6 Blocos Executivos Estruturados */}
+                      <div className="space-y-5">
+                        {/* 1. DADOS INSTITUCIONAIS */}
+                        <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-3">
+                          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                            <div className="flex items-center gap-2">
+                              <Building2 className="w-4 h-4 text-[var(--color-accent-purple)]" />
+                              <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                                1. Dados Institucionais da Organização (Instituto Ádapo)
+                              </h4>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPlanejamentoMode('edit');
+                                setPlanejamentoSection('apresentacao');
+                              }}
+                              className="text-[11px] font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
                             >
-                              <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={(e) =>
-                                    setOdsState({
-                                      ...odsState,
-                                      [ods.key]: { ...odsState[ods.key], selected: e.target.checked },
-                                    })
-                                  }
-                                  className="w-4 h-4 mt-0.5 rounded text-[var(--color-primary)] shrink-0"
-                                />
-                                <div className="space-y-1 min-w-0 flex-1">
-                                  <span className="font-bold text-xs text-[var(--text-primary)] block">
-                                    {ods.label}
-                                  </span>
-                                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed font-normal">
-                                    {ods.descricaoOficial}
+                              <Edit3 className="w-3 h-3" /> Editar
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                            <div>
+                              <span className="text-[11px] font-semibold text-[var(--text-muted)] block">Razão Social</span>
+                              <span className="font-bold text-[var(--text-primary)]">{dadosInstituto.razao_social || 'Instituto Ádapo'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[11px] font-semibold text-[var(--text-muted)] block">CNPJ</span>
+                              <span className="font-bold text-[var(--text-primary)]">{dadosInstituto.cnpj || '00.000.000/0001-00'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[11px] font-semibold text-[var(--text-muted)] block">Presidente / Representante Legal</span>
+                              <span className="font-bold text-[var(--text-primary)]">{dadosInstituto.presidente || 'Não informado'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[11px] font-semibold text-[var(--text-muted)] block">Endereço Institucional</span>
+                              <span className="text-[var(--text-primary)]">{dadosInstituto.endereco || 'Não informado'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[11px] font-semibold text-[var(--text-muted)] block">Telefone</span>
+                              <span className="text-[var(--text-primary)]">{dadosInstituto.telefone || 'Não informado'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[11px] font-semibold text-[var(--text-muted)] block">E-mail</span>
+                              <span className="text-[var(--text-primary)]">{dadosInstituto.email || 'Não informado'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 2. APRESENTAÇÃO, JUSTIFICATIVA & PÚBLICO-ALVO */}
+                        <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-3">
+                          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-[var(--color-primary)]" />
+                              <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                                2. Apresentação, Justificativa &amp; Público-Alvo
+                              </h4>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPlanejamentoMode('edit');
+                                setPlanejamentoSection('apresentacao');
+                              }}
+                              className="text-[11px] font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Edit3 className="w-3 h-3" /> Editar
+                            </button>
+                          </div>
+                          <div className="space-y-3 text-xs leading-relaxed">
+                            {formData.apresentacao && (
+                              <div>
+                                <span className="font-bold text-[var(--text-secondary)] block mb-1">Apresentação do Projeto:</span>
+                                <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                  {formData.apresentacao}
+                                </p>
+                              </div>
+                            )}
+                            {formData.justificativa && (
+                              <div>
+                                <span className="font-bold text-[var(--text-secondary)] block mb-1">Justificativa Social:</span>
+                                <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                  {formData.justificativa}
+                                </p>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {formData.publico_alvo && (
+                                <div>
+                                  <span className="font-bold text-[var(--text-secondary)] block mb-1">Público-Alvo:</span>
+                                  <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                    {formData.publico_alvo}
                                   </p>
                                 </div>
-                              </label>
-
-                              {isSelected && (
-                                <div className="pt-2 border-t border-[var(--border-default)]/60 space-y-1">
-                                  <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
-                                    Como o projeto contribui para esta ODS:
-                                  </label>
-                                  <textarea
-                                    value={odsState[ods.key]?.descricao || ''}
-                                    onChange={(e) =>
-                                      setOdsState({
-                                        ...odsState,
-                                        [ods.key]: { ...odsState[ods.key], descricao: e.target.value },
-                                      })
-                                    }
-                                    rows={2}
-                                    className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                                    placeholder={`Descreva a contribuição direta do projeto para o ${ods.key}...`}
-                                  />
+                              )}
+                              {formData.ingresso_permanencia && (
+                                <div>
+                                  <span className="font-bold text-[var(--text-secondary)] block mb-1">Critérios de Ingresso e Permanência:</span>
+                                  <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                    {formData.ingresso_permanencia}
+                                  </p>
                                 </div>
                               )}
                             </div>
-                          );
-                        })}
+                            {formData.localidade && (
+                              <div>
+                                <span className="font-bold text-[var(--text-secondary)] block mb-1">Localidade da Execução &amp; Território:</span>
+                                <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                  {formData.localidade}
+                                </p>
+                              </div>
+                            )}
+                            {!formData.apresentacao && !formData.justificativa && !formData.publico_alvo && !formData.localidade && (
+                              <p className="text-[var(--text-muted)] italic py-1">Nenhum detalhe de apresentação preenchido.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 3. OBJETIVOS & METAS */}
+                        <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-3">
+                          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                            <div className="flex items-center gap-2">
+                              <Target className="w-4 h-4 text-[var(--color-primary)]" />
+                              <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                                3. Objetivos &amp; Metas Estratégicas ({objetivosEspecificos.length})
+                              </h4>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPlanejamentoMode('edit');
+                                setPlanejamentoSection('objetivos');
+                              }}
+                              className="text-[11px] font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Edit3 className="w-3 h-3" /> Editar
+                            </button>
+                          </div>
+
+                          <div className="space-y-3 text-xs">
+                            {formData.objetivo_geral && (
+                              <div className="p-3.5 rounded-xl bg-[var(--color-primary-soft)] border border-[var(--color-primary)]/30 space-y-1">
+                                <span className="font-bold text-[var(--color-primary)] block">Objetivo Geral do Projeto:</span>
+                                <p className="text-[var(--text-primary)] leading-relaxed">{formData.objetivo_geral}</p>
+                              </div>
+                            )}
+
+                            {objetivosEspecificos.length === 0 ? (
+                              <p className="text-[var(--text-muted)] italic py-2">Nenhum objetivo específico cadastrado.</p>
+                            ) : (
+                              <div className="space-y-3">
+                                {objetivosEspecificos.map((obj, objIdx) => (
+                                  <div key={obj.id} className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-2.5 shadow-sm">
+                                    <div className="flex items-center gap-2 font-bold text-[var(--text-primary)]">
+                                      <span className="w-5 h-5 rounded-md bg-[var(--color-primary)] text-white flex items-center justify-center text-[11px]">
+                                        {objIdx + 1}
+                                      </span>
+                                      <span>{obj.titulo_objetivo || 'Objetivo sem título'}</span>
+                                    </div>
+                                    {obj.metas && obj.metas.length > 0 && (
+                                      <div className="pl-3 sm:pl-7 space-y-1.5 border-l-2 border-[var(--color-primary)]/30">
+                                        {obj.metas.map((m, mIdx) => (
+                                          <div key={m.id || mIdx} className="p-2 rounded-lg bg-[var(--bg-secondary)] text-xs space-y-1">
+                                            <p className="font-semibold text-[var(--text-primary)]">• {m.descricao_meta}</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-[var(--text-muted)] pl-2">
+                                              <span>Procedimento: {m.procedimento_coleta || '—'}</span>
+                                              <span>Responsável: {m.responsavel_coleta || '—'}</span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 4. ALINHAMENTO ODS */}
+                        <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-3">
+                          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                            <div className="flex items-center gap-2">
+                              <Compass className="w-4 h-4 text-[var(--color-primary)]" />
+                              <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                                4. Alinhamento com as ODS (Agenda 2030)
+                              </h4>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPlanejamentoMode('edit');
+                                setPlanejamentoSection('ods');
+                              }}
+                              className="text-[11px] font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Edit3 className="w-3 h-3" /> Editar
+                            </button>
+                          </div>
+                          {Object.entries(odsState).filter(([_, val]) => val.selected).length === 0 ? (
+                            <p className="text-xs text-[var(--text-muted)] italic py-2">Nenhuma ODS selecionada.</p>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                              {Object.entries(odsState)
+                                .filter(([_, val]) => val.selected)
+                                .map(([key, val]) => (
+                                  <div key={key} className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-1 shadow-sm">
+                                    <span className="font-bold text-[var(--color-primary)] block">{key}</span>
+                                    <p className="text-[var(--text-primary)]">{val.descricao || 'Alinhamento institucional registrado.'}</p>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 5. METODOLOGIA, ACESSIBILIDADE & RESULTADOS */}
+                        <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-3">
+                          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-[var(--color-primary)]" />
+                              <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                                5. Metodologia de Execução &amp; Resultados Esperados
+                              </h4>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPlanejamentoMode('edit');
+                                setPlanejamentoSection('metodologia');
+                              }}
+                              className="text-[11px] font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Edit3 className="w-3 h-3" /> Editar
+                            </button>
+                          </div>
+                          <div className="space-y-3 text-xs leading-relaxed">
+                            {formData.metodologia && (
+                              <div>
+                                <span className="font-bold text-[var(--text-secondary)] block mb-1">Metodologia de Execução &amp; Práticas Pedagógicas:</span>
+                                <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                  {formData.metodologia}
+                                </p>
+                              </div>
+                            )}
+                            {formData.acessibilidade && (
+                              <div>
+                                <span className="font-bold text-[var(--text-secondary)] block mb-1">Medidas de Acessibilidade &amp; Inclusão:</span>
+                                <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                  {formData.acessibilidade}
+                                </p>
+                              </div>
+                            )}
+                            {formData.resultados_esperados && (
+                              <div>
+                                <span className="font-bold text-[var(--text-secondary)] block mb-1">Resultados Esperados &amp; Transformação Social:</span>
+                                <p className="p-3 rounded-lg bg-[var(--bg-elevated)] text-[var(--text-primary)] whitespace-pre-wrap">
+                                  {formData.resultados_esperados}
+                                </p>
+                              </div>
+                            )}
+                            {!formData.metodologia && !formData.acessibilidade && !formData.resultados_esperados && (
+                              <p className="text-[var(--text-muted)] italic py-1">Nenhuma metodologia ou resultado esperados detalhados.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 6. ORÇAMENTO & DESPESAS */}
+                        <div className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 space-y-3">
+                          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-[var(--color-success)]" />
+                              <h4 className="font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                                6. Plano Orçamentário / Recursos Financeiros ({despesas.length})
+                              </h4>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPlanejamentoMode('edit');
+                                setPlanejamentoSection('orcamento');
+                              }}
+                              className="text-[11px] font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Edit3 className="w-3 h-3" /> Editar
+                            </button>
+                          </div>
+
+                          {despesas.length === 0 ? (
+                            <p className="text-xs text-[var(--text-muted)] italic py-2">Nenhuma despesa cadastrada.</p>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-xs text-left">
+                                <thead className="bg-[var(--bg-secondary)] text-[var(--text-secondary)] font-bold">
+                                  <tr>
+                                    <th className="p-2.5 rounded-l-lg">Categoria</th>
+                                    <th className="p-2.5">Item / Insumo</th>
+                                    <th className="p-2.5 text-center w-16">Qtd</th>
+                                    <th className="p-2.5 text-right w-28">Valor Unit. (R$)</th>
+                                    <th className="p-2.5 text-right rounded-r-lg w-28">Subtotal (R$)</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[var(--border-default)]">
+                                  {despesas.map((item, idx) => (
+                                    <tr key={item.id || idx}>
+                                      <td className="p-2 text-[var(--text-muted)]">{item.categoria}</td>
+                                      <td className="p-2 font-medium text-[var(--text-primary)]">{item.item_nome}</td>
+                                      <td className="p-2 text-center text-[var(--text-secondary)]">{item.quantidade}</td>
+                                      <td className="p-2 text-right text-[var(--text-secondary)]">
+                                        R$ {(Number(item.valor_unitario) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                      </td>
+                                      <td className="p-2 text-right font-bold text-[var(--text-primary)]">
+                                        R$ {(Number(item.subtotal) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  <tr className="bg-[var(--bg-secondary)]/60 font-bold">
+                                    <td colSpan={4} className="p-2.5 text-right uppercase text-[var(--text-primary)]">
+                                      Total do Orçamento Previsto:
+                                    </td>
+                                    <td className="p-2.5 text-right text-[var(--color-primary)] text-sm">
+                                      R$ {totalOrcamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* SEÇÃO PLANEJAMENTO: METODOLOGIA & RESULTADOS */}
-                  {planejamentoSection === 'metodologia' && (
-                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-                      <div className="border-b border-[var(--border-default)] pb-2">
-                        <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
-                          Metodologia, Acessibilidade & Resultados Esperados
-                        </h3>
-                        <p className="text-xs text-[var(--text-muted)]">Abordagem pedagógica, tecnologias sociais, inclusão e impactos projetados</p>
+                  {/* MODO DE EDIÇÃO DO PLANO DE TRABALHO */}
+                  {planejamentoMode === 'edit' && (
+                    <div className="space-y-6">
+                      {/* Header da Edição do Planejamento */}
+                      <div className="p-4 rounded-2xl border border-[var(--color-primary)]/40 bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <Edit3 className="w-5 h-5 text-[var(--color-primary)]" />
+                            <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                              Editando Plano de Trabalho
+                            </h3>
+                          </div>
+                          <p className="text-xs text-[var(--text-muted)]">Navegue pelas abas abaixo para estruturar o plano</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            icon={<Eye className="w-4 h-4" />}
+                            onClick={() => setPlanejamentoMode('view')}
+                          >
+                            Voltar à Visualização
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            icon={<Save className="w-4 h-4" />}
+                            onClick={async () => {
+                              await handleSaveProgress();
+                              setPlanejamentoMode('view');
+                            }}
+                            disabled={saving}
+                          >
+                            {saving ? 'Salvando...' : 'Salvar e Visualizar'}
+                          </Button>
+                        </div>
                       </div>
 
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex items-center mb-1">
-                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Metodologia de Execução & Práticas Pedagógicas</label>
-                            <FieldInfo text="Métodos aplicados, dinâmicas de acolhimento, oficinas práticas e instrumentos pedagógicos socioeducativos." />
-                          </div>
-                          <textarea
-                            name="metodologia"
-                            value={formData.metodologia}
-                            onChange={handleChange}
-                            rows={3}
-                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                            placeholder="Abordagem pedagógica e operacional das oficinas, vivências e encontros..."
-                          />
-                        </div>
-
-                        <div>
-                          <div className="flex items-center mb-1">
-                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Medidas de Acessibilidade & Inclusão</label>
-                            <FieldInfo text="Acessibilidade física, comunicacional e atitudinal garantida para pessoas com deficiência ou necessidades específicas." />
-                          </div>
-                          <textarea
-                            name="acessibilidade"
-                            value={formData.acessibilidade}
-                            onChange={handleChange}
-                            rows={2}
-                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                            placeholder="Garantia de acesso físico, sensorial, comunicacional e social para todos os públicos..."
-                          />
-                        </div>
-
-                        <div>
-                          <div className="flex items-center mb-1">
-                            <label className="text-xs font-semibold text-[var(--text-secondary)]">Resultados Esperados & Transformação Social</label>
-                            <FieldInfo text="Evolução comportamental, fortalecimento de vínculos familiares e ganhos socioemocionais projetados." />
-                          </div>
-                          <textarea
-                            name="resultados_esperados"
-                            value={formData.resultados_esperados}
-                            onChange={handleChange}
-                            rows={3}
-                            className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                            placeholder="Impactos quantitativos e qualitativos esperados ao final do ciclo de execução..."
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* SEÇÃO PLANEJAMENTO: ORÇAMENTO & DESPESAS */}
-                  {planejamentoSection === 'orcamento' && (
-                    <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-                      <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
-                        <div>
-                          <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Plano Orçamentário / Recursos Financeiros</h3>
-                          <p className="text-xs text-[var(--text-muted)]">Previsão total: <strong className="text-[var(--color-primary)]">R$ {totalOrcamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></p>
-                        </div>
-                        <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={handleAddDespesa}>
-                          Adicionar Item de Despesa
-                        </Button>
+                      {/* SELETOR DE SEÇÕES DO PLANEJAMENTO */}
+                      <div className="flex items-center gap-2 bg-[var(--bg-elevated)] p-1.5 rounded-xl border border-[var(--border-default)] overflow-x-auto">
+                        <button
+                          type="button"
+                          onClick={() => setPlanejamentoSection('apresentacao')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${planejamentoSection === 'apresentacao' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        >
+                          Apresentação &amp; Justificativa
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlanejamentoSection('objetivos')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${planejamentoSection === 'objetivos' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        >
+                          Objetivos &amp; Metas ({objetivosEspecificos.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlanejamentoSection('ods')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${planejamentoSection === 'ods' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        >
+                          Alinhamento ODS
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlanejamentoSection('metodologia')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${planejamentoSection === 'metodologia' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        >
+                          Metodologia &amp; Resultados
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlanejamentoSection('orcamento')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${planejamentoSection === 'orcamento' ? 'bg-[var(--color-primary)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        >
+                          Orçamento &amp; Despesas ({despesas.length})
+                        </button>
                       </div>
 
-                      {despesas.length === 0 ? (
-                        <p className="text-xs text-[var(--text-muted)] italic text-center py-6">Nenhum item orçado. Clique no botão acima para cadastrar despesas.</p>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs text-left">
-                            <thead className="bg-[var(--bg-secondary)] text-[var(--text-secondary)] font-bold">
-                              <tr>
-                                <th className="p-2.5 rounded-l-lg">Categoria</th>
-                                <th className="p-2.5">Item / Insumo</th>
-                                <th className="p-2.5 w-20 text-center">Qtd</th>
-                                <th className="p-2.5 w-28 text-right">Valor Unit. (R$)</th>
-                                <th className="p-2.5 w-28 text-right">Subtotal (R$)</th>
-                                <th className="p-2.5 w-12 text-center rounded-r-lg">Ação</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[var(--border-default)]">
-                              {despesas.map((item, idx) => (
-                                <tr key={item.id}>
-                                  <td className="p-2">
-                                    <Select options={CATEGORIAS_DESPESA.map((c) => ({ value: c, label: c }))} value={item.categoria} onChange={(e) => handleUpdateDespesa(idx, 'categoria', e.target.value)} />
-                                  </td>
-                                  <td className="p-2">
-                                    <Input value={item.item_nome} onChange={(e) => handleUpdateDespesa(idx, 'item_nome', e.target.value)} placeholder="Nome do item..." />
-                                  </td>
-                                  <td className="p-2 text-center">
-                                    <Input type="number" value={item.quantidade} onChange={(e) => handleUpdateDespesa(idx, 'quantidade', e.target.value)} />
-                                  </td>
-                                  <td className="p-2 text-right">
-                                    <Input type="number" step="0.01" value={item.valor_unitario} onChange={(e) => handleUpdateDespesa(idx, 'valor_unitario', e.target.value)} />
-                                  </td>
-                                  <td className="p-2 text-right font-bold text-[var(--text-primary)]">
-                                    R$ {(item.subtotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                  </td>
-                                  <td className="p-2 text-center">
-                                    <button type="button" onClick={() => handleRemoveDespesa(idx)} className="text-[var(--color-danger)] p-1 hover:opacity-80">
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                      {/* SEÇÃO PLANEJAMENTO: APRESENTAÇÃO & JUSTIFICATIVA */}
+                      {planejamentoSection === 'apresentacao' && (
+                        <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
+                          <div className="border-b border-[var(--border-default)] pb-3">
+                            <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                              Apresentação, Justificativa &amp; Público-Alvo
+                            </h3>
+                            <p className="text-xs text-[var(--text-muted)]">Fundamentação conceitual, relevância social, público participante e território de atuação</p>
+                          </div>
+
+                          <div className="space-y-4">
+                            {/* 1. Apresentação */}
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <label className="text-xs font-semibold text-[var(--text-secondary)]">Apresentação do Projeto</label>
+                                <FieldInfo text="Apresentação detalhada da proposta institucional, histórico da iniciativa e escopo geral das atividades." />
+                              </div>
+                              <textarea
+                                name="apresentacao"
+                                value={formData.apresentacao}
+                                onChange={handleChange}
+                                rows={4}
+                                className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                placeholder="Apresentação detalhada da proposta, histórico da iniciativa e escopo geral das atividades..."
+                              />
+                            </div>
+
+                            {/* 2. Justificativa Social */}
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <label className="text-xs font-semibold text-[var(--text-secondary)]">Justificativa Social</label>
+                                <FieldInfo text="Relevância da ação socioeducativa, problema territorial a ser enfrentado, direitos garantidos e impacto comunitário." />
+                              </div>
+                              <textarea
+                                name="justificativa"
+                                value={formData.justificativa}
+                                onChange={handleChange}
+                                rows={4}
+                                className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                placeholder="Relevância da ação, problema social a ser enfrentado, direitos a serem garantidos e impacto comunitário esperado..."
+                              />
+                            </div>
+
+                            {/* 3. Público-Alvo & Critérios */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <div className="flex items-center mb-1">
+                                  <label className="text-xs font-semibold text-[var(--text-secondary)]">Público-Alvo</label>
+                                  <FieldInfo text="Perfil detalhado do público participante: faixa etária, gênero, recorte racial e vulnerabilidade social." />
+                                </div>
+                                <textarea
+                                  name="publico_alvo"
+                                  value={formData.publico_alvo}
+                                  onChange={handleChange}
+                                  rows={3}
+                                  className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                  placeholder="Perfil detalhado do público: faixa etária, gênero, condições de vulnerabilidade..."
+                                />
+                              </div>
+
+                              <div>
+                                <div className="flex items-center mb-1">
+                                  <label className="text-xs font-semibold text-[var(--text-secondary)]">Critérios de Ingresso e Permanência</label>
+                                  <FieldInfo text="Requisitos de acesso, processo de acolhimento, frequência mínima exigida e compromissos familiares." />
+                                </div>
+                                <textarea
+                                  name="ingresso_permanencia"
+                                  value={formData.ingresso_permanencia}
+                                  onChange={handleChange}
+                                  rows={3}
+                                  className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                  placeholder="Requisitos de acesso, frequência mínima exigida, critérios de continuidade..."
+                                />
+                              </div>
+                            </div>
+
+                            {/* 4. Localidade da Execução */}
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <label className="text-xs font-semibold text-[var(--text-secondary)]">Localidade da Execução &amp; Território</label>
+                                <FieldInfo text="Endereço dos polos de atendimento, equipamentos parceiros, abrangência geográfica e infraestrutura local." />
+                              </div>
+                              <textarea
+                                name="localidade"
+                                value={formData.localidade}
+                                onChange={handleChange}
+                                rows={3}
+                                className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                placeholder="Endereço ou polos de atendimento, equipamentos comunitários parceiros, abrangência geográfica..."
+                              />
+                            </div>
+                          </div>
                         </div>
                       )}
+
+                      {/* SEÇÃO PLANEJAMENTO: OBJETIVOS & METAS */}
+                      {planejamentoSection === 'objetivos' && (
+                        <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-6">
+                          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Target className="w-5 h-5 text-[var(--color-primary)]" />
+                                <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                                  Objetivo Geral &amp; Objetivos Específicos com Metas
+                                </h3>
+                              </div>
+                              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                                Estruturação de metas quantitativas e qualitativas com procedimentos de coleta
+                              </p>
+                            </div>
+                            <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={handleAddObjetivoEspecifico}>
+                              Adicionar Objetivo
+                            </Button>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <label className="text-xs font-semibold text-[var(--text-secondary)]">Objetivo Geral do Projeto</label>
+                              <FieldInfo text="Declaração ampla do propósito central e da transformação social pretendida pelo projeto." />
+                            </div>
+                            <textarea
+                              name="objetivo_geral"
+                              value={formData.objetivo_geral}
+                              onChange={handleChange}
+                              rows={2}
+                              className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
+                              placeholder="Ex: Promover a inclusão social e o fortalecimento de vínculos comunitários de 100 crianças e adolescentes..."
+                            />
+                          </div>
+
+                          {objetivosEspecificos.length === 0 ? (
+                            <div className="p-8 text-center border-2 border-dashed border-[var(--border-default)] rounded-xl space-y-2 bg-[var(--bg-secondary)]/30">
+                              <p className="text-xs text-[var(--text-muted)] italic">
+                                Nenhum objetivo específico cadastrado. Clique no botão acima para estruturar as metas do projeto.
+                              </p>
+                              <Button size="sm" variant="secondary" icon={<Plus className="w-3.5 h-3.5" />} onClick={handleAddObjetivoEspecifico}>
+                                Cadastrar 1º Objetivo
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {objetivosEspecificos.map((obj, objIdx) => (
+                                <div key={obj.id} className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 space-y-3.5">
+                                  {/* Header do Objetivo */}
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                      <span className="w-6 h-6 rounded-lg bg-[var(--color-primary)] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                                        {objIdx + 1}
+                                      </span>
+                                      <div className="flex-1 min-w-0">
+                                        <Input
+                                          placeholder="Título ou descrição do Objetivo Específico..."
+                                          value={obj.titulo_objetivo}
+                                          onChange={(e) => handleUpdateObjetivoTitulo(objIdx, e.target.value)}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <Button size="sm" variant="secondary" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => handleAddMetaToObjetivo(objIdx)}>
+                                        Nova Meta
+                                      </Button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveObjetivoEspecifico(objIdx)}
+                                        className="text-[var(--color-danger)] p-1.5 hover:bg-[var(--color-danger)]/10 rounded-lg transition-colors"
+                                        title="Excluir Objetivo"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Lista de Metas */}
+                                  {obj.metas.length > 0 && (
+                                    <div className="pl-4 sm:pl-6 space-y-2.5 border-l-2 border-[var(--color-primary)]/40">
+                                      {obj.metas.map((meta, metaIdx) => (
+                                        <div key={meta.id} className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] grid grid-cols-1 md:grid-cols-4 gap-2.5 text-xs shadow-sm">
+                                          <div className="md:col-span-2">
+                                            <Input
+                                              label="Descrição da Meta"
+                                              value={meta.descricao_meta}
+                                              onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'descricao_meta', e.target.value)}
+                                              placeholder="Ex: Atingir 95% de frequência nas oficinas socioeducativas"
+                                            />
+                                          </div>
+                                          <div>
+                                            <Input
+                                              label="Procedimento de Coleta"
+                                              value={meta.procedimento_coleta}
+                                              onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'procedimento_coleta', e.target.value)}
+                                              placeholder="Ex: Lista de presença / Formulário"
+                                            />
+                                          </div>
+                                          <div className="flex items-end gap-1.5">
+                                            <div className="flex-1 min-w-0">
+                                              <Input
+                                                label="Responsável"
+                                                value={meta.responsavel_coleta}
+                                                onChange={(e) => handleUpdateMeta(objIdx, metaIdx, 'responsavel_coleta', e.target.value)}
+                                                placeholder="Ex: Educador / Coordenador"
+                                              />
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRemoveMeta(objIdx, metaIdx)}
+                                              className="text-[var(--color-danger)] p-2 hover:bg-[var(--color-danger)]/10 rounded-xl transition-colors shrink-0 mb-0.5"
+                                              title="Remover Meta"
+                                            >
+                                              <X className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* SEÇÃO PLANEJAMENTO: ODS */}
+                      {planejamentoSection === 'ods' && (
+                        <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
+                          <div className="border-b border-[var(--border-default)] pb-3">
+                            <div className="flex items-center gap-2">
+                              <Compass className="w-5 h-5 text-[var(--color-primary)]" />
+                              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                                Alinhamento aos Objetivos de Desenvolvimento Sustentável (ODS)
+                              </h3>
+                            </div>
+                            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                              Associe as metas globais da ONU/Agenda 2030 às ações e impactos gerados pelo projeto
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {ODS_INSTITUCIONAIS.map((ods) => {
+                              const isSelected = odsState[ods.key]?.selected || false;
+
+                              return (
+                                <div
+                                  key={ods.key}
+                                  className={`p-4 rounded-xl border transition-all space-y-2.5 ${
+                                    isSelected
+                                      ? 'bg-[var(--bg-elevated)] border-[var(--color-primary)] shadow-sm'
+                                      : 'bg-[var(--bg-secondary)]/30 border-[var(--border-default)]'
+                                  }`}
+                                >
+                                  <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={(e) =>
+                                        setOdsState({
+                                          ...odsState,
+                                          [ods.key]: { ...odsState[ods.key], selected: e.target.checked },
+                                        })
+                                      }
+                                      className="w-4 h-4 mt-0.5 rounded text-[var(--color-primary)] shrink-0"
+                                    />
+                                    <div className="space-y-1 min-w-0 flex-1">
+                                      <span className="font-bold text-xs text-[var(--text-primary)] block">
+                                        {ods.label}
+                                      </span>
+                                      <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed font-normal">
+                                        {ods.descricaoOficial}
+                                      </p>
+                                    </div>
+                                  </label>
+
+                                  {isSelected && (
+                                    <div className="pt-2 border-t border-[var(--border-default)]/60 space-y-1">
+                                      <label className="text-[11px] font-semibold text-[var(--text-secondary)] block">
+                                        Como o projeto contribui para esta ODS:
+                                      </label>
+                                      <textarea
+                                        value={odsState[ods.key]?.descricao || ''}
+                                        onChange={(e) =>
+                                          setOdsState({
+                                            ...odsState,
+                                            [ods.key]: { ...odsState[ods.key], descricao: e.target.value },
+                                          })
+                                        }
+                                        rows={2}
+                                        className="w-full p-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                        placeholder={`Descreva a contribuição direta do projeto para o ${ods.key}...`}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SEÇÃO PLANEJAMENTO: METODOLOGIA & RESULTADOS */}
+                      {planejamentoSection === 'metodologia' && (
+                        <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                          <div className="border-b border-[var(--border-default)] pb-2">
+                            <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                              Metodologia, Acessibilidade &amp; Resultados Esperados
+                            </h3>
+                            <p className="text-xs text-[var(--text-muted)]">Abordagem pedagógica, tecnologias sociais, inclusão e impactos projetados</p>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <label className="text-xs font-semibold text-[var(--text-secondary)]">Metodologia de Execução &amp; Práticas Pedagógicas</label>
+                                <FieldInfo text="Métodos aplicados, dinâmicas de acolhimento, oficinas práticas e instrumentos pedagógicos socioeducativos." />
+                              </div>
+                              <textarea
+                                name="metodologia"
+                                value={formData.metodologia}
+                                onChange={handleChange}
+                                rows={3}
+                                className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                placeholder="Abordagem pedagógica e operacional das oficinas, vivências e encontros..."
+                              />
+                            </div>
+
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <label className="text-xs font-semibold text-[var(--text-secondary)]">Medidas de Acessibilidade &amp; Inclusão</label>
+                                <FieldInfo text="Acessibilidade física, comunicacional e atitudinal garantida para pessoas com deficiência ou necessidades específicas." />
+                              </div>
+                              <textarea
+                                name="acessibilidade"
+                                value={formData.acessibilidade}
+                                onChange={handleChange}
+                                rows={2}
+                                className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                placeholder="Garantia de acesso físico, sensorial, comunicacional e social para todos os públicos..."
+                              />
+                            </div>
+
+                            <div>
+                              <div className="flex items-center mb-1">
+                                <label className="text-xs font-semibold text-[var(--text-secondary)]">Resultados Esperados &amp; Transformação Social</label>
+                                <FieldInfo text="Evolução comportamental, fortalecimento de vínculos familiares e ganhos socioemocionais projetados." />
+                              </div>
+                              <textarea
+                                name="resultados_esperados"
+                                value={formData.resultados_esperados}
+                                onChange={handleChange}
+                                rows={3}
+                                className="w-full p-3.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+                                placeholder="Impactos quantitativos e qualitativos esperados ao final do ciclo de execução..."
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SEÇÃO PLANEJAMENTO: ORÇAMENTO & DESPESAS */}
+                      {planejamentoSection === 'orcamento' && (
+                        <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+                          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                            <div>
+                              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Plano Orçamentário / Recursos Financeiros</h3>
+                              <p className="text-xs text-[var(--text-muted)]">Previsão total: <strong className="text-[var(--color-primary)]">R$ {totalOrcamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></p>
+                            </div>
+                            <Button size="sm" icon={<Plus className="w-4 h-4" />} onClick={handleAddDespesa}>
+                              Adicionar Item de Despesa
+                            </Button>
+                          </div>
+
+                          {despesas.length === 0 ? (
+                            <p className="text-xs text-[var(--text-muted)] italic text-center py-6">Nenhum item orçado. Clique no botão acima para cadastrar despesas.</p>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-xs text-left">
+                                <thead className="bg-[var(--bg-secondary)] text-[var(--text-secondary)] font-bold">
+                                  <tr>
+                                    <th className="p-2.5 rounded-l-lg">Categoria</th>
+                                    <th className="p-2.5">Item / Insumo</th>
+                                    <th className="p-2.5 w-20 text-center">Qtd</th>
+                                    <th className="p-2.5 w-28 text-right">Valor Unit. (R$)</th>
+                                    <th className="p-2.5 w-28 text-right">Subtotal (R$)</th>
+                                    <th className="p-2.5 w-12 text-center rounded-r-lg">Ação</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[var(--border-default)]">
+                                  {despesas.map((item, idx) => (
+                                    <tr key={item.id}>
+                                      <td className="p-2">
+                                        <Select options={CATEGORIAS_DESPESA.map((c) => ({ value: c, label: c }))} value={item.categoria} onChange={(e) => handleUpdateDespesa(idx, 'categoria', e.target.value)} />
+                                      </td>
+                                      <td className="p-2">
+                                        <Input value={item.item_nome} onChange={(e) => handleUpdateDespesa(idx, 'item_nome', e.target.value)} placeholder="Nome do item..." />
+                                      </td>
+                                      <td className="p-2 text-center">
+                                        <Input type="number" value={item.quantidade} onChange={(e) => handleUpdateDespesa(idx, 'quantidade', e.target.value)} />
+                                      </td>
+                                      <td className="p-2 text-right">
+                                        <Input type="number" step="0.01" value={item.valor_unitario} onChange={(e) => handleUpdateDespesa(idx, 'valor_unitario', e.target.value)} />
+                                      </td>
+                                      <td className="p-2 text-right font-bold text-[var(--text-primary)]">
+                                        R$ {(item.subtotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                      </td>
+                                      <td className="p-2 text-center">
+                                        <button type="button" onClick={() => handleRemoveDespesa(idx)} className="text-[var(--color-danger)] p-1 hover:opacity-80 cursor-pointer">
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Barra de Ações do Rodapé da Edição do Planejamento */}
+                      <div className="flex items-center justify-between pt-4 border-t border-[var(--border-default)]">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={<Eye className="w-4 h-4" />}
+                          onClick={() => setPlanejamentoMode('view')}
+                        >
+                          Voltar à Visualização
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          icon={<Save className="w-4 h-4" />}
+                          onClick={async () => {
+                            await handleSaveProgress();
+                            setPlanejamentoMode('view');
+                          }}
+                          disabled={saving}
+                        >
+                          {saving ? 'Salvando...' : 'Salvar Alterações'}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -5719,6 +6417,198 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                   </tbody>
                 </table>
               </div>
+            )}
+          </div>
+        </div>
+      </PapelTimbradoModal>
+
+      {/* MODAL: EXPORTAR PLANO DE TRABALHO EM PAPEL TIMBRADO */}
+      <PapelTimbradoModal
+        isOpen={showPlanoTrabalhoPrint}
+        onClose={() => setShowPlanoTrabalhoPrint(false)}
+        tituloDocumento="PLANO DE TRABALHO INSTITUCIONAL"
+        subtituloDocumento={`Projeto Social: ${formData.nome}`}
+      >
+        <div className="space-y-6 text-xs text-slate-900 leading-relaxed">
+          {/* 1. DADOS DA INSTITUIÇÃO */}
+          <div className="border border-slate-300 rounded-lg overflow-hidden timbrado-avoid-break">
+            <div className="bg-slate-100 p-2 font-bold uppercase tracking-wider text-slate-800 border-b border-slate-300">
+              1. DADOS INSTITUCIONAIS DA ORGANIZAÇÃO
+            </div>
+            <div className="p-3 grid grid-cols-2 gap-x-6 gap-y-1.5 bg-white">
+              <p><strong>Razão Social:</strong> {dadosInstituto.razao_social || 'Instituto Ádapo'}</p>
+              <p><strong>CNPJ:</strong> {dadosInstituto.cnpj || '00.000.000/0001-00'}</p>
+              <p><strong>Presidente / Representante:</strong> {dadosInstituto.presidente || '—'}</p>
+              <p><strong>E-mail:</strong> {dadosInstituto.email || '—'}</p>
+              <p><strong>Telefone:</strong> {dadosInstituto.telefone || '—'}</p>
+              <p><strong>Endereço:</strong> {dadosInstituto.endereco || '—'}</p>
+              <p><strong>Projeto Social:</strong> {formData.nome}</p>
+              <p><strong>Período de Vigência:</strong> {formData.data_inicio ? new Date(formData.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—'} {formData.data_fim ? `até ${new Date(formData.data_fim + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''}</p>
+            </div>
+          </div>
+
+          {/* 2. APRESENTAÇÃO, JUSTIFICATIVA & PÚBLICO-ALVO */}
+          <div className="space-y-3 timbrado-avoid-break">
+            <h4 className="font-bold uppercase tracking-wide text-[#F2632D]">
+              2. APRESENTAÇÃO, JUSTIFICATIVA &amp; PÚBLICO-ALVO
+            </h4>
+            {formData.apresentacao && (
+              <div>
+                <p className="font-bold text-slate-800">Apresentação:</p>
+                <p className="whitespace-pre-wrap text-justify text-slate-700">{formData.apresentacao}</p>
+              </div>
+            )}
+            {formData.justificativa && (
+              <div>
+                <p className="font-bold text-slate-800">Justificativa Social:</p>
+                <p className="whitespace-pre-wrap text-justify text-slate-700">{formData.justificativa}</p>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4 pt-1">
+              {formData.publico_alvo && (
+                <div>
+                  <p className="font-bold text-slate-800">Público-Alvo:</p>
+                  <p className="whitespace-pre-wrap text-slate-700">{formData.publico_alvo}</p>
+                </div>
+              )}
+              {formData.ingresso_permanencia && (
+                <div>
+                  <p className="font-bold text-slate-800">Critérios de Ingresso &amp; Permanência:</p>
+                  <p className="whitespace-pre-wrap text-slate-700">{formData.ingresso_permanencia}</p>
+                </div>
+              )}
+            </div>
+            {formData.localidade && (
+              <div>
+                <p className="font-bold text-slate-800">Localidade da Execução &amp; Território:</p>
+                <p className="whitespace-pre-wrap text-slate-700">{formData.localidade}</p>
+              </div>
+            )}
+          </div>
+
+          {/* 3. OBJETIVO GERAL, OBJETIVOS ESPECÍFICOS & METAS */}
+          <div className="space-y-3 timbrado-avoid-break">
+            <h4 className="font-bold uppercase tracking-wide text-[#F2632D]">
+              3. OBJETIVO GERAL, OBJETIVOS ESPECÍFICOS &amp; METAS
+            </h4>
+            {formData.objetivo_geral && (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <p className="font-bold text-slate-800">Objetivo Geral:</p>
+                <p className="text-slate-700">{formData.objetivo_geral}</p>
+              </div>
+            )}
+
+            {objetivosEspecificos.length > 0 && (
+              <div className="space-y-3">
+                {objetivosEspecificos.map((obj, objIdx) => (
+                  <div key={obj.id} className="border border-slate-200 rounded-lg p-3 bg-white space-y-2">
+                    <p className="font-bold text-slate-900">
+                      Objetivo Específico {objIdx + 1}: {obj.titulo_objetivo || '—'}
+                    </p>
+                    {obj.metas && obj.metas.length > 0 && (
+                      <table className="w-full text-xs border border-slate-300">
+                        <thead className="bg-slate-100 font-bold text-slate-800">
+                          <tr>
+                            <th className="p-1.5 border border-slate-300">Meta</th>
+                            <th className="p-1.5 border border-slate-300">Procedimento de Coleta</th>
+                            <th className="p-1.5 border border-slate-300 w-32">Responsável</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {obj.metas.map((m) => (
+                            <tr key={m.id} className="border-b border-slate-200">
+                              <td className="p-1.5 border border-slate-300 font-medium text-slate-800">{m.descricao_meta}</td>
+                              <td className="p-1.5 border border-slate-300 text-slate-600">{m.procedimento_coleta || '—'}</td>
+                              <td className="p-1.5 border border-slate-300 text-slate-600">{m.responsavel_coleta || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 4. ALINHAMENTO COM OS OBJETIVOS DE DESENVOLVIMENTO SUSTENTÁVEL (ODS) */}
+          <div className="space-y-3 timbrado-avoid-break">
+            <h4 className="font-bold uppercase tracking-wide text-[#F2632D]">
+              4. ALINHAMENTO COM AS ODS (AGENDA 2030 / ONU)
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(odsState)
+                .filter(([_, val]) => val.selected)
+                .map(([key, val]) => (
+                  <div key={key} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                    <span className="font-bold text-slate-900 block">{key}</span>
+                    <p className="text-slate-700">{val.descricao || 'Alinhamento institucional registrado.'}</p>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {/* 5. METODOLOGIA, ACESSIBILIDADE & RESULTADOS ESPERADOS */}
+          <div className="space-y-3 timbrado-avoid-break">
+            <h4 className="font-bold uppercase tracking-wide text-[#F2632D]">
+              5. METODOLOGIA DE EXECUÇÃO &amp; RESULTADOS
+            </h4>
+            {formData.metodologia && (
+              <div>
+                <p className="font-bold text-slate-800">Metodologia Pedagógica:</p>
+                <p className="whitespace-pre-wrap text-justify text-slate-700">{formData.metodologia}</p>
+              </div>
+            )}
+            {formData.acessibilidade && (
+              <div>
+                <p className="font-bold text-slate-800">Acessibilidade &amp; Inclusão:</p>
+                <p className="whitespace-pre-wrap text-justify text-slate-700">{formData.acessibilidade}</p>
+              </div>
+            )}
+            {formData.resultados_esperados && (
+              <div>
+                <p className="font-bold text-slate-800">Resultados Esperados:</p>
+                <p className="whitespace-pre-wrap text-justify text-slate-700">{formData.resultados_esperados}</p>
+              </div>
+            )}
+          </div>
+
+          {/* 6. ORÇAMENTO & RECURSOS FINANCEIROS */}
+          <div className="space-y-3 timbrado-avoid-break">
+            <h4 className="font-bold uppercase tracking-wide text-[#F2632D]">
+              6. PLANO ORÇAMENTÁRIO &amp; RECURSOS FINANCEIROS
+            </h4>
+            {despesas.length > 0 ? (
+              <table className="w-full text-xs border border-slate-300">
+                <thead className="bg-slate-100 font-bold text-slate-800">
+                  <tr>
+                    <th className="p-1.5 border border-slate-300">Categoria</th>
+                    <th className="p-1.5 border border-slate-300">Item / Insumo</th>
+                    <th className="p-1.5 border border-slate-300 text-center w-16">Qtd</th>
+                    <th className="p-1.5 border border-slate-300 text-right w-24">Valor Unit.</th>
+                    <th className="p-1.5 border border-slate-300 text-right w-24">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {despesas.map((item, idx) => (
+                    <tr key={item.id || idx} className="border-b border-slate-200">
+                      <td className="p-1.5 border border-slate-300">{item.categoria}</td>
+                      <td className="p-1.5 border border-slate-300 font-medium">{item.item_nome}</td>
+                      <td className="p-1.5 border border-slate-300 text-center">{item.quantidade}</td>
+                      <td className="p-1.5 border border-slate-300 text-right">R$ {(Number(item.valor_unitario) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="p-1.5 border border-slate-300 text-right font-bold">R$ {(Number(item.subtotal) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-slate-100 font-bold">
+                    <td colSpan={4} className="p-2 border border-slate-300 text-right uppercase">Total do Orçamento Previsto:</td>
+                    <td className="p-2 border border-slate-300 text-right text-[#F2632D]">
+                      R$ {totalOrcamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-slate-500 italic">Nenhuma despesa cadastrada.</p>
             )}
           </div>
         </div>
