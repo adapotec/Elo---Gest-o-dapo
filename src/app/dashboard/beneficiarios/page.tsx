@@ -26,6 +26,9 @@ import {
   ChevronsRight,
   X,
   Sparkles,
+  Copy,
+  Check,
+  MessageCircle,
 } from 'lucide-react';
 
 interface Beneficiario {
@@ -127,6 +130,35 @@ export default function BeneficiariosPage() {
       if (match && match[1].trim() !== 'Não informado') return match[1].trim();
     }
     return null;
+  };
+
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyPhone = (e: React.MouseEvent, phone: string, id: string) => {
+    e.stopPropagation();
+    if (!phone || phone === 'Sem contato') return;
+    navigator.clipboard.writeText(phone);
+    setCopiedId(id);
+    setTimeout(() => {
+      setCopiedId((curr) => (curr === id ? null : curr));
+    }, 2000);
+  };
+
+  const handleOpenWhatsApp = (beneficiario: Beneficiario) => {
+    const resp = getResponsavelInfo(beneficiario);
+    if (!resp.telefone || resp.telefone === 'Sem contato') return;
+
+    let cleanPhone = resp.telefone.replace(/\D/g, '');
+    if (cleanPhone.length >= 10 && cleanPhone.length <= 11) {
+      cleanPhone = `55${cleanPhone}`;
+    }
+
+    const nomeResp = resp.nome && resp.nome !== 'Não informado' ? resp.nome : 'Responsável';
+    const nomeCrianca = beneficiario.nome_completo;
+
+    const message = `Olá *${nomeResp}*, aqui é do Ádapo, tudo bem?\n\nEntro em contato para falar sobre ${nomeCrianca}`;
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   // Comunidades únicas disponíveis com contagem
@@ -244,15 +276,33 @@ export default function BeneficiariosPage() {
       header: 'Responsável & Contato',
       render: (item) => {
         const resp = getResponsavelInfo(item);
+        const hasValidPhone = resp.telefone && resp.telefone !== 'Sem contato';
         return (
           <div className="text-xs min-w-0 space-y-0.5">
             <p className="font-medium text-[var(--text-primary)] truncate">
               {resp.nome}
             </p>
-            <p className="text-[11px] font-mono-data text-[var(--color-primary)] font-semibold flex items-center gap-1">
-              <Phone className="w-3 h-3 shrink-0 opacity-75" />
-              {resp.telefone}
-            </p>
+            <div className="flex items-center gap-1.5 text-[11px] font-mono-data text-[var(--color-primary)] font-semibold">
+              <span className="flex items-center gap-1">
+                <Phone className="w-3 h-3 shrink-0 opacity-75" />
+                {resp.telefone}
+              </span>
+              {hasValidPhone && (
+                <button
+                  type="button"
+                  onClick={(e) => handleCopyPhone(e, resp.telefone, item.id)}
+                  className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors inline-flex items-center justify-center cursor-pointer"
+                  title={copiedId === item.id ? 'Número copiado!' : 'Copiar número'}
+                  aria-label="Copiar número de telefone"
+                >
+                  {copiedId === item.id ? (
+                    <Check className="w-3 h-3 text-[var(--color-success)]" />
+                  ) : (
+                    <Copy className="w-3 h-3" />
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         );
       },
@@ -590,25 +640,61 @@ export default function BeneficiariosPage() {
               </div>
             </div>
 
-            {/* Informações do Responsável */}
-            <div className="space-y-2">
+            {/* Informações do Responsável & Ação de Contato */}
+            <div className="space-y-2.5">
               <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1.5">
                 <HeartHandshake className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                Responsável Legal
+                Responsável Legal &amp; Contato
               </h4>
-              <div className="p-3 rounded-lg bg-[var(--bg-secondary)] space-y-1">
+              <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] space-y-3 border border-[var(--border-default)]">
                 {(() => {
                   const resp = getResponsavelInfo(selectedBeneficiario);
+                  const hasValidPhone = resp.telefone && resp.telefone !== 'Sem contato';
+
                   return (
                     <>
-                      <p className="font-semibold text-[var(--text-primary)]">
-                        {resp.nome}
-                        {selectedBeneficiario.parentesco_responsavel ? ` (${selectedBeneficiario.parentesco_responsavel})` : ''}
-                      </p>
-                      <p className="text-[11px] font-mono-data text-[var(--color-primary)] font-semibold flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-[var(--color-primary)]" />
-                        {resp.telefone}
-                      </p>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-xs text-[var(--text-primary)]">
+                          {resp.nome}
+                          {selectedBeneficiario.parentesco_responsavel ? ` (${selectedBeneficiario.parentesco_responsavel})` : ''}
+                        </p>
+                        <div className="flex items-center gap-1.5 text-[11px] font-mono-data text-[var(--color-primary)] font-semibold">
+                          <Phone className="w-3 h-3 text-[var(--color-primary)] shrink-0" />
+                          <span>{resp.telefone}</span>
+                          {hasValidPhone && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleCopyPhone(e, resp.telefone, `panel-${selectedBeneficiario.id}`)}
+                              className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-colors inline-flex items-center justify-center cursor-pointer"
+                              title={copiedId === `panel-${selectedBeneficiario.id}` ? 'Número copiado!' : 'Copiar número'}
+                              aria-label="Copiar número de telefone"
+                            >
+                              {copiedId === `panel-${selectedBeneficiario.id}` ? (
+                                <Check className="w-3 h-3 text-[var(--color-success)]" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Botão Entrar em Contato via WhatsApp */}
+                      <div className="pt-2.5 border-t border-[var(--border-default)]/60 space-y-1.5">
+                        <Button
+                          type="button"
+                          variant="primary"
+                          className="w-full justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white border-none shadow-sm font-semibold cursor-pointer"
+                          icon={<MessageCircle className="w-4 h-4" />}
+                          disabled={!hasValidPhone}
+                          onClick={() => handleOpenWhatsApp(selectedBeneficiario)}
+                        >
+                          Entrar em contato
+                        </Button>
+                        <p className="text-[10.5px] text-[var(--text-muted)] text-center leading-tight">
+                          Esse contato deve ser feito prioritariamente através do Whatsapp oficial do Instituto
+                        </p>
+                      </div>
                     </>
                   );
                 })()}
