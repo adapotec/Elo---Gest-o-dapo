@@ -4,8 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { PapelTimbradoModal } from '@/components/ui/PapelTimbradoModal';
 import {
   User,
@@ -203,7 +201,7 @@ export function PedagogiaFichaMonitoramento({
       setLoadingFicha(true);
       const supabase = createClient();
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('fichas_monitoramento')
         .select('*')
         .eq('beneficiario_id', selectedBeneficiarioId)
@@ -440,25 +438,37 @@ export function PedagogiaFichaMonitoramento({
             </div>
 
             {/* Filtros de Status */}
-            <div className="flex items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-xl text-[11px] font-semibold">
+            <div className="flex items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-xl text-[11px] font-semibold border border-[var(--border-default)]">
               <button
                 type="button"
                 onClick={() => setStatusFiltro('todos')}
-                className={`flex-1 py-1 px-2 rounded-lg transition-all cursor-pointer text-center ${statusFiltro === 'todos' ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                className={`flex-1 py-1.5 px-2 rounded-lg transition-all cursor-pointer text-center ${
+                  statusFiltro === 'todos'
+                    ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-xs font-bold'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
               >
                 Todos
               </button>
               <button
                 type="button"
                 onClick={() => setStatusFiltro('ativo')}
-                className={`flex-1 py-1 px-2 rounded-lg transition-all cursor-pointer text-center ${statusFiltro === 'ativo' ? 'bg-emerald-500/15 text-emerald-600 shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                className={`flex-1 py-1.5 px-2 rounded-lg transition-all cursor-pointer text-center ${
+                  statusFiltro === 'ativo'
+                    ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
               >
                 Ativos
               </button>
               <button
                 type="button"
                 onClick={() => setStatusFiltro('desligado')}
-                className={`flex-1 py-1 px-2 rounded-lg transition-all cursor-pointer text-center ${statusFiltro === 'desligado' ? 'bg-rose-500/15 text-rose-600 shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                className={`flex-1 py-1.5 px-2 rounded-lg transition-all cursor-pointer text-center ${
+                  statusFiltro === 'desligado'
+                    ? 'bg-rose-600 text-white shadow-xs font-bold'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
               >
                 Desligados
               </button>
@@ -472,7 +482,7 @@ export function PedagogiaFichaMonitoramento({
                 placeholder="Buscar por nome ou bairro..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)] placeholder:text-[var(--text-muted)] transition-all"
+                className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)] placeholder:text-[var(--text-muted)] transition-all font-medium"
               />
             </div>
 
@@ -509,11 +519,11 @@ export function PedagogiaFichaMonitoramento({
 
                       <div className="shrink-0">
                         {isDesligado ? (
-                          <Badge variant="danger" className="text-[10px] py-0.5 px-1.5">
+                          <Badge variant="danger" className="text-[10px] py-0.5 px-1.5 font-bold">
                             Desligado
                           </Badge>
                         ) : (
-                          <Badge variant="success" className="text-[10px] py-0.5 px-1.5">
+                          <Badge variant="success" className="text-[10px] py-0.5 px-1.5 font-bold">
                             Ativo
                           </Badge>
                         )}
@@ -542,18 +552,22 @@ export function PedagogiaFichaMonitoramento({
                       <User className="w-4 h-4 text-[var(--color-primary)]" />
                       {beneficiarioAtual.nome_completo}
                     </h4>
-                    <p className="text-[11px] text-[var(--text-muted)]">
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
                       Nascimento: {beneficiarioAtual.data_nascimento ? new Date(beneficiarioAtual.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'} ({calcularIdade(beneficiarioAtual.data_nascimento)} anos)
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-[var(--text-secondary)]">Status no Projeto:</span>
-                    <div className="flex items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-xl">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Status no Projeto:</span>
+                    <div className="flex items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--border-default)]">
                       <button
                         type="button"
                         onClick={() => setFichaData((prev) => ({ ...prev, status: 'ativo' }))}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${fichaData.status === 'ativo' ? 'bg-emerald-600 text-white shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          fichaData.status === 'ativo'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-[var(--text-primary)]'
+                        }`}
                       >
                         <UserCheck className="w-3.5 h-3.5" />
                         Ativo
@@ -561,7 +575,11 @@ export function PedagogiaFichaMonitoramento({
                       <button
                         type="button"
                         onClick={() => setFichaData((prev) => ({ ...prev, status: 'desligado' }))}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${fichaData.status === 'desligado' ? 'bg-rose-600 text-white shadow-xs' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          fichaData.status === 'desligado'
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-[var(--text-primary)]'
+                        }`}
                       >
                         <UserX className="w-3.5 h-3.5" />
                         Desligado
@@ -580,7 +598,7 @@ export function PedagogiaFichaMonitoramento({
                       Este aluno não aparecerá nas chamadas ativas ou nas listas operacionais de frequência e acompanhamento, permanecendo no histórico para cálculo de evasão.
                     </p>
                     <div>
-                      <label className="text-[11px] font-semibold text-[var(--text-primary)] block mb-1">
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
                         Motivo do Desligamento:
                       </label>
                       <input
@@ -588,7 +606,7 @@ export function PedagogiaFichaMonitoramento({
                         placeholder="Ex: Mudança de endereço, excesso de faltas, solicitação da família..."
                         value={fichaData.motivo_desligamento}
                         onChange={(e) => setFichaData((prev) => ({ ...prev, motivo_desligamento: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-rose-300 dark:border-rose-900/50 text-[var(--text-primary)] focus:outline-none focus:border-rose-500"
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-rose-300 dark:border-rose-900/50 text-[var(--text-primary)] focus:outline-none focus:border-rose-500 font-medium"
                       />
                     </div>
                   </div>
@@ -604,233 +622,226 @@ export function PedagogiaFichaMonitoramento({
                   </h4>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 text-xs">
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Nome da Criança</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Nome da Criança</label>
                     <input
                       type="text"
                       disabled
                       value={beneficiarioAtual.nome_completo}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)]/90 border border-[var(--border-default)] text-slate-900 dark:text-slate-100 font-semibold disabled:opacity-100"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Sexo / Gênero</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Sexo / Gênero</label>
                     <input
                       type="text"
                       disabled
                       value={beneficiarioAtual.genero || 'Não informado'}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)]/90 border border-[var(--border-default)] text-slate-900 dark:text-slate-100 font-medium disabled:opacity-100"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Autoidentificação Racial</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Autoidentificação Racial</label>
                     <input
                       type="text"
                       disabled
                       value={beneficiarioAtual.cor_raca || 'Não informada'}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)]/90 border border-[var(--border-default)] text-slate-900 dark:text-slate-100 font-medium disabled:opacity-100"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Parentalidade</label>
-                    <div className="flex items-center gap-4 py-2">
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="parentalidade"
-                          checked={fichaData.parentalidade === 'biologico'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, parentalidade: 'biologico' }))}
-                          className="text-[var(--color-primary)]"
-                        />
-                        <span>Biológico</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="parentalidade"
-                          checked={fichaData.parentalidade === 'adotivo'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, parentalidade: 'adotivo' }))}
-                          className="text-[var(--color-primary)]"
-                        />
-                        <span>Adotivo</span>
-                      </label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Parentalidade</label>
+                    <div className="flex items-center gap-1.5 p-1 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-default)]">
+                      <button
+                        type="button"
+                        onClick={() => setFichaData((prev) => ({ ...prev, parentalidade: 'biologico' }))}
+                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
+                          fichaData.parentalidade === 'biologico'
+                            ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                            : 'text-slate-700 dark:text-slate-300 hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Biológico
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFichaData((prev) => ({ ...prev, parentalidade: 'adotivo' }))}
+                        className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
+                          fichaData.parentalidade === 'adotivo'
+                            ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                            : 'text-slate-700 dark:text-slate-300 hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Adotivo
+                      </button>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Telefone da Família</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Telefone da Família</label>
                     <input
                       type="text"
                       disabled
                       value={beneficiarioAtual.telefone_responsavel || beneficiarioAtual.telefone || 'Sem contato'}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-mono-data"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)]/90 border border-[var(--border-default)] text-slate-900 dark:text-slate-100 font-mono-data font-semibold disabled:opacity-100"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Trabalho da Mãe</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Trabalho da Mãe</label>
                     <input
                       type="text"
                       placeholder="Ex: Autônoma, Comércio, Do Lar..."
                       value={fichaData.trab_mae}
                       onChange={(e) => setFichaData((prev) => ({ ...prev, trab_mae: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Trabalho do Pai</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Trabalho do Pai</label>
                     <input
                       type="text"
                       placeholder="Ex: Pedreiro, Motorista, Informal..."
                       value={fichaData.trab_pai}
                       onChange={(e) => setFichaData((prev) => ({ ...prev, trab_pai: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Endereço Residencial</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Endereço Residencial</label>
                     <input
                       type="text"
                       disabled
                       value={`${beneficiarioAtual.rua || 'Rua não informada'}, ${beneficiarioAtual.numero || 'S/N'} - ${beneficiarioAtual.bairro || beneficiarioAtual.comunidade || ''} (${beneficiarioAtual.cidade || 'São Luís'}/${beneficiarioAtual.uf || 'MA'})`}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)]/90 border border-[var(--border-default)] text-slate-900 dark:text-slate-100 font-medium disabled:opacity-100"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">CEP</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">CEP</label>
                     <input
                       type="text"
                       disabled
                       value={beneficiarioAtual.cep || '—'}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-mono-data"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)]/90 border border-[var(--border-default)] text-slate-900 dark:text-slate-100 font-mono-data font-medium disabled:opacity-100"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Situação do Imóvel</label>
-                    <div className="flex items-center gap-3 py-2 text-xs flex-wrap">
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="tipo_habitacao"
-                          checked={fichaData.tipo_habitacao === 'propria'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, tipo_habitacao: 'propria' }))}
-                        />
-                        <span>Própria</span>
-                      </label>
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="tipo_habitacao"
-                          checked={fichaData.tipo_habitacao === 'alugada'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, tipo_habitacao: 'alugada' }))}
-                        />
-                        <span>Alugada</span>
-                      </label>
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="tipo_habitacao"
-                          checked={fichaData.tipo_habitacao === 'cedida'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, tipo_habitacao: 'cedida' }))}
-                        />
-                        <span>Cedida</span>
-                      </label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Situação do Imóvel</label>
+                    <div className="flex items-center gap-1 p-1 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-default)]">
+                      {(['propria', 'alugada', 'cedida'] as const).map((tipo) => {
+                        const labels = { propria: 'Própria', alugada: 'Alugada', cedida: 'Cedida' };
+                        const isSelected = fichaData.tipo_habitacao === tipo;
+                        return (
+                          <button
+                            key={tipo}
+                            type="button"
+                            onClick={() => setFichaData((prev) => ({ ...prev, tipo_habitacao: tipo }))}
+                            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
+                              isSelected
+                                ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                                : 'text-slate-700 dark:text-slate-300 hover:text-[var(--text-primary)]'
+                            }`}
+                          >
+                            {labels[tipo]}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Quantos cômodos tem a casa?</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Quantos cômodos tem a casa?</label>
                     <input
                       type="number"
                       placeholder="Ex: 4"
                       value={fichaData.num_comodos_casa}
                       onChange={(e) => setFichaData((prev) => ({ ...prev, num_comodos_casa: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Para quantas pessoas?</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Para quantas pessoas?</label>
                     <input
                       type="number"
                       placeholder="Ex: 5"
                       value={fichaData.num_pessoas_casa}
                       onChange={(e) => setFichaData((prev) => ({ ...prev, num_pessoas_casa: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                     />
                   </div>
                 </div>
 
                 {/* Sub-bloco: Responsável que trouxe para o projeto */}
-                <div className="pt-3 border-t border-[var(--border-default)] space-y-2">
-                  <span className="text-[11px] font-bold text-[var(--text-primary)] block">
+                <div className="pt-3.5 border-t border-[var(--border-default)] space-y-2">
+                  <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 block">
                     Responsável que trouxe a criança para o projeto:
                   </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 text-xs">
                     <div>
-                      <label className="text-[11px] font-semibold text-[var(--text-muted)] block mb-1">Nome do Responsável</label>
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Nome do Responsável</label>
                       <input
                         type="text"
                         placeholder="Nome completo..."
                         value={fichaData.responsavel_projeto_nome}
                         onChange={(e) => setFichaData((prev) => ({ ...prev, responsavel_projeto_nome: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-[var(--text-muted)] block mb-1">Grau de Parentesco</label>
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Grau de Parentesco</label>
                       <input
                         type="text"
                         placeholder="Mãe, Pai, Avó, Tia, Tutor..."
                         value={fichaData.responsavel_projeto_parentesco}
                         onChange={(e) => setFichaData((prev) => ({ ...prev, responsavel_projeto_parentesco: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-[var(--text-muted)] block mb-1">Data Nasc. / Idade</label>
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Data Nasc. / Idade</label>
                       <div className="grid grid-cols-2 gap-2">
                         <input
                           type="date"
                           value={fichaData.responsavel_projeto_data_nasc}
                           onChange={(e) => setFichaData((prev) => ({ ...prev, responsavel_projeto_data_nasc: e.target.value }))}
-                          className="w-full px-2 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                          className="w-full px-2 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                         />
                         <input
                           type="number"
                           placeholder="Idade"
                           value={fichaData.responsavel_projeto_idade}
                           onChange={(e) => setFichaData((prev) => ({ ...prev, responsavel_projeto_idade: e.target.value }))}
-                          className="w-full px-2 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                          className="w-full px-2 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-[var(--text-muted)] block mb-1">Naturalidade</label>
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Naturalidade</label>
                       <input
                         type="text"
                         placeholder="Ex: São Luís - MA"
                         value={fichaData.responsavel_projeto_naturalidade}
                         onChange={(e) => setFichaData((prev) => ({ ...prev, responsavel_projeto_naturalidade: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold text-[var(--text-muted)] block mb-1">Profissão</label>
+                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Profissão</label>
                       <input
                         type="text"
                         placeholder="Ex: Vendedora, Costureira..."
                         value={fichaData.responsavel_projeto_profissao}
                         onChange={(e) => setFichaData((prev) => ({ ...prev, responsavel_projeto_profissao: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                       />
                     </div>
                   </div>
@@ -846,75 +857,57 @@ export function PedagogiaFichaMonitoramento({
                   </h4>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 text-xs">
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Série &amp; Grau</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Série &amp; Grau</label>
                     <div className="grid grid-cols-2 gap-2">
                       <input
                         type="text"
                         placeholder="Série (ex: 4º)"
                         value={fichaData.serie_escolar}
                         onChange={(e) => setFichaData((prev) => ({ ...prev, serie_escolar: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                       />
                       <input
                         type="text"
                         placeholder="Grau (ex: Fundamental)"
                         value={fichaData.grau_escolar}
                         onChange={(e) => setFichaData((prev) => ({ ...prev, grau_escolar: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Período que estuda</label>
-                    <div className="flex items-center gap-2 py-2 text-xs flex-wrap">
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="periodo_estudo"
-                          checked={fichaData.periodo_estudo === 'manha'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, periodo_estudo: 'manha' }))}
-                        />
-                        <span>Manhã</span>
-                      </label>
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="periodo_estudo"
-                          checked={fichaData.periodo_estudo === 'tarde'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, periodo_estudo: 'tarde' }))}
-                        />
-                        <span>Tarde</span>
-                      </label>
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="periodo_estudo"
-                          checked={fichaData.periodo_estudo === 'noite'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, periodo_estudo: 'noite' }))}
-                        />
-                        <span>Noite</span>
-                      </label>
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="periodo_estudo"
-                          checked={fichaData.periodo_estudo === 'integral'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, periodo_estudo: 'integral' }))}
-                        />
-                        <span>Integral</span>
-                      </label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Período que estuda</label>
+                    <div className="flex items-center gap-1 p-1 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-default)] flex-wrap">
+                      {(['manha', 'tarde', 'noite', 'integral'] as const).map((per) => {
+                        const labels = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite', integral: 'Integral' };
+                        const isSelected = fichaData.periodo_estudo === per;
+                        return (
+                          <button
+                            key={per}
+                            type="button"
+                            onClick={() => setFichaData((prev) => ({ ...prev, periodo_estudo: per }))}
+                            className={`flex-1 py-1.5 px-1.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer text-center whitespace-nowrap ${
+                              isSelected
+                                ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                                : 'text-slate-700 dark:text-slate-300 hover:text-[var(--text-primary)]'
+                            }`}
+                          >
+                            {labels[per]}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Tipo da Escola</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Tipo da Escola</label>
                     <select
                       value={fichaData.tipo_escola}
                       onChange={(e: any) => setFichaData((prev) => ({ ...prev, tipo_escola: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                     >
                       <option value="">Selecione...</option>
                       <option value="municipal">Municipal</option>
@@ -926,66 +919,70 @@ export function PedagogiaFichaMonitoramento({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Nome da Escola</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Nome da Escola</label>
                     <input
                       type="text"
                       placeholder="Ex: U.E.B. Professora Maria Alice..."
                       value={fichaData.nome_escola}
                       onChange={(e) => setFichaData((prev) => ({ ...prev, nome_escola: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Endereço da Escola</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Endereço da Escola</label>
                     <input
                       type="text"
                       placeholder="Rua ou Bairro da escola..."
                       value={fichaData.endereco_escola}
                       onChange={(e) => setFichaData((prev) => ({ ...prev, endereco_escola: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Recebe algum auxílio do governo?</label>
-                    <div className="flex items-center gap-3 py-1">
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="recebe_auxilio"
-                          checked={fichaData.recebe_auxilio_governo === 'sim'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, recebe_auxilio_governo: 'sim' }))}
-                        />
-                        <span>Sim</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="recebe_auxilio"
-                          checked={fichaData.recebe_auxilio_governo === 'nao'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, recebe_auxilio_governo: 'nao' }))}
-                        />
-                        <span>Não</span>
-                      </label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Recebe algum auxílio do governo?</label>
+                    <div className="flex items-center gap-1 p-1 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-default)]">
+                      <button
+                        type="button"
+                        onClick={() => setFichaData((prev) => ({ ...prev, recebe_auxilio_governo: 'sim' }))}
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
+                          fichaData.recebe_auxilio_governo === 'sim'
+                            ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                            : 'text-slate-700 dark:text-slate-300 hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Sim
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFichaData((prev) => ({ ...prev, recebe_auxilio_governo: 'nao', qual_auxilio_governo: '' }))}
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
+                          fichaData.recebe_auxilio_governo === 'nao'
+                            ? 'bg-slate-600 text-white shadow-xs font-bold'
+                            : 'text-slate-700 dark:text-slate-300 hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Não
+                      </button>
                     </div>
                     {fichaData.recebe_auxilio_governo === 'sim' && (
                       <input
                         type="text"
-                        placeholder="Qual? (ex: Bolsa Família, BPC...)"
+                        placeholder="Qual auxílio? (ex: Bolsa Família, BPC...)"
                         value={fichaData.qual_auxilio_governo}
                         onChange={(e) => setFichaData((prev) => ({ ...prev, qual_auxilio_governo: e.target.value }))}
-                        className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] text-xs"
+                        className="w-full mt-2 px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] text-xs font-medium"
                       />
                     )}
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Renda familiar em Salários Mínimos</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Renda familiar em Salários Mínimos</label>
                     <select
                       value={fichaData.faixa_renda_sm}
                       onChange={(e: any) => setFichaData((prev) => ({ ...prev, faixa_renda_sm: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                     >
                       <option value="">Selecione...</option>
                       <option value="ate_1">Até 1 Salário Mínimo</option>
@@ -998,45 +995,49 @@ export function PedagogiaFichaMonitoramento({
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Quem contribui para a renda familiar?</label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Quem contribui para a renda familiar?</label>
                     <input
                       type="text"
                       placeholder="Ex: Mãe e Pai, Apenas Mãe, Avó..."
                       value={fichaData.quem_contribui_renda}
                       onChange={(e) => setFichaData((prev) => ({ ...prev, quem_contribui_renda: e.target.value }))}
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Possui convênio médico?</label>
-                    <div className="flex items-center gap-3 py-1">
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="convenio_medico"
-                          checked={fichaData.possui_convenio_medico === 'sim'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, possui_convenio_medico: 'sim' }))}
-                        />
-                        <span>Sim</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="convenio_medico"
-                          checked={fichaData.possui_convenio_medico === 'nao'}
-                          onChange={() => setFichaData((prev) => ({ ...prev, possui_convenio_medico: 'nao' }))}
-                        />
-                        <span>Não (SUS)</span>
-                      </label>
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">Possui convênio médico?</label>
+                    <div className="flex items-center gap-1 p-1 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-default)]">
+                      <button
+                        type="button"
+                        onClick={() => setFichaData((prev) => ({ ...prev, possui_convenio_medico: 'sim' }))}
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
+                          fichaData.possui_convenio_medico === 'sim'
+                            ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                            : 'text-slate-700 dark:text-slate-300 hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Sim
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFichaData((prev) => ({ ...prev, possui_convenio_medico: 'nao', qual_convenio_medico: '' }))}
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center ${
+                          fichaData.possui_convenio_medico === 'nao'
+                            ? 'bg-slate-600 text-white shadow-xs font-bold'
+                            : 'text-slate-700 dark:text-slate-300 hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Não (SUS)
+                      </button>
                     </div>
                     {fichaData.possui_convenio_medico === 'sim' && (
                       <input
                         type="text"
-                        placeholder="Qual convênio/plano?"
+                        placeholder="Qual convênio/plano de saúde?"
                         value={fichaData.qual_convenio_medico}
                         onChange={(e) => setFichaData((prev) => ({ ...prev, qual_convenio_medico: e.target.value }))}
-                        className="w-full mt-1.5 px-3 py-1.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] text-xs"
+                        className="w-full mt-2 px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] text-xs font-medium"
                       />
                     )}
                   </div>
@@ -1045,14 +1046,14 @@ export function PedagogiaFichaMonitoramento({
 
               {/* ══ BLOCO 3: CLASSIFICAÇÃO SOCIOECONÔMICA (INVENTÁRIO DE BENS) ══ */}
               <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-                <div className="border-b border-[var(--border-default)] pb-2 flex items-center justify-between">
+                <div className="border-b border-[var(--border-default)] pb-2 flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-[var(--color-primary)]" />
                     <h4 className="font-bold text-xs uppercase tracking-wider text-[var(--text-primary)]">
                       3. Dados de Classificação Socioeconômica (Inventário de Bens)
                     </h4>
                   </div>
-                  <span className="text-[11px] text-[var(--text-muted)]">
+                  <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
                     Escala: Não tem / 1 / 2 / 3 ou mais
                   </span>
                 </div>
@@ -1066,7 +1067,7 @@ export function PedagogiaFichaMonitoramento({
                         key={item}
                         className="p-3 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] flex items-center justify-between gap-2"
                       >
-                        <span className="font-medium text-[var(--text-primary)]">{item}</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{item}</span>
                         <div className="flex items-center gap-1 shrink-0">
                           {OPCOES_ESCALA.map((opcao) => {
                             const isSelected = valorAtual === opcao;
@@ -1078,7 +1079,7 @@ export function PedagogiaFichaMonitoramento({
                                 className={`px-2 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
                                   isSelected
                                     ? 'bg-[var(--color-primary)] text-white shadow-xs'
-                                    : 'bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--border-default)]'
+                                    : 'bg-[var(--bg-elevated)] text-slate-700 dark:text-slate-300 hover:text-[var(--text-primary)] border border-[var(--border-default)]'
                                 }`}
                               >
                                 {opcao}
@@ -1094,7 +1095,7 @@ export function PedagogiaFichaMonitoramento({
 
               {/* Bloco de Observações Adicionais */}
               <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-2">
-                <label className="text-xs font-bold text-[var(--text-primary)] block">
+                <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
                   Observações Gerais da Matrícula &amp; Monitoramento:
                 </label>
                 <textarea
@@ -1102,7 +1103,7 @@ export function PedagogiaFichaMonitoramento({
                   placeholder="Informações relevantes sobre a rotina da criança, dinâmicas familiares ou encaminhamentos pedagógicos..."
                   value={fichaData.observacoes_adicionais}
                   onChange={(e) => setFichaData((prev) => ({ ...prev, observacoes_adicionais: e.target.value }))}
-                  className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)]"
+                  className="w-full p-3 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[var(--color-primary)] font-medium"
                 />
               </div>
 
