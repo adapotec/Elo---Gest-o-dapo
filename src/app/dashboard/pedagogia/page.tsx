@@ -1,16 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Topbar } from '@/components/layout/Topbar';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { createClient } from '@/lib/supabase/client';
-import { PedagogiaFrequencia } from '@/components/dashboard/pedagogia/PedagogiaFrequencia';
+import { PedagogiaPlanosAula } from '@/components/dashboard/pedagogia/PedagogiaPlanosAula';
 import { PedagogiaDossie } from '@/components/dashboard/pedagogia/PedagogiaDossie';
 import { PedagogiaSocioemocional } from '@/components/dashboard/pedagogia/PedagogiaSocioemocional';
-import { PedagogiaPlanosAula } from '@/components/dashboard/pedagogia/PedagogiaPlanosAula';
-import { FieldInfo } from '@/components/ui/FieldInfo';
+import { PedagogiaFrequencia } from '@/components/dashboard/pedagogia/PedagogiaFrequencia';
+import { PedagogiaFichaMonitoramento } from '@/components/dashboard/pedagogia/PedagogiaFichaMonitoramento';
 import {
   GraduationCap,
   FolderKanban,
@@ -18,7 +18,7 @@ import {
   Calendar,
   BookOpen,
   Heart,
-  Target,
+  FileText,
 } from 'lucide-react';
 
 interface ProjetoItem {
@@ -30,7 +30,7 @@ interface ProjetoItem {
   metas?: string;
 }
 
-type TabKey = 'frequencia' | 'dossie' | 'socioemocional' | 'planos_aula';
+type TabKey = 'planos_aula' | 'dossie' | 'socioemocional' | 'frequencia' | 'ficha_monitoramento';
 
 interface TabItem {
   key: TabKey;
@@ -40,14 +40,15 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { key: 'frequencia', label: 'Frequência & Chamada', icon: Calendar, color: '#F2632D' },
+  { key: 'planos_aula', label: 'Planos de Aula', icon: BookOpen, color: '#3B82F6' },
   { key: 'dossie', label: 'Dossiê do Beneficiário', icon: Users, color: '#1C9C82' },
   { key: 'socioemocional', label: 'Acomp. Socioemocional', icon: Heart, color: '#93368F' },
-  { key: 'planos_aula', label: 'Planos de Aula', icon: BookOpen, color: '#3B82F6' },
+  { key: 'frequencia', label: 'Frequência & Chamada', icon: Calendar, color: '#F2632D' },
+  { key: 'ficha_monitoramento', label: 'Ficha de Monitoramento', icon: FileText, color: '#0EA5E9' },
 ];
 
 export default function PedagogiaPage() {
-  const [activeTab, setActiveTab] = useState<TabKey>('frequencia');
+  const [activeTab, setActiveTab] = useState<TabKey>('planos_aula');
   const [projetos, setProjetos] = useState<ProjetoItem[]>([]);
   const [selectedProjetoId, setSelectedProjetoId] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -93,15 +94,21 @@ export default function PedagogiaPage() {
     if (!selectedProjetoId) return;
     const supabase = createClient();
 
-    // A. Beneficiários inscritos neste projeto
+    // A. Beneficiários inscritos neste projeto (Ativos e Desligados)
     const { data: inscData } = await supabase
       .from('inscricoes')
-      .select('id, beneficiarios(id, nome_completo, data_nascimento, cpf, rg, telefone, email, rua, numero, bairro, comunidade, cidade, uf, contatos_emergencia, observacoes)')
-      .eq('projeto_id', selectedProjetoId)
-      .eq('status', 'ativo');
+      .select('id, status, data_inscricao, beneficiarios(id, nome_completo, data_nascimento, cpf, rg, telefone, email, rua, numero, complemento, bairro, comunidade, cidade, uf, cep, genero, cor_raca, escolaridade, profissao, nome_responsavel, telefone_responsavel, parentesco_responsavel, renda_familiar, num_dependentes, num_membros_familia, contatos_emergencia, observacoes)')
+      .eq('projeto_id', selectedProjetoId);
 
     const listaBeneficiarios = (inscData || [])
-      .map((item: any) => item.beneficiarios)
+      .map((item: any) => {
+        if (!item.beneficiarios) return null;
+        return {
+          ...item.beneficiarios,
+          inscricao_id: item.id,
+          inscricao_status: item.status || 'ativo',
+        };
+      })
       .filter(Boolean);
     setInscritos(listaBeneficiarios);
 
@@ -149,11 +156,16 @@ export default function PedagogiaPage() {
 
   const projetoAtivo = projetos.find((p) => p.id === selectedProjetoId);
 
+  // Alunos ativos para módulos operacionais
+  const inscritosAtivos = useMemo(() => {
+    return inscritos.filter((b) => b.inscricao_status !== 'desligado');
+  }, [inscritos]);
+
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <Topbar
         title="Gestão Pedagógica & Metodologia"
-        subtitle="Controle de Frequência, Dossiê do Aluno, Acompanhamento Socioemocional e Planos de Aula"
+        subtitle="Planos de Aula, Dossiê do Aluno, Acompanhamento Socioemocional, Frequência e Ficha de Monitoramento"
         action={
           selectedProjetoId ? (
             <Link href={`/dashboard/projetos/${selectedProjetoId}`}>
@@ -167,7 +179,7 @@ export default function PedagogiaPage() {
 
       <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto transition-all duration-300">
         {/* ═══════════════════════════════════════════════════════════════
-            CABEÇALHO DO PROJETO VIGENTE (PADRÃO IDÊNTICO A PROJETOS)
+            CABEÇALHO DO PROJETO VIGENTE
         ═══════════════════════════════════════════════════════════════ */}
         <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] overflow-hidden transition-all">
           <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -205,7 +217,7 @@ export default function PedagogiaPage() {
                   )}
                 </div>
                 <p className="text-xs text-[var(--text-muted)]">
-                  Inscritos: <strong className="text-[var(--text-secondary)] font-mono-data">{inscritos.length}</strong> • Encontros: <strong className="text-[var(--text-secondary)] font-mono-data">{acoes.length}</strong> • Metas: <strong className="text-[var(--text-secondary)] font-mono-data">{metas.length}</strong>
+                  Inscritos: <strong className="text-[var(--text-secondary)] font-mono-data">{inscritosAtivos.length}</strong> ativos ({inscritos.length} totais) • Encontros: <strong className="text-[var(--text-secondary)] font-mono-data">{acoes.length}</strong> • Metas: <strong className="text-[var(--text-secondary)] font-mono-data">{metas.length}</strong>
                 </p>
               </div>
             </div>
@@ -223,10 +235,10 @@ export default function PedagogiaPage() {
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════
-            PAINEL DE NAVEGAÇÃO SUPERIOR POR ÁREAS (PADRÃO IDÊNTICO A PROJETOS)
+            PAINEL DE NAVEGAÇÃO SUPERIOR POR ÁREAS (ORDEM ATUALIZADA)
         ═══════════════════════════════════════════════════════════════ */}
         <div className="p-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
             {TABS.map((tab) => {
               const IconComp = tab.icon;
               const isActive = activeTab === tab.key;
@@ -242,7 +254,7 @@ export default function PedagogiaPage() {
                   }`}
                 >
                   <IconComp className="w-5 h-5" style={{ color: isActive ? 'var(--color-primary)' : tab.color }} />
-                  <span>{tab.label}</span>
+                  <span className="text-center">{tab.label}</span>
                 </button>
               );
             })}
@@ -250,7 +262,7 @@ export default function PedagogiaPage() {
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════
-            BLOCO 3: CONTEÚDO DA ABA ATIVA
+            CONTEÚDO DA ABA ATIVA
         ═══════════════════════════════════════════════════════════════ */}
         {!selectedProjetoId ? (
           <div className="p-12 rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] text-center">
@@ -261,6 +273,35 @@ export default function PedagogiaPage() {
           </div>
         ) : (
           <div>
+            {activeTab === 'planos_aula' && (
+              <PedagogiaPlanosAula
+                projetoId={selectedProjetoId}
+                projetoNome={projetoAtivo?.nome || 'Projeto Social'}
+                metas={metas}
+                acoes={acoes}
+                voluntarios={voluntarios}
+                onRefresh={carregarDadosDoProjeto}
+              />
+            )}
+
+            {activeTab === 'dossie' && (
+              <PedagogiaDossie
+                projetoId={selectedProjetoId}
+                projetoNome={projetoAtivo?.nome || 'Projeto Social'}
+                inscritos={inscritosAtivos}
+              />
+            )}
+
+            {activeTab === 'socioemocional' && (
+              <PedagogiaSocioemocional
+                projetoId={selectedProjetoId}
+                projetoNome={projetoAtivo?.nome || 'Projeto Social'}
+                inscritos={inscritosAtivos}
+                voluntarios={voluntarios}
+                onRefresh={carregarDadosDoProjeto}
+              />
+            )}
+
             {activeTab === 'frequencia' && (
               <PedagogiaFrequencia
                 projetoId={selectedProjetoId}
@@ -271,31 +312,11 @@ export default function PedagogiaPage() {
               />
             )}
 
-            {activeTab === 'dossie' && (
-              <PedagogiaDossie
+            {activeTab === 'ficha_monitoramento' && (
+              <PedagogiaFichaMonitoramento
                 projetoId={selectedProjetoId}
                 projetoNome={projetoAtivo?.nome || 'Projeto Social'}
                 inscritos={inscritos}
-              />
-            )}
-
-            {activeTab === 'socioemocional' && (
-              <PedagogiaSocioemocional
-                projetoId={selectedProjetoId}
-                projetoNome={projetoAtivo?.nome || 'Projeto Social'}
-                inscritos={inscritos}
-                voluntarios={voluntarios}
-                onRefresh={carregarDadosDoProjeto}
-              />
-            )}
-
-            {activeTab === 'planos_aula' && (
-              <PedagogiaPlanosAula
-                projetoId={selectedProjetoId}
-                projetoNome={projetoAtivo?.nome || 'Projeto Social'}
-                metas={metas}
-                acoes={acoes}
-                voluntarios={voluntarios}
                 onRefresh={carregarDadosDoProjeto}
               />
             )}
