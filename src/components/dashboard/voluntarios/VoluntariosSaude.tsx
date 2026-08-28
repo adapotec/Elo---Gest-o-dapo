@@ -73,7 +73,7 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
       width: '260px',
       render: (item) => (
         <div className="flex items-center gap-3 min-w-0 pr-2">
-          <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-600 font-bold flex items-center justify-center text-xs overflow-hidden shrink-0 border border-red-500/20 shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-red-500/10 text-red-600 font-bold flex items-center justify-center text-xs overflow-hidden shrink-0 border border-red-500/20 shadow-xs">
             {item.avatar_url ? (
               <img src={item.avatar_url} alt={item.nome_completo} className="w-full h-full object-cover" />
             ) : (
@@ -211,71 +211,71 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
   ];
 
   return (
-    <div className="space-y-6">
-      {/* ── 1. CARDS DE KPIS DE SAÚDE OPERACIONAL ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
-          <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-600 flex items-center justify-center shrink-0 shadow-xs">
-            <Heart className="w-6 h-6" />
+    <div className="space-y-5">
+      {/* ── 1. CARDS DE KPIS DE SAÚDE OPERACIONAL (MICRO-KPIS COMPACTOS) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center shrink-0">
+            <Heart className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Prontuários
             </p>
-            <p className="text-xl sm:text-2xl font-display font-extrabold text-[var(--text-primary)]">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
               {stats.total}
             </p>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0 shadow-xs">
-            <Droplet className="w-6 h-6" />
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
+            <Droplet className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tipo Sanguíneo
             </p>
             <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-xl sm:text-2xl font-display font-extrabold text-[var(--text-primary)]">
+              <span className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
                 {stats.comTipoSanguineo}
               </span>
-              <span className="text-xs text-[var(--text-muted)]">({stats.total - stats.comTipoSanguineo} pendentes)</span>
+              <span className="text-[10px] text-[var(--text-muted)]">({stats.total - stats.comTipoSanguineo} pend.)</span>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 shadow-xs">
-            <AlertTriangle className="w-6 h-6" />
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Alergias Mapeadas
             </p>
-            <p className="text-xl sm:text-2xl font-display font-extrabold text-amber-600">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-amber-600">
               {stats.comAlergias}
             </p>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 shadow-xs">
-            <ShieldAlert className="w-6 h-6" />
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+            <ShieldAlert className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Contatos SOS Ativos
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+              Contatos SOS
             </p>
-            <p className="text-xl sm:text-2xl font-display font-extrabold text-emerald-600">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-emerald-600">
               {stats.comContatoEmergencia}
             </p>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* ── 2. PAINEL DE BUSCA DE PRONTUÁRIO ── */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)] flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)] flex flex-col md:flex-row items-center justify-between gap-3">
         <div className="relative flex-1 w-full">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input

@@ -20,7 +20,6 @@ import {
   FileText,
   Plus,
   RefreshCw,
-  Sparkles,
 } from 'lucide-react';
 
 type TabKey = 'equipe' | 'saude' | 'recesso' | 'documentos';
@@ -95,8 +94,8 @@ function VoluntariosContent() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* ── 1. CABEÇALHO DA PÁGINA (TOPBAR) ── */}
+    <div className="flex-1 flex flex-col min-w-0">
+      {/* ── 1. CABEÇALHO DA PÁGINA (TOPBAR FIXO NO TOPO) ── */}
       <Topbar
         title="Gestão de Voluntários & Equipe"
         subtitle="Ciclo de vida, prontuário operacional de saúde, recessos e emissão de documentos oficiais timbrados."
@@ -120,67 +119,71 @@ function VoluntariosContent() {
         }
       />
 
-      {/* ── 2. SELETOR DE ABAS PRINCIPAIS ── */}
-      <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-[var(--shadow-card)] overflow-x-auto custom-scrollbar">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
+      {/* ── 2. CONTAINER COM ESPAÇAMENTO AREJADO E CENTRALIZADO (MAX-W-7XL) ── */}
+      <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto transition-all duration-300">
+        
+        {/* Seletor de Abas Superiores */}
+        <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-[var(--shadow-card)] overflow-x-auto custom-scrollbar">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
 
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => handleTabChange(tab.key)}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer ${
-                isActive
-                  ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-xs border border-[var(--border-default)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/50'
-              }`}
-            >
-              <div
-                className="w-6 h-6 rounded-lg flex items-center justify-center transition-colors"
-                style={{
-                  backgroundColor: isActive ? `${tab.color}20` : 'transparent',
-                  color: isActive ? tab.color : 'currentColor',
-                }}
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => handleTabChange(tab.key)}
+                className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer ${
+                  isActive
+                    ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-xs border border-[var(--border-default)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/50'
+                }`}
               >
-                <Icon className="w-4 h-4" />
-              </div>
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+                <div
+                  className="w-5 h-5 rounded-lg flex items-center justify-center transition-colors"
+                  style={{
+                    backgroundColor: isActive ? `${tab.color}20` : 'transparent',
+                    color: isActive ? tab.color : 'currentColor',
+                  }}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </div>
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-      {/* ── 3. RENDERIZAÇÃO DA ABA ATIVA ── */}
-      <div className="animate-in fade-in duration-200">
-        {activeTab === 'equipe' && (
-          <VoluntariosEquipe
-            voluntarios={voluntarios}
-            loading={loading}
-            onRefresh={fetchVoluntarios}
-            onSelectParaDocumento={handleSelectParaDocumento}
-          />
-        )}
+        {/* Conteúdo Renderizado da Aba Ativa */}
+        <div className="animate-in fade-in duration-200">
+          {activeTab === 'equipe' && (
+            <VoluntariosEquipe
+              voluntarios={voluntarios}
+              loading={loading}
+              onRefresh={fetchVoluntarios}
+              onSelectParaDocumento={handleSelectParaDocumento}
+            />
+          )}
 
-        {activeTab === 'saude' && (
-          <VoluntariosSaude
-            voluntarios={voluntarios}
-            loading={loading}
-          />
-        )}
+          {activeTab === 'saude' && (
+            <VoluntariosSaude
+              voluntarios={voluntarios}
+              loading={loading}
+            />
+          )}
 
-        {activeTab === 'recesso' && (
-          <VoluntariosRecesso />
-        )}
+          {activeTab === 'recesso' && (
+            <VoluntariosRecesso />
+          )}
 
-        {activeTab === 'documentos' && (
-          <VoluntariosDocumentos
-            voluntarios={voluntarios}
-            voluntarioPreSelecionado={voluntarioParaDoc}
-            tipoDocInicial={tipoDocContexto}
-          />
-        )}
+          {activeTab === 'documentos' && (
+            <VoluntariosDocumentos
+              voluntarios={voluntarios}
+              voluntarioPreSelecionado={voluntarioParaDoc}
+              tipoDocInicial={tipoDocContexto}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

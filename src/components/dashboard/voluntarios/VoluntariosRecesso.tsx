@@ -241,130 +241,128 @@ export function VoluntariosRecesso() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* ── 1. CARDS DE RESUMO DE RECESSOS ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-l-4 border-l-[#1C9C82]">
-          <div className="w-11 h-11 rounded-2xl bg-[#1C9C82]/10 text-[#1C9C82] flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5" />
+    <div className="space-y-5">
+      {/* ── 1. CARDS DE RESUMO DE RECESSOS (MICRO-KPIS COMPACTOS) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#1C9C82]/10 text-[#1C9C82] flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Equipe Ativa
             </p>
-            <p className="text-xl sm:text-2xl font-display font-extrabold text-[var(--text-primary)]">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
               {totalVoluntariosAtivos}
             </p>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-l-4 border-l-[#F2632D]">
-          <div className="w-11 h-11 rounded-2xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
-            <Home className="w-5 h-5" />
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
+            <Home className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Dia da Família
             </p>
-            <p className="text-sm font-bold text-[var(--text-primary)]">
+            <p className="text-sm font-bold text-[var(--text-primary)] truncate">
               {diaFamiliaAtivo ? `Dia ${primeiroDomingo} (Ativo)` : 'Desativado'}
             </p>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-l-4 border-l-purple-500">
-          <div className="w-11 h-11 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center shrink-0">
-            <Coffee className="w-5 h-5" />
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center shrink-0">
+            <Coffee className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Folgas Coletivas
             </p>
-            <p className="text-xl sm:text-2xl font-display font-extrabold text-purple-600">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-purple-600">
               {folgasColetivas}
             </p>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-l-4 border-l-amber-500">
-          <div className="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5" />
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+            <Clock className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Folgas Individuais
             </p>
-            <p className="text-xl sm:text-2xl font-display font-extrabold text-amber-600">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-amber-600">
               {folgasIndividuais}
             </p>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* ── 2. NAVEGAÇÃO ENTRE MESES E SUB-ABAS ── */}
-      <Card className="p-4 sm:p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handlePrevMonth}
-              className="p-2 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors cursor-pointer"
-              aria-label="Mês anterior"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <h3 className="font-display font-bold text-lg text-[var(--text-primary)] min-w-[200px] text-center">
-              {MESES_NOMES[currentMonth]} {currentYear}
-            </h3>
-            <button
-              onClick={handleNextMonth}
-              className="p-2 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors cursor-pointer"
-              aria-label="Próximo mês"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
-            <button
-              onClick={() => setActiveSubTab('calendario')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeSubTab === 'calendario'
-                  ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              Calendário Mensal
-            </button>
-            <button
-              onClick={() => setActiveSubTab('tabela')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeSubTab === 'tabela'
-                  ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              Solicitar Folga
-            </button>
-            <button
-              onClick={() => setActiveSubTab('admin')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeSubTab === 'admin'
-                  ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              Gestão Dia da Família
-            </button>
-          </div>
+      <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrevMonth}
+            className="p-1.5 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors cursor-pointer"
+            aria-label="Mês anterior"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <h3 className="font-display font-bold text-sm sm:text-base text-[var(--text-primary)] min-w-[180px] text-center">
+            {MESES_NOMES[currentMonth]} {currentYear}
+          </h3>
+          <button
+            onClick={handleNextMonth}
+            className="p-1.5 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors cursor-pointer"
+            aria-label="Próximo mês"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
-      </Card>
+
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
+          <button
+            onClick={() => setActiveSubTab('calendario')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeSubTab === 'calendario'
+                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            Calendário
+          </button>
+          <button
+            onClick={() => setActiveSubTab('tabela')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeSubTab === 'tabela'
+                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            Solicitar Folga
+          </button>
+          <button
+            onClick={() => setActiveSubTab('admin')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeSubTab === 'admin'
+                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            Dia da Família
+          </button>
+        </div>
+      </div>
 
       {/* ── 3. CONTEÚDO DAS SUB-ABAS ── */}
       {activeSubTab === 'calendario' && (
-        <Card className="p-4 sm:p-6 overflow-x-auto">
+        <Card className="p-4 sm:p-5 overflow-x-auto">
           <div className="min-w-[600px]">
             {/* Dias da Semana */}
-            <div className="grid grid-cols-7 gap-2 mb-2 text-center text-xs font-bold text-[var(--text-muted)] uppercase">
+            <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[11px] font-bold text-[var(--text-muted)] uppercase">
               {DIAS_SEMANA.map((d, i) => (
                 <div key={d} className={i === 0 ? 'text-red-500' : ''}>
                   {d}
@@ -376,7 +374,7 @@ export function VoluntariosRecesso() {
             <div className="grid grid-cols-7 gap-2">
               {calendarDays.map((day, idx) => {
                 if (day === null) {
-                  return <div key={`empty-${idx}`} className="h-24 rounded-xl bg-[var(--bg-secondary)]/30" />;
+                  return <div key={`empty-${idx}`} className="h-20 rounded-xl bg-[var(--bg-secondary)]/30" />;
                 }
 
                 const isPrimeiroDom = diaFamiliaAtivo && day === primeiroDomingo;
@@ -387,7 +385,7 @@ export function VoluntariosRecesso() {
                   <div
                     key={`day-${day}`}
                     onClick={() => setSelectedDay(day)}
-                    className={`h-24 p-2 rounded-xl border flex flex-col justify-between transition-all cursor-pointer ${
+                    className={`h-20 p-2 rounded-xl border flex flex-col justify-between transition-all cursor-pointer ${
                       isPrimeiroDom
                         ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/20'
                         : isUltimoFds
@@ -406,7 +404,7 @@ export function VoluntariosRecesso() {
                       )}
                     </div>
 
-                    <div className="space-y-1 overflow-hidden">
+                    <div className="space-y-0.5 overflow-hidden">
                       {recessosDoDia.slice(0, 2).map((r) => (
                         <div
                           key={r.id}

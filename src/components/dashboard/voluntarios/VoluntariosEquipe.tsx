@@ -144,7 +144,7 @@ export function VoluntariosEquipe({
       width: '280px',
       render: (item) => (
         <div className="flex items-center gap-3 min-w-0 pr-2">
-          <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold flex items-center justify-center text-xs overflow-hidden shrink-0 border border-[var(--border-default)] shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold flex items-center justify-center text-xs overflow-hidden shrink-0 border border-[var(--border-default)] shadow-xs">
             {item.avatar_url ? (
               <img src={item.avatar_url} alt={item.nome_completo} className="w-full h-full object-cover" />
             ) : (
@@ -237,74 +237,74 @@ export function VoluntariosEquipe({
   ];
 
   return (
-    <div className="space-y-6">
-      {/* ── 1. CARDS DE KPIS EXECUTIVOS (SOFT BENTO) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0 shadow-xs">
-            <Users className="w-6 h-6" />
+    <div className="space-y-5">
+      {/* ── 1. CARDS DE KPIS EXECUTIVOS (MICRO-KPIS COMPACTOS E MINIMALISTAS) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
+            <Users className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Total Voluntários
             </p>
-            <p className="text-xl sm:text-2xl font-display font-extrabold text-[var(--text-primary)]">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
               {stats.total}
             </p>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 shadow-xs">
-            <UserCheck className="w-6 h-6" />
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+            <UserCheck className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Ativos / Campo
             </p>
             <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-xl sm:text-2xl font-display font-extrabold text-[var(--text-primary)]">
+              <span className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
                 {stats.ativos}
               </span>
-              <span className="text-xs text-[var(--text-muted)]">({stats.inativos} inativos)</span>
+              <span className="text-[10px] text-[var(--text-muted)]">({stats.inativos} inat.)</span>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
-          <div className="w-12 h-12 rounded-2xl bg-[#93368F]/10 text-[#93368F] flex items-center justify-center shrink-0 shadow-xs">
-            <HeartHandshake className="w-6 h-6" />
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#93368F]/10 text-[#93368F] flex items-center justify-center shrink-0">
+            <HeartHandshake className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Operacionais
             </p>
             <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-xl sm:text-2xl font-display font-extrabold text-[var(--text-primary)]">
+              <span className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
                 {stats.operacionais}
               </span>
-              <span className="text-xs text-[var(--text-muted)]">({stats.externos} apoio)</span>
+              <span className="text-[10px] text-[var(--text-muted)]">({stats.externos} apoio)</span>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 shadow-xs">
-            <Sparkles className="w-6 h-6" />
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+            <Sparkles className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Habilidades
             </p>
-            <p className="text-xl sm:text-2xl font-display font-extrabold text-[var(--text-primary)]">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
               {todasHabilidades.length > 0 ? `${todasHabilidades.length} Tags` : '100% Equipe'}
             </p>
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* ── 2. PAINEL DE BUSCA & FILTROS (ALINHAMENTO EM LINHA FLUIDA) ── */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)] space-y-3">
+      <div className="p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)] space-y-3">
         <div className="flex flex-col md:flex-row items-center gap-3">
           {/* Input de Busca com flex-1 */}
           <div className="relative flex-1 w-full">
@@ -349,7 +349,7 @@ export function VoluntariosEquipe({
         {/* Pílulas de Competências / Habilidades (se houver) */}
         {todasHabilidades.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--border-default)]">
-            <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mr-1">
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mr-1">
               Habilidades:
             </span>
             <button
