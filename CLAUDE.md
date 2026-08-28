@@ -53,6 +53,24 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-28 — `[VOLUNTÁRIOS] & [MÓDULO UNIFICADO EM 4 ABAS & DOCUMENTOS TIMBRADOS]` 🟢 IMPLEMENTADO
+
+**Reestruturação Modular do Voluntariado, Prontuário de Saúde, Recessos e Documentos Oficiais**
+- **4 Abas Principais em `/dashboard/voluntarios`**:
+  1. `equipe` (**Equipe & Voluntários**): Cards KPIs executivos, busca por habilidades, filtros de tipo/status, WhatsApp direto e `DetailPanel`.
+  2. `saude` (**Saúde & Emergência**): Prontuário operacional da equipe com Tipos Sanguíneos, Alergias, Medicamentos contínuos, contatos SOS e emissão de **Crachá / Cartão de Emergência Timbrado em PDF** para saídas a campo.
+  3. `recesso` (**Recessos & Folgas**): Incorporação do calendário do Dia da Família (1º domingo), controle de limites e solicitação de folgas.
+  4. `documentos` (**Documentos & Certificados**): Emissor do **Termo de Adesão ao Trabalho Voluntário (Lei Federal nº 9.608/1998)** e do **Certificado de Reconhecimento & Horas Complementares** em papel timbrado oficial com assinatura.
+- **Componentes criados**:
+  - `src/components/dashboard/voluntarios/VoluntariosEquipe.tsx`
+  - `src/components/dashboard/voluntarios/VoluntariosSaude.tsx`
+  - `src/components/dashboard/voluntarios/VoluntariosRecesso.tsx`
+  - `src/components/dashboard/voluntarios/VoluntariosDocumentos.tsx`
+- **Migração SQL**:
+  - `supabase/migrations/20260828_add_voluntarios_skills_and_docs.sql`
+
+---
+
 ### 2026-08-21 — `[PROJETOS] & [STATUS & FIXAÇÃO & ORDENAÇÃO]` 🟢 IMPLEMENTADO
 
 **Status "Em Planejamento", Fixação no Topo e Ordenação por Movimentação em `/projetos`**
