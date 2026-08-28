@@ -70,8 +70,9 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
     {
       key: 'nome_completo',
       header: 'Voluntário(a)',
+      width: '260px',
       render: (item) => (
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-3 min-w-0 pr-2">
           <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-600 font-bold flex items-center justify-center text-xs overflow-hidden shrink-0 border border-red-500/20 shadow-xs">
             {item.avatar_url ? (
               <img src={item.avatar_url} alt={item.nome_completo} className="w-full h-full object-cover" />
@@ -79,7 +80,7 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
               item.nome_completo.charAt(0).toUpperCase()
             )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="font-semibold text-xs sm:text-sm text-[var(--text-primary)] truncate">
               {item.nome_completo}
             </p>
@@ -106,14 +107,15 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
     {
       key: 'alergias',
       header: 'Alergias & Restrições',
+      width: '200px',
       render: (item) => {
         const hasAlergia = item.alergias && item.alergias.trim() !== '' && item.alergias !== 'Nenhuma' && item.alergias !== 'Não informado';
         return (
           <div className="text-xs min-w-0">
             {hasAlergia ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20 max-w-[180px]">
                 <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate max-w-[200px]">{item.alergias}</span>
+                <span className="truncate">{item.alergias}</span>
               </span>
             ) : (
               <span className="text-[var(--text-muted)] text-[11px]">Nenhuma relatada</span>
@@ -124,7 +126,8 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
     },
     {
       key: 'contato_emergencia',
-      header: 'Contato de Emergência (SOS)',
+      header: 'Contato SOS (Emergência)',
+      width: '230px',
       render: (item) => {
         const waUrl = getWhatsAppUrl(item.contato_emergencia_telefone, item.nome_completo, item.contato_emergencia_nome || undefined);
         const hasContact = Boolean(item.contato_emergencia_telefone);
@@ -134,7 +137,7 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
         }
 
         return (
-          <div className="text-xs min-w-0 space-y-0.5">
+          <div className="text-xs min-w-0 space-y-1">
             <p className="font-semibold text-[var(--text-primary)] truncate">
               {item.contato_emergencia_nome || 'Responsável'} {item.contato_emergencia_parentesco ? `(${item.contato_emergencia_parentesco})` : ''}
             </p>
@@ -153,7 +156,7 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 text-[10px] font-bold flex items-center gap-1"
+                  className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 text-[10px] font-bold flex items-center gap-1 transition-colors"
                   title="WhatsApp SOS"
                 >
                   <MessageCircle className="w-3 h-3" />
@@ -168,9 +171,9 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
     {
       key: 'plano_saude',
       header: 'Plano / SUS',
-      width: '140px',
+      width: '130px',
       render: (item) => (
-        <div className="text-xs">
+        <div className="text-xs space-y-0.5">
           <p className="font-medium text-[var(--text-primary)] truncate">
             {item.plano_saude || 'SUS'}
           </p>
@@ -193,7 +196,7 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
         <Button
           variant="secondary"
           size="sm"
-          className="text-xs h-8 px-2.5"
+          className="text-xs h-8 px-2.5 mx-auto"
           icon={<Printer className="w-3.5 h-3.5 text-red-600" />}
           onClick={(e) => {
             e.stopPropagation();
@@ -211,12 +214,12 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
     <div className="space-y-6">
       {/* ── 1. CARDS DE KPIS DE SAÚDE OPERACIONAL ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-l-4 border-l-red-500">
-          <div className="w-11 h-11 rounded-2xl bg-red-500/10 text-red-600 flex items-center justify-center shrink-0">
-            <Heart className="w-5 h-5" />
+        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
+          <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-600 flex items-center justify-center shrink-0 shadow-xs">
+            <Heart className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Prontuários
             </p>
             <p className="text-xl sm:text-2xl font-display font-extrabold text-[var(--text-primary)]">
@@ -225,15 +228,15 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
           </div>
         </Card>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-l-4 border-l-rose-500">
-          <div className="w-11 h-11 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
-            <Droplet className="w-5 h-5" />
+        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0 shadow-xs">
+            <Droplet className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tipo Sanguíneo
             </p>
-            <div className="flex items-baseline gap-1.5">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-xl sm:text-2xl font-display font-extrabold text-[var(--text-primary)]">
                 {stats.comTipoSanguineo}
               </span>
@@ -242,12 +245,12 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
           </div>
         </Card>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-l-4 border-l-amber-500">
-          <div className="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-            <AlertTriangle className="w-5 h-5" />
+        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 shadow-xs">
+            <AlertTriangle className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Alergias Mapeadas
             </p>
             <p className="text-xl sm:text-2xl font-display font-extrabold text-amber-600">
@@ -256,12 +259,12 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
           </div>
         </Card>
 
-        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-l-4 border-l-emerald-500">
-          <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
-            <ShieldAlert className="w-5 h-5" />
+        <Card className="p-4 sm:p-5 flex items-center gap-3.5 border border-[var(--border-default)] shadow-[var(--shadow-card)]">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 shadow-xs">
+            <ShieldAlert className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Contatos SOS Ativos
             </p>
             <p className="text-xl sm:text-2xl font-display font-extrabold text-emerald-600">
@@ -272,19 +275,19 @@ export function VoluntariosSaude({ voluntarios, loading }: VoluntariosSaudeProps
       </div>
 
       {/* ── 2. PAINEL DE BUSCA DE PRONTUÁRIO ── */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)] flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+      <div className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)] flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             type="text"
-            placeholder="Buscar por nome, tipo sanguíneo, alergia..."
+            placeholder="Buscar prontuário por nome, tipo sanguíneo, alergia ou contato SOS..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-red-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-red-500 transition-all"
           />
         </div>
 
-        <div className="text-xs text-[var(--text-muted)] flex items-center gap-1.5 self-end sm:self-center">
+        <div className="text-xs text-[var(--text-muted)] flex items-center gap-1.5 self-end md:self-center shrink-0">
           <Info className="w-4 h-4 text-red-500" />
           <span>Ficha médica e contatos de emergência para suporte em saídas de campo.</span>
         </div>
