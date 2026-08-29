@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { Input } from '@/components/ui/Input';
 import {
   Heart,
   ChevronLeft,
@@ -21,18 +22,29 @@ import {
   XCircle,
   Info,
   UserCheck,
+  Check,
+  X,
+  Umbrella,
+  Sparkles,
+  AlertCircle,
+  HelpCircle,
+  FileCheck,
 } from 'lucide-react';
 import { Voluntario } from './VoluntariosEquipe';
 
-interface RecessoRecord {
+export interface RecessoRecord {
   id: string;
   voluntario_id: string;
   data_folga: string;
-  tipo: 'coletiva' | 'individual';
+  data_fim?: string | null;
+  dias_qtd?: number | null;
+  tipo: 'coletiva' | 'individual' | 'recesso_15_dias';
   motivo: string | null;
+  motivo_recusa?: string | null;
   status: 'pendente' | 'aprovada' | 'recusada';
   mes_referencia: number;
   ano_referencia: number;
+  created_at?: string;
   voluntarios?: Voluntario;
 }
 
@@ -65,10 +77,11 @@ function getUltimoFinalDeSemana(year: number, month: number): Date[] {
       dates.push(date);
     }
   }
-  return dates;
+  return dates.sort((a, b) => a.getDate() - b.getDate());
 }
 
-function formatDateBR(dateStr: string): string {
+function formatDateBR(dateStr?: string | null): string {
+  if (!dateStr) return '';
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
@@ -85,18 +98,25 @@ export function VoluntariosRecesso() {
   const [configRecesso, setConfigRecesso] = useState<ConfigRecesso | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [activeSubTab, setActiveSubTab] = useState<'calendario' | 'tabela' | 'admin'>('calendario');
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  // Sub-abas: 'calendario' | 'solicitar' | 'aprovacoes'
+  const [activeSubTab, setActiveSubTab] = useState<'calendario' | 'solicitar' | 'aprovacoes'>('calendario');
+  const [selectedDayModal, setSelectedDayModal] = useState<number | null>(null);
 
-  const [folgaVoluntarioId, setFolgaVoluntarioId] = useState('');
-  const [folgaData, setFolgaData] = useState('');
-  const [folgaMotivo, setFolgaMotivo] = useState('');
-  const [folgaSubmitting, setFolgaSubmitting] = useState(false);
-  const [folgaError, setFolgaError] = useState<string | null>(null);
-  const [folgaSuccess, setFolgaSuccess] = useState(false);
+  // Formulário de Solicitação
+  const [tipoSol, setTipoSol] = useState<'folga_individual' | 'recesso_15_dias'>('folga_individual');
+  const [solVoluntarioId, setSolVoluntarioId] = useState('');
+  const [solDataInicio, setSolDataInicio] = useState('');
+  const [solMotivo, setSolMotivo] = useState('');
+  const [solSubmitting, setSolSubmitting] = useState(false);
+  const [solError, setSolError] = useState<string | null>(null);
+  const [solSuccess, setSolSuccess] = useState<string | null>(null);
 
+  // Gestão / Aprovação
   const [adminMotivo, setAdminMotivo] = useState('');
   const [adminSaving, setAdminSaving] = useState(false);
+  const [recusaModalId, setRecusaModalId] = useState<string | null>(null);
+  const [motivoRecusaTexto, setMotivoRecusaTexto] = useState('');
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -110,8 +130,7 @@ export function VoluntariosRecesso() {
         supabase
           .from('recessos_voluntarios')
           .select('*, voluntarios(*)')
-          .eq('mes_referencia', currentMonth + 1)
-          .eq('ano_referencia', currentYear),
+          .or(`mes_referencia.eq.${currentMonth + 1},ano_referencia.eq.${currentYear}`),
         supabase
           .from('configuracoes_recesso')
           .select('*')
@@ -136,16 +155,51 @@ export function VoluntariosRecesso() {
   const ultimoFds = useMemo(() => getUltimoFinalDeSemana(currentYear, currentMonth), [currentYear, currentMonth]);
   const ultimoFdsDates = useMemo(() => ultimoFds.map((d) => d.getDate()), [ultimoFds]);
 
-  const recessosByDay = useMemo(() => {
-    const map: Record<number, RecessoRecord[]> = {};
-    recessos.forEach((r) => {
-      const day = new Date(r.data_folga + 'T12:00:00').getDate();
-      if (!map[day]) map[day] = [];
-      map[day].push(r);
-    });
-    return map;
-  }, [recessos]);
+  // Checa se uma data ou período inclui o último final de semana
+  const verificaIntersecaoUltimoFds = (dataInicioStr: string, is15Dias: boolean) => {
+    if (!dataInicioStr) return false;
+    const inicio = new Date(dataInicioStr + 'T12:00:00');
+    const qtdDias = is15Dias ? 15 : 1;
+    
+    for (let i = 0; i < qtdDias; i++) {
+      const cur = new Date(inicio);
+      cur.setDate(inicio.getDate() + i);
+      if (cur.getFullYear() === currentYear && cur.getMonth() === currentMonth) {
+        if (ultimoFdsDates.includes(cur.getDate())) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
+  const isUltimoFdsWarning = verificaIntersecaoUltimoFds(solDataInicio, tipoSol === 'recesso_15_dias');
+
+  // Recessos e Folgas APROVADOS por dia do mês atual (apenas aprovadas aparecem no calendário)
+  const recessosAprovadosByDay = useMemo(() => {
+    const map: Record<number, RecessoRecord[]> = {};
+    
+    recessos
+      .filter((r) => r.status === 'aprovada')
+      .forEach((r) => {
+        const start = new Date(r.data_folga + 'T12:00:00');
+        const dias = r.dias_qtd || (r.tipo === 'recesso_15_dias' ? 15 : 1);
+
+        for (let i = 0; i < dias; i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate() + i);
+
+          if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+            const dayNum = d.getDate();
+            if (!map[dayNum]) map[dayNum] = [];
+            map[dayNum].push(r);
+          }
+        }
+      });
+    return map;
+  }, [recessos, currentMonth, currentYear]);
+
+  // Lista de dias para o grid do calendário
   const calendarDays = useMemo(() => {
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -155,20 +209,27 @@ export function VoluntariosRecesso() {
     return days;
   }, [currentYear, currentMonth]);
 
+  // Estatísticas
   const totalVoluntariosAtivos = voluntarios.length;
-  const folgasColetivas = recessos.filter((r) => r.tipo === 'coletiva').length;
-  const folgasIndividuais = recessos.filter((r) => r.tipo === 'individual' && r.status === 'aprovada').length;
+  const folgasIndividuaisAprovadas = recessos.filter(
+    (r) => r.tipo === 'individual' && r.status === 'aprovada' && r.mes_referencia === currentMonth + 1
+  ).length;
+  const recessos15DiasAprovados = recessos.filter(
+    (r) => r.tipo === 'recesso_15_dias' && r.status === 'aprovada' && r.ano_referencia === currentYear
+  ).length;
+  const pendentesAprovacao = recessos.filter((r) => r.status === 'pendente');
 
   const handlePrevMonth = () => setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
 
+  // Alternar Dia da Família (Diretor Administrativo)
   const handleToggleDiaFamilia = async () => {
     setAdminSaving(true);
     try {
       const newValue = !diaFamiliaAtivo;
 
       if (!newValue && !adminMotivo.trim()) {
-        alert('Por favor, informe o motivo da desativação do Dia da Família.');
+        alert('Por favor, informe o motivo formal da desativação do Dia da Família.');
         setAdminSaving(false);
         return;
       }
@@ -200,50 +261,112 @@ export function VoluntariosRecesso() {
     }
   };
 
-  const handleSolicitarFolga = async (e: React.FormEvent) => {
+  // Enviar Solicitação (Folga Mensal ou Recesso de 15 Dias)
+  const handleEnviarSolicitacao = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFolgaError(null);
-    setFolgaSuccess(false);
+    setSolError(null);
+    setSolSuccess(null);
 
-    if (!folgaVoluntarioId || !folgaData) {
-      setFolgaError('Selecione o voluntário e a data desejada.');
+    if (!solVoluntarioId || !solDataInicio) {
+      setSolError('Selecione o voluntário e a data de início desejada.');
       return;
     }
 
-    setFolgaSubmitting(true);
+    setSolSubmitting(true);
     try {
-      const targetDate = new Date(folgaData + 'T12:00:00');
-      const mesRef = targetDate.getMonth() + 1;
-      const anoRef = targetDate.getFullYear();
+      const start = new Date(solDataInicio + 'T12:00:00');
+      const mesRef = start.getMonth() + 1;
+      const anoRef = start.getFullYear();
+      
+      let dataFim = null;
+      let diasQtd = 1;
+
+      if (tipoSol === 'recesso_15_dias') {
+        diasQtd = 15;
+        const fim = new Date(start);
+        fim.setDate(start.getDate() + 14);
+        dataFim = fim.toISOString().split('T')[0];
+      }
 
       const { error: insertErr } = await supabase.from('recessos_voluntarios').insert({
-        voluntario_id: folgaVoluntarioId,
-        data_folga: folgaData,
-        tipo: 'individual',
-        motivo: folgaMotivo.trim() || null,
-        status: 'aprovada',
+        voluntario_id: solVoluntarioId,
+        data_folga: solDataInicio,
+        data_fim: dataFim,
+        dias_qtd: diasQtd,
+        tipo: tipoSol,
+        motivo: solMotivo.trim() || null,
+        status: 'pendente', // Sempre pendente até aprovação do Diretor
         mes_referencia: mesRef,
         ano_referencia: anoRef,
       });
 
       if (insertErr) throw insertErr;
 
-      setFolgaSuccess(true);
-      setFolgaVoluntarioId('');
-      setFolgaData('');
-      setFolgaMotivo('');
+      setSolSuccess(
+        tipoSol === 'recesso_15_dias'
+          ? 'Solicitação de Recesso de 15 dias enviada com sucesso! Aguardando aprovação do Diretor Administrativo.'
+          : 'Solicitação de Folga Mensal enviada com sucesso! Aguardando aprovação do Diretor Administrativo.'
+      );
+      setSolVoluntarioId('');
+      setSolDataInicio('');
+      setSolMotivo('');
       await loadData();
     } catch (err: any) {
-      setFolgaError(err.message || 'Erro ao registrar folga.');
+      setSolError(err.message || 'Erro ao registrar solicitação.');
     } finally {
-      setFolgaSubmitting(false);
+      setSolSubmitting(false);
+    }
+  };
+
+  // Aprovar Solicitação (Diretor)
+  const handleAprovarSolicitacao = async (id: string) => {
+    setProcessingId(id);
+    try {
+      const { error } = await supabase
+        .from('recessos_voluntarios')
+        .update({
+          status: 'aprovada',
+          motivo_recusa: null,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      await loadData();
+    } catch (err: any) {
+      alert('Erro ao aprovar solicitação: ' + err.message);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Recusar Solicitação (Diretor)
+  const handleConfirmarRecusa = async () => {
+    if (!recusaModalId) return;
+    setProcessingId(recusaModalId);
+    try {
+      const { error } = await supabase
+        .from('recessos_voluntarios')
+        .update({
+          status: 'recusada',
+          motivo_recusa: motivoRecusaTexto.trim() || 'Necessidade operacional em atividades com público externo.',
+        })
+        .eq('id', recusaModalId);
+
+      if (error) throw error;
+      setRecusaModalId(null);
+      setMotivoRecusaTexto('');
+      await loadData();
+    } catch (err: any) {
+      alert('Erro ao recusar solicitação: ' + err.message);
+    } finally {
+      setProcessingId(null);
     }
   };
 
   return (
     <div className="space-y-5">
-      {/* ── 1. CARDS DE RESUMO DE RECESSOS (MICRO-KPIS COMPACTOS) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* ── 1. MICRO-KPIS COMPACTOS DE RECESSOS & FOLGAS ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#1C9C82]/10 text-[#1C9C82] flex items-center justify-center shrink-0">
             <Users className="w-4 h-4" />
@@ -264,10 +387,10 @@ export function VoluntariosRecesso() {
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Dia da Família
+              1ª Folga (Família)
             </p>
-            <p className="text-sm font-bold text-[var(--text-primary)] truncate">
-              {diaFamiliaAtivo ? `Dia ${primeiroDomingo} (Ativo)` : 'Desativado'}
+            <p className="text-xs sm:text-sm font-bold text-[var(--text-primary)] truncate">
+              {diaFamiliaAtivo ? `Dia ${primeiroDomingo} (Reservada)` : 'Desativado'}
             </p>
           </div>
         </div>
@@ -278,25 +401,46 @@ export function VoluntariosRecesso() {
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Folgas Coletivas
+              2ª Folga Aprovada
             </p>
             <p className="text-lg sm:text-xl font-display font-extrabold text-purple-600">
-              {folgasColetivas}
+              {folgasIndividuaisAprovadas}
             </p>
           </div>
         </div>
 
         <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+            <Umbrella className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+              Recessos 15 Dias
+            </p>
+            <p className="text-lg sm:text-xl font-display font-extrabold text-amber-600">
+              {recessos15DiasAprovados}
+            </p>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3 col-span-2 lg:col-span-1">
+          <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
             <Clock className="w-4 h-4" />
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Folgas Individuais
+              Aprovações Pendentes
             </p>
-            <p className="text-lg sm:text-xl font-display font-extrabold text-amber-600">
-              {folgasIndividuais}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-lg sm:text-xl font-display font-extrabold ${pendentesAprovacao.length > 0 ? 'text-rose-600 animate-pulse' : 'text-[var(--text-primary)]'}`}>
+                {pendentesAprovacao.length}
+              </span>
+              {pendentesAprovacao.length > 0 && (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/10 text-rose-600">
+                  Ação
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -328,40 +472,68 @@ export function VoluntariosRecesso() {
             onClick={() => setActiveSubTab('calendario')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeSubTab === 'calendario'
-                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
+                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs font-bold'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            Calendário
+            Calendário Mensal
           </button>
           <button
-            onClick={() => setActiveSubTab('tabela')}
+            onClick={() => setActiveSubTab('solicitar')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeSubTab === 'tabela'
-                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
+              activeSubTab === 'solicitar'
+                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs font-bold'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            Solicitar Folga
+            Solicitar Folga / Recesso
           </button>
           <button
-            onClick={() => setActiveSubTab('admin')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeSubTab === 'admin'
-                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
+            onClick={() => setActiveSubTab('aprovacoes')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer relative ${
+              activeSubTab === 'aprovacoes'
+                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs font-bold'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            Dia da Família
+            <span>Aprovações & Diretoria</span>
+            {pendentesAprovacao.length > 0 && (
+              <span className="w-2 h-2 rounded-full bg-rose-500 absolute top-1.5 right-1.5" />
+            )}
           </button>
         </div>
       </div>
 
       {/* ── 3. CONTEÚDO DAS SUB-ABAS ── */}
+
+      {/* ========================================================================= */}
+      {/* SUB-ABA 1: CALENDÁRIO MENSAL (APENAS APROVADAS SÃO EXIBIDAS) */}
+      {/* ========================================================================= */}
       {activeSubTab === 'calendario' && (
-        <Card className="p-4 sm:p-5 overflow-x-auto">
-          <div className="min-w-[600px]">
-            {/* Dias da Semana */}
+        <Card className="p-4 sm:p-5 overflow-x-auto space-y-3">
+          {/* Legenda Explicativa */}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pb-2 border-b border-[var(--border-default)]">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-[var(--color-primary)]/20 border border-[var(--color-primary)]" />
+                <span className="text-[var(--text-primary)] font-semibold">1º Domingo: Dia da Família (Folga Coletiva)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-purple-500/10 border border-purple-400" />
+                <span className="text-[var(--text-primary)] font-semibold">Último FDS: Encontros com Público Externo</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500" />
+                <span className="text-[var(--text-primary)] font-semibold">Folgas / Recessos Aprovados</span>
+              </div>
+            </div>
+            <span className="text-[var(--text-muted)] italic">
+              * Apenas folgas aprovadas pela Diretoria são inseridas no cronograma.
+            </span>
+          </div>
+
+          <div className="min-w-[650px]">
+            {/* Cabeçalho dos Dias da Semana */}
             <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[11px] font-bold text-[var(--text-muted)] uppercase">
               {DIAS_SEMANA.map((d, i) => (
                 <div key={d} className={i === 0 ? 'text-red-500' : ''}>
@@ -374,48 +546,58 @@ export function VoluntariosRecesso() {
             <div className="grid grid-cols-7 gap-2">
               {calendarDays.map((day, idx) => {
                 if (day === null) {
-                  return <div key={`empty-${idx}`} className="h-20 rounded-xl bg-[var(--bg-secondary)]/30" />;
+                  return <div key={`empty-${idx}`} className="h-24 rounded-xl bg-[var(--bg-secondary)]/20" />;
                 }
 
                 const isPrimeiroDom = diaFamiliaAtivo && day === primeiroDomingo;
                 const isUltimoFds = ultimoFdsDates.includes(day);
-                const recessosDoDia = recessosByDay[day] || [];
+                const recessosDoDia = recessosAprovadosByDay[day] || [];
 
                 return (
                   <div
                     key={`day-${day}`}
-                    onClick={() => setSelectedDay(day)}
-                    className={`h-20 p-2 rounded-xl border flex flex-col justify-between transition-all cursor-pointer ${
+                    onClick={() => setSelectedDayModal(day)}
+                    className={`h-24 p-2 rounded-xl border flex flex-col justify-between transition-all cursor-pointer hover:shadow-xs ${
                       isPrimeiroDom
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/20'
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/25'
                         : isUltimoFds
                         ? 'border-purple-300 bg-purple-500/5'
-                        : 'border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/50'
+                        : 'border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs font-bold ${isPrimeiroDom ? 'text-[var(--color-primary)]' : 'text-[var(--text-primary)]'}`}>
+                      <span className={`text-xs font-bold ${isPrimeiroDom ? 'text-[var(--color-primary)]' : isUltimoFds ? 'text-purple-600' : 'text-[var(--text-primary)]'}`}>
                         {day}
                       </span>
                       {isPrimeiroDom && (
-                        <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-[var(--color-primary)] text-white">
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--color-primary)] text-white shadow-2xs">
                           Família
+                        </span>
+                      )}
+                      {isUltimoFds && !isPrimeiroDom && (
+                        <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-purple-100 text-purple-700">
+                          Externo
                         </span>
                       )}
                     </div>
 
-                    <div className="space-y-0.5 overflow-hidden">
+                    <div className="space-y-1 overflow-hidden">
                       {recessosDoDia.slice(0, 2).map((r) => (
                         <div
                           key={r.id}
-                          className="text-[9px] truncate px-1 py-0.5 rounded bg-[var(--bg-secondary)] font-medium text-[var(--text-primary)]"
+                          className={`text-[9px] truncate px-1.5 py-0.5 rounded font-medium ${
+                            r.tipo === 'recesso_15_dias'
+                              ? 'bg-amber-500/15 text-amber-800 border border-amber-500/20'
+                              : 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/20'
+                          }`}
                         >
-                          {r.voluntarios?.nome_completo?.split(' ')[0] || 'Folga'}
+                          {r.tipo === 'recesso_15_dias' ? '🏖️ ' : '☕ '}
+                          {r.voluntarios?.nome_completo?.split(' ')[0] || 'Voluntário'}
                         </div>
                       ))}
                       {recessosDoDia.length > 2 && (
-                        <span className="text-[8px] text-[var(--text-muted)] font-bold block">
-                          +{recessosDoDia.length - 2} folgas
+                        <span className="text-[8px] text-[var(--text-muted)] font-bold block pl-1">
+                          +{recessosDoDia.length - 2} escalas
                         </span>
                       )}
                     </div>
@@ -427,140 +609,405 @@ export function VoluntariosRecesso() {
         </Card>
       )}
 
-      {activeSubTab === 'tabela' && (
-        <Card className="p-6 max-w-2xl mx-auto space-y-5">
+      {/* ========================================================================= */}
+      {/* SUB-ABA 2: SOLICITAR FOLGA MENSAL OU RECESSO DE 15 DIAS */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'solicitar' && (
+        <Card className="p-6 max-w-2xl mx-auto space-y-6">
           <div className="space-y-1">
             <h3 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
               <Calendar className="w-5 h-5 text-[var(--color-primary)]" />
-              Registrar Folga / Recesso Individual
+              Solicitação de Folga Mensal ou Recesso Anual
             </h3>
-            <p className="text-xs text-[var(--text-muted)]">
-              Agende o recesso do voluntário para atualização do saldo anual e da escala de presença.
+            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+              Cada voluntário tem direito a <strong>2 folgas no mês</strong> (sendo a 1ª o Dia da Família) e a <strong>1 recesso de 15 dias</strong> ao ano. Todas as solicitações são avaliadas pela Diretoria Administrativa.
             </p>
           </div>
 
-          {folgaError && (
-            <div className="p-3 rounded-xl bg-red-500/10 text-red-600 text-xs font-semibold flex items-center gap-2">
-              <XCircle className="w-4 h-4" />
-              <span>{folgaError}</span>
+          {/* Seleção do Tipo de Solicitação */}
+          <div className="grid grid-cols-2 gap-3 p-1.5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
+            <button
+              type="button"
+              onClick={() => setTipoSol('folga_individual')}
+              className={`p-3 rounded-xl text-left transition-all cursor-pointer ${
+                tipoSol === 'folga_individual'
+                  ? 'bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-xs'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Coffee className="w-4 h-4 text-purple-600" />
+                <span className="font-bold text-xs text-[var(--text-primary)]">
+                  2ª Folga Mensal (1 Dia)
+                </span>
+              </div>
+              <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                Livre escolha para um dia útil ou fim de semana do mês.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTipoSol('recesso_15_dias')}
+              className={`p-3 rounded-xl text-left transition-all cursor-pointer ${
+                tipoSol === 'recesso_15_dias'
+                  ? 'bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-xs'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Umbrella className="w-4 h-4 text-amber-600" />
+                <span className="font-bold text-xs text-[var(--text-primary)]">
+                  Recesso Anual (15 Dias)
+                </span>
+              </div>
+              <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                Período contínuo de 15 dias para descanso e recomposição.
+              </p>
+            </button>
+          </div>
+
+          {/* Mensagens de Sucesso / Erro */}
+          {solError && (
+            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+              <XCircle className="w-4 h-4 shrink-0" />
+              <span>{solError}</span>
             </div>
           )}
 
-          {folgaSuccess && (
-            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-600 text-xs font-semibold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Folga registrada com sucesso!</span>
+          {solSuccess && (
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{solSuccess}</span>
             </div>
           )}
 
-          <form onSubmit={handleSolicitarFolga} className="space-y-4 text-xs">
+          {/* Formulário */}
+          <form onSubmit={handleEnviarSolicitacao} className="space-y-4 text-xs">
             <div>
               <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                Voluntário(a) *
+                Voluntário(a) Solicitante *
               </label>
               <Select
                 options={[
-                  { value: '', label: 'Selecione um voluntário...' },
+                  { value: '', label: 'Selecione o voluntário...' },
                   ...voluntarios.map((v) => ({
                     value: v.id,
                     label: `${v.nome_completo} (${v.area_atuacao || 'Geral'})`,
                   })),
                 ]}
-                value={folgaVoluntarioId}
-                onChange={(e) => setFolgaVoluntarioId(e.target.value)}
+                value={solVoluntarioId}
+                onChange={(e) => setSolVoluntarioId(e.target.value)}
               />
             </div>
 
             <div>
               <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                Data da Folga *
+                {tipoSol === 'recesso_15_dias' ? 'Data de Início do Recesso (15 Dias Consecutivos) *' : 'Data Escolhida para a 2ª Folga *'}
               </label>
               <input
                 type="date"
-                value={folgaData}
-                onChange={(e) => setFolgaData(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                value={solDataInicio}
+                onChange={(e) => setSolDataInicio(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-mono-data"
                 required
               />
+              {tipoSol === 'recesso_15_dias' && solDataInicio && (
+                <p className="text-[11px] text-[var(--text-muted)] mt-1 font-mono-data">
+                  Período: {formatDateBR(solDataInicio)} até {
+                    (() => {
+                      const f = new Date(solDataInicio + 'T12:00:00');
+                      f.setDate(f.getDate() + 14);
+                      return formatDateBR(f.toISOString().split('T')[0]);
+                    })()
+                  } (15 dias)
+                </p>
+              )}
             </div>
+
+            {/* Aviso de Último Fim de Semana com Atividades Externas */}
+            {isUltimoFdsWarning && (
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border-2 border-amber-500/30 text-amber-900 text-xs leading-relaxed space-y-1 animate-in fade-in">
+                <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Aviso Importante: Último Final de Semana com Público Externo</span>
+                </div>
+                <p>
+                  O período solicitado coincide com o <strong>último final de semana do mês</strong>, data prioritariamente dedicada aos encontros com o público externo que demandam maior presença da equipe.
+                </p>
+                <p className="text-[11px] text-amber-700 italic">
+                  Sua solicitação será enviada para avaliação e homologação da Diretoria Administrativa.
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                Motivo / Justificativa (Opcional)
+                Justificativa / Observação (Opcional)
               </label>
               <textarea
-                value={folgaMotivo}
-                onChange={(e) => setFolgaMotivo(e.target.value)}
-                rows={3}
-                placeholder="Ex: Assuntos pessoais, viagem ou compensação de horas."
-                className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                value={solMotivo}
+                onChange={(e) => setSolMotivo(e.target.value)}
+                rows={2}
+                placeholder="Ex: Assuntos acadêmicos, viagem ou compromisso familiar."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full justify-center"
-              disabled={folgaSubmitting}
+              className="w-full justify-center py-2.5 text-xs font-bold"
+              disabled={solSubmitting}
             >
-              {folgaSubmitting ? 'Salvando...' : 'Confirmar Registro de Folga'}
+              {solSubmitting ? 'Enviando Solicitação...' : 'Enviar Solicitação para a Diretoria'}
             </Button>
           </form>
         </Card>
       )}
 
-      {activeSubTab === 'admin' && (
-        <Card className="p-6 max-w-2xl mx-auto space-y-5">
-          <div className="space-y-1">
-            <h3 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
-              <Shield className="w-5 h-5 text-[var(--color-primary)]" />
-              Controle Institucional — Dia da Família
-            </h3>
-            <p className="text-xs text-[var(--text-muted)]">
-              O Dia da Família ocorre por padrão no 1º domingo de cada mês. Caso haja evento extraordinário que impeça o recesso coletivo, desative e registre o motivo formal.
-            </p>
-          </div>
+      {/* ========================================================================= */}
+      {/* SUB-ABA 3: APROVAÇÕES & DIRETORIA ADMINISTRATIVA */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'aprovacoes' && (
+        <div className="space-y-6 max-w-4xl mx-auto">
+          {/* Box 1: Controle do Dia da Família */}
+          <Card className="p-5 space-y-4 border-l-4 border-l-[var(--color-primary)]">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <h3 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-[var(--color-primary)]" />
+                  Controle do Dia da Família (1º Domingo do Mês)
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                  Apenas o <strong>Diretor Administrativo</strong> pode desativar o Dia da Família em meses com eventos e ações extraordinárias com a comunidade.
+                </p>
+              </div>
 
-          <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 flex items-center justify-between">
-            <div>
-              <p className="font-bold text-sm text-[var(--text-primary)]">
-                Status no Mês de {MESES_NOMES[currentMonth]}/{currentYear}
-              </p>
+              <Button
+                variant={diaFamiliaAtivo ? 'secondary' : 'primary'}
+                size="sm"
+                onClick={handleToggleDiaFamilia}
+                disabled={adminSaving}
+                className="shrink-0"
+              >
+                {diaFamiliaAtivo ? 'Desativar neste Mês' : 'Reativar Dia da Família'}
+              </Button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-between text-xs">
+              <span className="font-semibold text-[var(--text-secondary)]">Status em {MESES_NOMES[currentMonth]}/{currentYear}:</span>
+              <span className={`font-bold ${diaFamiliaAtivo ? 'text-emerald-600' : 'text-amber-600'}`}>
+                {diaFamiliaAtivo ? `ATIVO — Folga Coletiva no Dia ${primeiroDomingo}` : 'DESATIVADO'}
+              </span>
+            </div>
+
+            {diaFamiliaAtivo && (
+              <div className="space-y-1.5 pt-1">
+                <label className="text-[11px] font-semibold text-[var(--text-muted)]">
+                  Justificativa obrigatória caso deseje desativar:
+                </label>
+                <textarea
+                  value={adminMotivo}
+                  onChange={(e) => setAdminMotivo(e.target.value)}
+                  placeholder="Ex: Mutirão social extraordinário ou celebração do Dia das Crianças."
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                />
+              </div>
+            )}
+          </Card>
+
+          {/* Box 2: Fila de Solicitações Pendentes */}
+          <Card className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
+                  <FileCheck className="w-5 h-5 text-purple-600" />
+                  Solicitações Aguardando Homologação da Diretoria
+                </h3>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Avalie pedidos de 2ª folga mensal e recessos anuais de 15 dias.
+                </p>
+              </div>
+              <Badge variant={pendentesAprovacao.length > 0 ? 'warning' : 'neutral'}>
+                {pendentesAprovacao.length} Pendentes
+              </Badge>
+            </div>
+
+            {pendentesAprovacao.length === 0 ? (
+              <div className="p-8 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)]/30 rounded-2xl border border-dashed border-[var(--border-default)]">
+                Não há solicitações de folga ou recesso pendentes de aprovação no momento.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pendentesAprovacao.map((item) => {
+                  const isExternoWarning = verificaIntersecaoUltimoFds(
+                    item.data_folga,
+                    item.tipo === 'recesso_15_dias'
+                  );
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-sm text-[var(--text-primary)]">
+                            {item.voluntarios?.nome_completo || 'Voluntário'}
+                          </span>
+                          <Badge variant={item.tipo === 'recesso_15_dias' ? 'warning' : 'purple'}>
+                            {item.tipo === 'recesso_15_dias' ? 'Recesso 15 Dias' : '2ª Folga Mensal'}
+                          </Badge>
+                          {isExternoWarning && (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3 text-amber-600" />
+                              Intercepta Último FDS
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-xs text-[var(--text-secondary)] font-mono-data">
+                          Data: <strong>{formatDateBR(item.data_folga)}</strong>
+                          {item.data_fim && ` até ${formatDateBR(item.data_fim)} (${item.dias_qtd || 15} dias)`}
+                        </p>
+
+                        {item.motivo && (
+                          <p className="text-xs text-[var(--text-muted)] italic">
+                            &quot;{item.motivo}&quot;
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="text-xs text-red-600 hover:bg-red-500/10"
+                          disabled={processingId === item.id}
+                          onClick={() => setRecusaModalId(item.id)}
+                          icon={<X className="w-3.5 h-3.5" />}
+                        >
+                          Recusar
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                          disabled={processingId === item.id}
+                          onClick={() => handleAprovarSolicitacao(item.id)}
+                          icon={<Check className="w-3.5 h-3.5" />}
+                        >
+                          Aprovar
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Motivo de Recusa */}
+      {recusaModalId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="space-y-1">
+              <h3 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
+                <XCircle className="w-5 h-5 text-red-500" />
+                Recusar Solicitação de Folga/Recesso
+              </h3>
               <p className="text-xs text-[var(--text-muted)]">
-                {diaFamiliaAtivo ? `Ativo para o dia ${primeiroDomingo}` : 'Desativado formalmente'}
+                Informe o motivo da recusa para notificação e registro do voluntário.
               </p>
             </div>
-            <Button
-              variant={diaFamiliaAtivo ? 'secondary' : 'primary'}
-              size="sm"
-              onClick={handleToggleDiaFamilia}
-              disabled={adminSaving}
-            >
-              {diaFamiliaAtivo ? 'Desativar neste Mês' : 'Reativar Dia da Família'}
-            </Button>
+
+            <textarea
+              value={motivoRecusaTexto}
+              onChange={(e) => setMotivoRecusaTexto(e.target.value)}
+              placeholder="Ex: Necessidade de escala no último fim de semana em virtude de ação comunitária externa."
+              rows={3}
+              className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-red-500 resize-none"
+            />
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setRecusaModalId(null)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleConfirmarRecusa}
+              >
+                Confirmar Recusa
+              </Button>
+            </div>
           </div>
+        </div>
+      )}
 
-          {!diaFamiliaAtivo && configRecesso?.motivo_desativacao && (
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 space-y-1">
-              <p className="font-bold uppercase tracking-wider text-[10px]">Justificativa Registrada:</p>
-              <p>{configRecesso.motivo_desativacao}</p>
+      {/* Modal de Detalhes do Dia Clicado no Calendário */}
+      {selectedDayModal !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                Escala de {selectedDayModal} de {MESES_NOMES[currentMonth]} de {currentYear}
+              </h3>
+              <button
+                onClick={() => setSelectedDayModal(null)}
+                className="p-1 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-muted)]"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          )}
 
-          {diaFamiliaAtivo && (
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-[var(--text-secondary)]">
-                Justificativa para eventual desativação:
-              </label>
-              <textarea
-                value={adminMotivo}
-                onChange={(e) => setAdminMotivo(e.target.value)}
-                placeholder="Ex: Mutirão de Ação Social com a comunidade ou evento de Dia das Crianças."
-                rows={2}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
-              />
+            <div className="space-y-2 text-xs">
+              {diaFamiliaAtivo && selectedDayModal === primeiroDomingo && (
+                <div className="p-3 rounded-xl bg-[var(--color-primary-soft)] border border-[var(--color-primary)]/20 text-[var(--color-primary)] font-bold flex items-center gap-2">
+                  <Home className="w-4 h-4" />
+                  <span>Dia da Família — Folga Coletiva para toda a equipe.</span>
+                </div>
+              )}
+
+              {ultimoFdsDates.includes(selectedDayModal) && (
+                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-400/20 text-purple-700 font-semibold flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  <span>Último FDS: Encontros com público externo (Presença prioritária).</span>
+                </div>
+              )}
+
+              {recessosAprovadosByDay[selectedDayModal]?.length === 0 && (!diaFamiliaAtivo || selectedDayModal !== primeiroDomingo) && (
+                <p className="text-[var(--text-muted)] py-4 text-center">
+                  Nenhum voluntário de folga ou recesso neste dia.
+                </p>
+              )}
+
+              {recessosAprovadosByDay[selectedDayModal]?.map((r) => (
+                <div key={r.id} className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[var(--text-primary)]">{r.voluntarios?.nome_completo}</span>
+                    <Badge variant={r.tipo === 'recesso_15_dias' ? 'warning' : 'success'}>
+                      {r.tipo === 'recesso_15_dias' ? 'Recesso 15 Dias' : '2ª Folga Aprovada'}
+                    </Badge>
+                  </div>
+                  {r.motivo && <p className="text-[11px] text-[var(--text-muted)] italic">&quot;{r.motivo}&quot;</p>}
+                </div>
+              ))}
             </div>
-          )}
-        </Card>
+
+            <div className="pt-2 flex justify-end">
+              <Button size="sm" onClick={() => setSelectedDayModal(null)}>
+                Fechar
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

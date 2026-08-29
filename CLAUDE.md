@@ -53,6 +53,23 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-08-29 — `[RECESSOS & FOLGAS] & [2 FOLGAS MENSAIS + RECESSO 15 DIAS + APROVAÇÃO DIRETORIA]` 🟢 IMPLEMENTADO
+
+**Regras de Negócio Diferenciadas para Folgas Mensais e Recesso Anual**
+- **Folgas Mensais (2 Folgas por Mês)**:
+  - **1ª Folga (Coletiva)**: No 1º Domingo do Mês (**Dia da Família**), pré-reservada automaticamente para toda a equipe.
+  - **2ª Folga (Individual / Livre Escolha)**: 1 dia de livre escolha do voluntário no mês. Caso a data coincida com o **último final de semana do mês** (dias de encontros com público externo), o sistema emite alerta em destaque indicando a prioridade de presença da equipe.
+- **Recesso Anual (15 Dias Consecutivos)**:
+  - O voluntário escolhe a data de início e o sistema calcula os 15 dias corridos, alertando se houver interseção com o último fim de semana externo.
+- **Painel de Aprovações & Diretoria Administrativa**:
+  - Apenas o **Diretor Administrativo** pode desativar o Dia da Família (com justificativa).
+  - Todas as solicitações de folgas e recessos entram com status `pendente` e são julgadas na aba de Aprovações (botões *Aprovar* e *Recusar com justificativa*).
+  - **Regra do Calendário**: Apenas folgas e recessos **aprovados** são renderizados na grade visual do calendário mensal.
+- **Migração SQL**:
+  - `supabase/migrations/20260829_recessos_folgas_15_dias.sql`
+
+---
+
 ### 2026-08-28 — `[VOLUNTÁRIOS] & [MÓDULO UNIFICADO EM 4 ABAS & DOCUMENTOS TIMBRADOS]` 🟢 IMPLEMENTADO
 
 **Reestruturação Modular do Voluntariado, Prontuário de Saúde, Recessos e Documentos Oficiais**
