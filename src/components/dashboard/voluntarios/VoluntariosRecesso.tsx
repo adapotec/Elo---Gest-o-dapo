@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { Input } from '@/components/ui/Input';
 import {
   Heart,
   ChevronLeft,
@@ -21,14 +20,16 @@ import {
   Home,
   XCircle,
   Info,
-  UserCheck,
   Check,
   X,
   Umbrella,
-  Sparkles,
-  AlertCircle,
   HelpCircle,
   FileCheck,
+  Edit3,
+  Trash2,
+  Filter,
+  Plus,
+  Save,
 } from 'lucide-react';
 import { Voluntario } from './VoluntariosEquipe';
 
@@ -101,6 +102,7 @@ export function VoluntariosRecesso() {
   // Sub-abas: 'calendario' | 'solicitar' | 'aprovacoes'
   const [activeSubTab, setActiveSubTab] = useState<'calendario' | 'solicitar' | 'aprovacoes'>('calendario');
   const [selectedDayModal, setSelectedDayModal] = useState<number | null>(null);
+  const [showRegrasInfo, setShowRegrasInfo] = useState(false);
 
   // Formulário de Solicitação
   const [tipoSol, setTipoSol] = useState<'folga_individual' | 'recesso_15_dias'>('folga_individual');
@@ -111,12 +113,22 @@ export function VoluntariosRecesso() {
   const [solError, setSolError] = useState<string | null>(null);
   const [solSuccess, setSolSuccess] = useState<string | null>(null);
 
-  // Gestão / Aprovação
+  // Gestão & Diretoria Administrativa
+  const [adminFilterStatus, setAdminFilterStatus] = useState<'pendente' | 'aprovada' | 'recusada' | 'todos'>('todos');
   const [adminMotivo, setAdminMotivo] = useState('');
   const [adminSaving, setAdminSaving] = useState(false);
   const [recusaModalId, setRecusaModalId] = useState<string | null>(null);
   const [motivoRecusaTexto, setMotivoRecusaTexto] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Modal de Edição Direta pela Diretoria
+  const [editingRecord, setEditingRecord] = useState<RecessoRecord | null>(null);
+  const [editDataInicio, setEditDataInicio] = useState('');
+  const [editDataFim, setEditDataFim] = useState('');
+  const [editTipo, setEditTipo] = useState<'individual' | 'recesso_15_dias' | 'coletiva'>('individual');
+  const [editStatus, setEditStatus] = useState<'pendente' | 'aprovada' | 'recusada'>('aprovada');
+  const [editMotivo, setEditMotivo] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -130,7 +142,7 @@ export function VoluntariosRecesso() {
         supabase
           .from('recessos_voluntarios')
           .select('*, voluntarios(*)')
-          .or(`mes_referencia.eq.${currentMonth + 1},ano_referencia.eq.${currentYear}`),
+          .order('data_folga', { ascending: false }),
         supabase
           .from('configuracoes_recesso')
           .select('*')
@@ -160,7 +172,7 @@ export function VoluntariosRecesso() {
     if (!dataInicioStr) return false;
     const inicio = new Date(dataInicioStr + 'T12:00:00');
     const qtdDias = is15Dias ? 15 : 1;
-    
+
     for (let i = 0; i < qtdDias; i++) {
       const cur = new Date(inicio);
       cur.setDate(inicio.getDate() + i);
@@ -178,7 +190,7 @@ export function VoluntariosRecesso() {
   // Recessos e Folgas APROVADOS por dia do mês atual (apenas aprovadas aparecem no calendário)
   const recessosAprovadosByDay = useMemo(() => {
     const map: Record<number, RecessoRecord[]> = {};
-    
+
     recessos
       .filter((r) => r.status === 'aprovada')
       .forEach((r) => {
@@ -277,7 +289,7 @@ export function VoluntariosRecesso() {
       const start = new Date(solDataInicio + 'T12:00:00');
       const mesRef = start.getMonth() + 1;
       const anoRef = start.getFullYear();
-      
+
       let dataFim = null;
       let diasQtd = 1;
 
@@ -288,14 +300,17 @@ export function VoluntariosRecesso() {
         dataFim = fim.toISOString().split('T')[0];
       }
 
+      // Converte tipoSol para o valor aceito pela constraint do banco ('individual' ou 'recesso_15_dias')
+      const tipoBanco = tipoSol === 'folga_individual' ? 'individual' : 'recesso_15_dias';
+
       const { error: insertErr } = await supabase.from('recessos_voluntarios').insert({
         voluntario_id: solVoluntarioId,
         data_folga: solDataInicio,
         data_fim: dataFim,
         dias_qtd: diasQtd,
-        tipo: tipoSol,
+        tipo: tipoBanco,
         motivo: solMotivo.trim() || null,
-        status: 'pendente', // Sempre pendente até aprovação do Diretor
+        status: 'pendente',
         mes_referencia: mesRef,
         ano_referencia: anoRef,
       });
@@ -304,8 +319,8 @@ export function VoluntariosRecesso() {
 
       setSolSuccess(
         tipoSol === 'recesso_15_dias'
-          ? 'Solicitação de Recesso de 15 dias enviada com sucesso! Aguardando aprovação do Diretor Administrativo.'
-          : 'Solicitação de Folga Mensal enviada com sucesso! Aguardando aprovação do Diretor Administrativo.'
+          ? 'Solicitação de Recesso de 15 dias enviada com sucesso! Aguardando aprovação da Diretoria.'
+          : 'Solicitação de 2ª Folga Mensal enviada com sucesso! Aguardando aprovação da Diretoria.'
       );
       setSolVoluntarioId('');
       setSolDataInicio('');
@@ -348,7 +363,7 @@ export function VoluntariosRecesso() {
         .from('recessos_voluntarios')
         .update({
           status: 'recusada',
-          motivo_recusa: motivoRecusaTexto.trim() || 'Necessidade operacional em atividades com público externo.',
+          motivo_recusa: motivoRecusaTexto.trim() || 'Necessidade operacional em atividades externas.',
         })
         .eq('id', recusaModalId);
 
@@ -362,6 +377,81 @@ export function VoluntariosRecesso() {
       setProcessingId(null);
     }
   };
+
+  // Abrir Modal de Edição (Diretoria)
+  const handleOpenEditModal = (rec: RecessoRecord) => {
+    setEditingRecord(rec);
+    setEditDataInicio(rec.data_folga);
+    setEditDataFim(rec.data_fim || '');
+    setEditTipo(rec.tipo);
+    setEditStatus(rec.status);
+    setEditMotivo(rec.motivo || '');
+  };
+
+  // Salvar Edição Completa (Diretoria)
+  const handleSaveEdit = async () => {
+    if (!editingRecord) return;
+    setSavingEdit(true);
+
+    try {
+      const start = new Date(editDataInicio + 'T12:00:00');
+      const mesRef = start.getMonth() + 1;
+      const anoRef = start.getFullYear();
+
+      let dataFim = editDataFim || null;
+      let diasQtd = editTipo === 'recesso_15_dias' ? 15 : 1;
+
+      if (editTipo === 'recesso_15_dias' && !dataFim) {
+        const fim = new Date(start);
+        fim.setDate(start.getDate() + 14);
+        dataFim = fim.toISOString().split('T')[0];
+      }
+
+      const { error } = await supabase
+        .from('recessos_voluntarios')
+        .update({
+          data_folga: editDataInicio,
+          data_fim: dataFim,
+          dias_qtd: diasQtd,
+          tipo: editTipo,
+          status: editStatus,
+          motivo: editMotivo.trim() || null,
+          mes_referencia: mesRef,
+          ano_referencia: anoRef,
+        })
+        .eq('id', editingRecord.id);
+
+      if (error) throw error;
+
+      setEditingRecord(null);
+      await loadData();
+    } catch (err: any) {
+      alert('Erro ao salvar alteração: ' + err.message);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Excluir Registro (Diretoria)
+  const handleDeleteRecord = async (id: string) => {
+    if (!window.confirm('Tem certeza de que deseja remover este registro de folga/recesso?')) return;
+    setProcessingId(id);
+    try {
+      const { error } = await supabase.from('recessos_voluntarios').delete().eq('id', id);
+      if (error) throw error;
+      await loadData();
+    } catch (err: any) {
+      alert('Erro ao excluir: ' + err.message);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Filtragem na aba da Diretoria
+  const listaDiretoriaFiltrada = useMemo(() => {
+    if (adminFilterStatus === 'todos') return recessos;
+    return recessos.filter((r) => r.status === adminFilterStatus);
+  }, [recessos, adminFilterStatus]);
 
   return (
     <div className="space-y-5">
@@ -390,34 +480,34 @@ export function VoluntariosRecesso() {
               1ª Folga (Família)
             </p>
             <p className="text-xs sm:text-sm font-bold text-[var(--text-primary)] truncate">
-              {diaFamiliaAtivo ? `Dia ${primeiroDomingo} (Reservada)` : 'Desativado'}
+              {diaFamiliaAtivo ? `Dia ${primeiroDomingo}` : 'Desativado'}
             </p>
           </div>
         </div>
 
         <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-[#93368F]/10 text-[#93368F] flex items-center justify-center shrink-0">
             <Coffee className="w-4 h-4" />
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               2ª Folga Aprovada
             </p>
-            <p className="text-lg sm:text-xl font-display font-extrabold text-purple-600">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-[#93368F]">
               {folgasIndividuaisAprovadas}
             </p>
           </div>
         </div>
 
         <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-            <Umbrella className="w-4 h-4" />
+          <div className="w-9 h-9 rounded-xl bg-[#F9C859]/20 text-[#8B4A2E] flex items-center justify-center shrink-0">
+            <Umbrella className="w-4 h-4 text-[#F2632D]" />
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Recessos 15 Dias
             </p>
-            <p className="text-lg sm:text-xl font-display font-extrabold text-amber-600">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-[var(--color-primary)]">
               {recessos15DiasAprovados}
             </p>
           </div>
@@ -445,8 +535,8 @@ export function VoluntariosRecesso() {
         </div>
       </div>
 
-      {/* ── 2. NAVEGAÇÃO ENTRE MESES E SUB-ABAS ── */}
-      <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* ── 2. NAVEGAÇÃO ENTRE MESES E SUB-ABAS (MINIMALISTA) ── */}
+      <div className="p-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrevMonth}
@@ -455,7 +545,7 @@ export function VoluntariosRecesso() {
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <h3 className="font-display font-bold text-sm sm:text-base text-[var(--text-primary)] min-w-[180px] text-center">
+          <h3 className="font-display font-bold text-sm sm:text-base text-[var(--text-primary)] min-w-[170px] text-center">
             {MESES_NOMES[currentMonth]} {currentYear}
           </h3>
           <button
@@ -465,8 +555,53 @@ export function VoluntariosRecesso() {
           >
             <ChevronRight className="w-4 h-4" />
           </button>
+
+          {/* Botão informativo (?) com Popover de Regras */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowRegrasInfo(!showRegrasInfo)}
+              className="p-1.5 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
+              title="Entender regras de folga e recesso"
+              aria-label="Regras de folga e recesso"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
+
+            {showRegrasInfo && (
+              <div className="absolute left-0 top-9 z-40 w-72 sm:w-80 p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xl space-y-2.5 animate-in fade-in zoom-in-95 duration-150 text-xs">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-1.5">
+                  <span className="font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                    <Info className="w-4 h-4 text-[var(--color-primary)]" />
+                    Regras de Folgas &amp; Recessos
+                  </span>
+                  <button
+                    onClick={() => setShowRegrasInfo(false)}
+                    className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-0.5 rounded"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="space-y-2 text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                  <p>
+                    <strong className="text-[var(--text-primary)]">1ª Folga Mensal (Dia da Família):</strong> Ocorre automaticamente no 1º domingo do mês para toda a equipe.
+                  </p>
+                  <p>
+                    <strong className="text-[var(--text-primary)]">2ª Folga Mensal (1 Dia):</strong> Livre escolha de data no mês, sujeita à aprovação da Diretoria.
+                  </p>
+                  <p>
+                    <strong className="text-[var(--text-primary)]">Recesso Anual (15 Dias):</strong> Período contínuo de descanso anual para voluntários ativos.
+                  </p>
+                  <p className="text-[10px] text-amber-700 dark:text-amber-400 bg-amber-500/10 p-2 rounded-xl border border-amber-500/20">
+                    O último fim de semana de cada mês é prioritário para ações externas com a comunidade.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
+        {/* Sub-navegação em Pílulas */}
         <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
           <button
             onClick={() => setActiveSubTab('calendario')}
@@ -496,7 +631,7 @@ export function VoluntariosRecesso() {
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <span>Aprovações & Diretoria</span>
+            <span>Aprovações &amp; Diretoria</span>
             {pendentesAprovacao.length > 0 && (
               <span className="w-2 h-2 rounded-full bg-rose-500 absolute top-1.5 right-1.5" />
             )}
@@ -511,24 +646,24 @@ export function VoluntariosRecesso() {
       {/* ========================================================================= */}
       {activeSubTab === 'calendario' && (
         <Card className="p-4 sm:p-5 overflow-x-auto space-y-3">
-          {/* Legenda Explicativa */}
+          {/* Legenda Compacta */}
           <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pb-2 border-b border-[var(--border-default)]">
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded bg-[var(--color-primary)]/20 border border-[var(--color-primary)]" />
-                <span className="text-[var(--text-primary)] font-semibold">1º Domingo: Dia da Família (Folga Coletiva)</span>
+                <span className="w-2.5 h-2.5 rounded bg-[var(--color-primary)]" />
+                <span className="text-[var(--text-primary)] font-medium">1º Dom: Dia da Família</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded bg-purple-500/10 border border-purple-400" />
-                <span className="text-[var(--text-primary)] font-semibold">Último FDS: Encontros com Público Externo</span>
+                <span className="w-2.5 h-2.5 rounded bg-purple-500" />
+                <span className="text-[var(--text-primary)] font-medium">Último FDS: Ações Externas</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500" />
-                <span className="text-[var(--text-primary)] font-semibold">Folgas / Recessos Aprovados</span>
+                <span className="w-2.5 h-2.5 rounded bg-emerald-500" />
+                <span className="text-[var(--text-primary)] font-medium">Folgas / Recessos Aprovados</span>
               </div>
             </div>
-            <span className="text-[var(--text-muted)] italic">
-              * Apenas folgas aprovadas pela Diretoria são inseridas no cronograma.
+            <span className="text-[10px] text-[var(--text-muted)] italic">
+              Clique em qualquer dia para ver a escala detalhada
             </span>
           </div>
 
@@ -536,7 +671,7 @@ export function VoluntariosRecesso() {
             {/* Cabeçalho dos Dias da Semana */}
             <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[11px] font-bold text-[var(--text-muted)] uppercase">
               {DIAS_SEMANA.map((d, i) => (
-                <div key={d} className={i === 0 ? 'text-red-500' : ''}>
+                <div key={d} className={i === 0 ? 'text-rose-500' : ''}>
                   {d}
                 </div>
               ))}
@@ -575,7 +710,7 @@ export function VoluntariosRecesso() {
                         </span>
                       )}
                       {isUltimoFds && !isPrimeiroDom && (
-                        <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-purple-100 text-purple-700">
+                        <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
                           Externo
                         </span>
                       )}
@@ -585,14 +720,18 @@ export function VoluntariosRecesso() {
                       {recessosDoDia.slice(0, 2).map((r) => (
                         <div
                           key={r.id}
-                          className={`text-[9px] truncate px-1.5 py-0.5 rounded font-medium ${
+                          className={`text-[9px] truncate px-1.5 py-0.5 rounded font-medium flex items-center gap-1 ${
                             r.tipo === 'recesso_15_dias'
-                              ? 'bg-amber-500/15 text-amber-800 border border-amber-500/20'
-                              : 'bg-emerald-500/15 text-emerald-800 border border-emerald-500/20'
+                              ? 'bg-amber-500/15 text-amber-900 dark:text-amber-200 border border-amber-500/20'
+                              : 'bg-emerald-500/15 text-emerald-900 dark:text-emerald-200 border border-emerald-500/20'
                           }`}
                         >
-                          {r.tipo === 'recesso_15_dias' ? '🏖️ ' : '☕ '}
-                          {r.voluntarios?.nome_completo?.split(' ')[0] || 'Voluntário'}
+                          {r.tipo === 'recesso_15_dias' ? (
+                            <Umbrella className="w-2.5 h-2.5 shrink-0 text-amber-600" />
+                          ) : (
+                            <Coffee className="w-2.5 h-2.5 shrink-0 text-emerald-600" />
+                          )}
+                          <span className="truncate">{r.voluntarios?.nome_completo?.split(' ')[0] || 'Voluntário'}</span>
                         </div>
                       ))}
                       {recessosDoDia.length > 2 && (
@@ -613,15 +752,22 @@ export function VoluntariosRecesso() {
       {/* SUB-ABA 2: SOLICITAR FOLGA MENSAL OU RECESSO DE 15 DIAS */}
       {/* ========================================================================= */}
       {activeSubTab === 'solicitar' && (
-        <Card className="p-6 max-w-2xl mx-auto space-y-6">
-          <div className="space-y-1">
-            <h3 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
+        <Card className="p-6 max-w-2xl mx-auto space-y-5">
+          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+            <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-[var(--color-primary)]" />
-              Solicitação de Folga Mensal ou Recesso Anual
-            </h3>
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Cada voluntário tem direito a <strong>2 folgas no mês</strong> (sendo a 1ª o Dia da Família) e a <strong>1 recesso de 15 dias</strong> ao ano. Todas as solicitações são avaliadas pela Diretoria Administrativa.
-            </p>
+              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                Solicitação de Folga ou Recesso
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowRegrasInfo(true)}
+              className="text-[11px] text-[var(--text-muted)] hover:text-[var(--color-primary)] flex items-center gap-1 font-semibold cursor-pointer"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              Ver Regras
+            </button>
           </div>
 
           {/* Seleção do Tipo de Solicitação */}
@@ -631,18 +777,18 @@ export function VoluntariosRecesso() {
               onClick={() => setTipoSol('folga_individual')}
               className={`p-3 rounded-xl text-left transition-all cursor-pointer ${
                 tipoSol === 'folga_individual'
-                  ? 'bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-xs'
-                  : 'opacity-70 hover:opacity-100'
+                  ? 'bg-[var(--bg-elevated)] border border-[var(--color-primary)] ring-1 ring-[var(--color-primary)] shadow-xs'
+                  : 'border border-transparent opacity-75 hover:opacity-100'
               }`}
             >
               <div className="flex items-center gap-2">
-                <Coffee className="w-4 h-4 text-purple-600" />
+                <Coffee className="w-4 h-4 text-[#93368F]" />
                 <span className="font-bold text-xs text-[var(--text-primary)]">
                   2ª Folga Mensal (1 Dia)
                 </span>
               </div>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">
-                Livre escolha para um dia útil ou fim de semana do mês.
+                Livre escolha para um dia no mês vigente.
               </p>
             </button>
 
@@ -651,18 +797,18 @@ export function VoluntariosRecesso() {
               onClick={() => setTipoSol('recesso_15_dias')}
               className={`p-3 rounded-xl text-left transition-all cursor-pointer ${
                 tipoSol === 'recesso_15_dias'
-                  ? 'bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-xs'
-                  : 'opacity-70 hover:opacity-100'
+                  ? 'bg-[var(--bg-elevated)] border border-[var(--color-primary)] ring-1 ring-[var(--color-primary)] shadow-xs'
+                  : 'border border-transparent opacity-75 hover:opacity-100'
               }`}
             >
               <div className="flex items-center gap-2">
-                <Umbrella className="w-4 h-4 text-amber-600" />
+                <Umbrella className="w-4 h-4 text-[var(--color-primary)]" />
                 <span className="font-bold text-xs text-[var(--text-primary)]">
                   Recesso Anual (15 Dias)
                 </span>
               </div>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">
-                Período contínuo de 15 dias para descanso e recomposição.
+                Período contínuo de 15 dias para descanso.
               </p>
             </button>
           </div>
@@ -725,18 +871,15 @@ export function VoluntariosRecesso() {
               )}
             </div>
 
-            {/* Aviso de Último Fim de Semana com Atividades Externas */}
+            {/* Aviso de Último Fim de Semana */}
             {isUltimoFdsWarning && (
-              <div className="p-3.5 rounded-xl bg-amber-500/10 border-2 border-amber-500/30 text-amber-900 text-xs leading-relaxed space-y-1 animate-in fade-in">
-                <div className="flex items-center gap-1.5 font-bold text-amber-800">
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs leading-relaxed space-y-1 animate-in fade-in">
+                <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Aviso Importante: Último Final de Semana com Público Externo</span>
+                  <span>Aviso: Coincide com o Último Final de Semana do Mês</span>
                 </div>
-                <p>
-                  O período solicitado coincide com o <strong>último final de semana do mês</strong>, data prioritariamente dedicada aos encontros com o público externo que demandam maior presença da equipe.
-                </p>
-                <p className="text-[11px] text-amber-700 italic">
-                  Sua solicitação será enviada para avaliação e homologação da Diretoria Administrativa.
+                <p className="text-[11px]">
+                  Data dedicada prioritariamente a ações externas comunitárias. O pedido será encaminhado para deliberação da Diretoria.
                 </p>
               </div>
             )}
@@ -750,7 +893,7 @@ export function VoluntariosRecesso() {
                 onChange={(e) => setSolMotivo(e.target.value)}
                 rows={2}
                 placeholder="Ex: Assuntos acadêmicos, viagem ou compromisso familiar."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none font-medium"
               />
             </div>
 
@@ -766,20 +909,23 @@ export function VoluntariosRecesso() {
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-ABA 3: APROVAÇÕES & DIRETORIA ADMINISTRATIVA */}
+      {/* SUB-ABA 3: APROVAÇÕES & DIRETORIA ADMINISTRATIVA (PODER TOTAL DE GERÊNCIA) */}
       {/* ========================================================================= */}
       {activeSubTab === 'aprovacoes' && (
-        <div className="space-y-6 max-w-4xl mx-auto">
-          {/* Box 1: Controle do Dia da Família */}
+        <div className="space-y-5 max-w-4xl mx-auto">
+          {/* Card 1: Controle do Dia da Família */}
           <Card className="p-5 space-y-4 border-l-4 border-l-[var(--color-primary)]">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <h3 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-[var(--color-primary)]" />
-                  Controle do Dia da Família (1º Domingo do Mês)
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <h3 className="font-display font-bold text-sm sm:text-base text-[var(--text-primary)] flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-[var(--color-primary)]" />
+                  Controle do Dia da Família (1º Domingo)
                 </h3>
-                <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                  Apenas o <strong>Diretor Administrativo</strong> pode desativar o Dia da Família em meses com eventos e ações extraordinárias com a comunidade.
+                <p className="text-[11px] text-[var(--text-muted)]">
+                  Status em {MESES_NOMES[currentMonth]}/{currentYear}:{' '}
+                  <strong className={diaFamiliaAtivo ? 'text-emerald-600' : 'text-amber-600'}>
+                    {diaFamiliaAtivo ? `ATIVO (Folga no Dia ${primeiroDomingo})` : 'DESATIVADO'}
+                  </strong>
                 </p>
               </div>
 
@@ -788,59 +934,81 @@ export function VoluntariosRecesso() {
                 size="sm"
                 onClick={handleToggleDiaFamilia}
                 disabled={adminSaving}
-                className="shrink-0"
+                className="shrink-0 text-xs"
               >
                 {diaFamiliaAtivo ? 'Desativar neste Mês' : 'Reativar Dia da Família'}
               </Button>
             </div>
 
-            <div className="p-3 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-between text-xs">
-              <span className="font-semibold text-[var(--text-secondary)]">Status em {MESES_NOMES[currentMonth]}/{currentYear}:</span>
-              <span className={`font-bold ${diaFamiliaAtivo ? 'text-emerald-600' : 'text-amber-600'}`}>
-                {diaFamiliaAtivo ? `ATIVO — Folga Coletiva no Dia ${primeiroDomingo}` : 'DESATIVADO'}
-              </span>
-            </div>
-
             {diaFamiliaAtivo && (
-              <div className="space-y-1.5 pt-1">
+              <div className="space-y-1 pt-1">
                 <label className="text-[11px] font-semibold text-[var(--text-muted)]">
-                  Justificativa obrigatória caso deseje desativar:
+                  Justificativa formal caso deseje desativar:
                 </label>
-                <textarea
+                <input
+                  type="text"
                   value={adminMotivo}
                   onChange={(e) => setAdminMotivo(e.target.value)}
                   placeholder="Ex: Mutirão social extraordinário ou celebração do Dia das Crianças."
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
                 />
               </div>
             )}
           </Card>
 
-          {/* Box 2: Fila de Solicitações Pendentes */}
+          {/* Card 2: Painel Central de Gerenciamento & Edição de Todas as Solicitações */}
           <Card className="p-5 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-default)] pb-3">
               <div>
                 <h3 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
-                  <FileCheck className="w-5 h-5 text-purple-600" />
-                  Solicitações Aguardando Homologação da Diretoria
+                  <FileCheck className="w-5 h-5 text-[#93368F]" />
+                  Gerenciamento de Todas as Escalas &amp; Folgas
                 </h3>
                 <p className="text-xs text-[var(--text-muted)]">
-                  Avalie pedidos de 2ª folga mensal e recessos anuais de 15 dias.
+                  O Diretor Administrativo pode aprovar, editar, corrigir ou cancelar qualquer solicitação.
                 </p>
               </div>
-              <Badge variant={pendentesAprovacao.length > 0 ? 'warning' : 'neutral'}>
-                {pendentesAprovacao.length} Pendentes
-              </Badge>
+
+              {/* Filtros de Status */}
+              <div className="flex items-center gap-1 bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--border-default)] text-[11px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setAdminFilterStatus('todos')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${adminFilterStatus === 'todos' ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-xs font-bold' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                >
+                  Todas ({recessos.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminFilterStatus('pendente')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${adminFilterStatus === 'pendente' ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 shadow-xs font-bold' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                >
+                  Pendentes ({pendentesAprovacao.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminFilterStatus('aprovada')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${adminFilterStatus === 'aprovada' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shadow-xs font-bold' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                >
+                  Aprovadas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminFilterStatus('recusada')}
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${adminFilterStatus === 'recusada' ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 shadow-xs font-bold' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                >
+                  Recusadas
+                </button>
+              </div>
             </div>
 
-            {pendentesAprovacao.length === 0 ? (
+            {listaDiretoriaFiltrada.length === 0 ? (
               <div className="p-8 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)]/30 rounded-2xl border border-dashed border-[var(--border-default)]">
-                Não há solicitações de folga ou recesso pendentes de aprovação no momento.
+                Nenhum registro de folga ou recesso encontrado com o filtro selecionado.
               </div>
             ) : (
               <div className="space-y-3">
-                {pendentesAprovacao.map((item) => {
+                {listaDiretoriaFiltrada.map((item) => {
                   const isExternoWarning = verificaIntersecaoUltimoFds(
                     item.data_folga,
                     item.tipo === 'recesso_15_dias'
@@ -849,7 +1017,7 @@ export function VoluntariosRecesso() {
                   return (
                     <div
                       key={item.id}
-                      className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                      className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all hover:border-[var(--color-primary)]/40"
                     >
                       <div className="space-y-1.5 min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -859,10 +1027,21 @@ export function VoluntariosRecesso() {
                           <Badge variant={item.tipo === 'recesso_15_dias' ? 'warning' : 'purple'}>
                             {item.tipo === 'recesso_15_dias' ? 'Recesso 15 Dias' : '2ª Folga Mensal'}
                           </Badge>
+                          <Badge
+                            variant={
+                              item.status === 'aprovada'
+                                ? 'success'
+                                : item.status === 'pendente'
+                                ? 'warning'
+                                : 'danger'
+                            }
+                          >
+                            {item.status.toUpperCase()}
+                          </Badge>
                           {isExternoWarning && (
                             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 text-amber-600" />
-                              Intercepta Último FDS
+                              Último FDS
                             </span>
                           )}
                         </div>
@@ -877,28 +1056,61 @@ export function VoluntariosRecesso() {
                             &quot;{item.motivo}&quot;
                           </p>
                         )}
+
+                        {item.motivo_recusa && (
+                          <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
+                            Motivo da Recusa: {item.motivo_recusa}
+                          </p>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      {/* Ações da Diretoria: Aprovar, Recusar, Editar, Excluir */}
+                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center flex-wrap">
+                        {item.status !== 'aprovada' && (
+                          <Button
+                            size="sm"
+                            className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                            disabled={processingId === item.id}
+                            onClick={() => handleAprovarSolicitacao(item.id)}
+                            icon={<Check className="w-3.5 h-3.5" />}
+                          >
+                            Aprovar
+                          </Button>
+                        )}
+
+                        {item.status !== 'recusada' && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="text-xs text-rose-600 hover:bg-rose-500/10"
+                            disabled={processingId === item.id}
+                            onClick={() => setRecusaModalId(item.id)}
+                            icon={<X className="w-3.5 h-3.5" />}
+                          >
+                            Recusar
+                          </Button>
+                        )}
+
                         <Button
                           variant="secondary"
                           size="sm"
-                          className="text-xs text-red-600 hover:bg-red-500/10"
-                          disabled={processingId === item.id}
-                          onClick={() => setRecusaModalId(item.id)}
-                          icon={<X className="w-3.5 h-3.5" />}
+                          className="text-xs"
+                          onClick={() => handleOpenEditModal(item)}
+                          icon={<Edit3 className="w-3.5 h-3.5" />}
+                          title="Editar escala"
                         >
-                          Recusar
+                          Editar
                         </Button>
-                        <Button
-                          size="sm"
-                          className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                          disabled={processingId === item.id}
-                          onClick={() => handleAprovarSolicitacao(item.id)}
-                          icon={<Check className="w-3.5 h-3.5" />}
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRecord(item.id)}
+                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="Excluir escala"
+                          aria-label="Excluir escala"
                         >
-                          Aprovar
-                        </Button>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   );
@@ -909,17 +1121,141 @@ export function VoluntariosRecesso() {
         </div>
       )}
 
-      {/* Modal de Motivo de Recusa */}
+      {/* ── MODAL: EDIÇÃO DIRETA PELA DIRETORIA ── */}
+      {editingRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-[var(--color-primary)]" />
+                <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                  Editar Registro de Escala / Folga
+                </h3>
+              </div>
+              <button
+                onClick={() => setEditingRecord(null)}
+                className="p-1 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-muted)]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              <div>
+                <label className="font-semibold text-[var(--text-secondary)] block mb-1">
+                  Voluntário
+                </label>
+                <input
+                  type="text"
+                  disabled
+                  value={editingRecord.voluntarios?.nome_completo || 'Voluntário'}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold disabled:opacity-100"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-[var(--text-secondary)] block mb-1">
+                    Tipo de Escala
+                  </label>
+                  <select
+                    value={editTipo}
+                    onChange={(e: any) => setEditTipo(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+                  >
+                    <option value="individual">2ª Folga Mensal</option>
+                    <option value="recesso_15_dias">Recesso 15 Dias</option>
+                    <option value="coletiva">Folga Coletiva</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-[var(--text-secondary)] block mb-1">
+                    Status da Solicitação
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e: any) => setEditStatus(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+                  >
+                    <option value="aprovada">Aprovada</option>
+                    <option value="pendente">Pendente</option>
+                    <option value="recusada">Recusada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-[var(--text-secondary)] block mb-1">
+                    Data de Início *
+                  </label>
+                  <input
+                    type="date"
+                    value={editDataInicio}
+                    onChange={(e) => setEditDataInicio(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-mono-data"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-[var(--text-secondary)] block mb-1">
+                    Data de Término (Opcional)
+                  </label>
+                  <input
+                    type="date"
+                    value={editDataFim}
+                    onChange={(e) => setEditDataFim(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-mono-data"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[var(--text-secondary)] block mb-1">
+                  Justificativa / Motivo
+                </label>
+                <textarea
+                  value={editMotivo}
+                  onChange={(e) => setEditMotivo(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--border-default)]">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setEditingRecord(null)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                icon={<Save className="w-4 h-4" />}
+                disabled={savingEdit}
+                onClick={handleSaveEdit}
+              >
+                {savingEdit ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: MOTIVO DE RECUSA ── */}
       {recusaModalId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="space-y-1">
               <h3 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-red-500" />
+                <XCircle className="w-5 h-5 text-rose-500" />
                 Recusar Solicitação de Folga/Recesso
               </h3>
               <p className="text-xs text-[var(--text-muted)]">
-                Informe o motivo da recusa para notificação e registro do voluntário.
+                Informe o motivo da recusa para o registro do voluntário.
               </p>
             </div>
 
@@ -928,7 +1264,7 @@ export function VoluntariosRecesso() {
               onChange={(e) => setMotivoRecusaTexto(e.target.value)}
               placeholder="Ex: Necessidade de escala no último fim de semana em virtude de ação comunitária externa."
               rows={3}
-              className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-red-500 resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-rose-500 resize-none"
             />
 
             <div className="flex items-center justify-end gap-2 pt-2">
@@ -941,7 +1277,7 @@ export function VoluntariosRecesso() {
               </Button>
               <Button
                 size="sm"
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-rose-600 hover:bg-rose-700 text-white"
                 onClick={handleConfirmarRecusa}
               >
                 Confirmar Recusa
@@ -951,11 +1287,11 @@ export function VoluntariosRecesso() {
         </div>
       )}
 
-      {/* Modal de Detalhes do Dia Clicado no Calendário */}
+      {/* ── MODAL: DETALHES DO DIA CLICADO NO CALENDÁRIO ── */}
       {selectedDayModal !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-md bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
               <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
                 Escala de {selectedDayModal} de {MESES_NOMES[currentMonth]} de {currentYear}
               </h3>
@@ -976,7 +1312,7 @@ export function VoluntariosRecesso() {
               )}
 
               {ultimoFdsDates.includes(selectedDayModal) && (
-                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-400/20 text-purple-700 font-semibold flex items-center gap-2">
+                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-400/20 text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   <span>Último FDS: Encontros com público externo (Presença prioritária).</span>
                 </div>
