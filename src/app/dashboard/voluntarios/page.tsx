@@ -12,17 +12,15 @@ import {
 } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
 import { VoluntariosSaude } from '@/components/dashboard/voluntarios/VoluntariosSaude';
 import { VoluntariosRecesso } from '@/components/dashboard/voluntarios/VoluntariosRecesso';
-import { VoluntariosDocumentos } from '@/components/dashboard/voluntarios/VoluntariosDocumentos';
 import {
   Users,
   Heart,
   Calendar,
-  FileText,
-  Plus,
   RefreshCw,
+  ShieldCheck,
 } from 'lucide-react';
 
-type TabKey = 'equipe' | 'saude' | 'recesso' | 'documentos';
+type TabKey = 'equipe' | 'saude' | 'recesso';
 
 interface TabItem {
   key: TabKey;
@@ -32,10 +30,9 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { key: 'equipe', label: 'Equipe & Voluntários', icon: Users, color: '#F2632D' },
+  { key: 'equipe', label: 'Equipe & Habilidades', icon: Users, color: '#F2632D' },
   { key: 'saude', label: 'Saúde & Emergência', icon: Heart, color: '#EF4444' },
   { key: 'recesso', label: 'Recessos & Folgas', icon: Calendar, color: '#93368F' },
-  { key: 'documentos', label: 'Documentos & Certificados', icon: FileText, color: '#1C9C82' },
 ];
 
 function VoluntariosContent() {
@@ -44,17 +41,13 @@ function VoluntariosContent() {
 
   const tabParam = searchParams.get('tab') as TabKey | null;
   const [activeTab, setActiveTab] = useState<TabKey>(
-    tabParam && ['equipe', 'saude', 'recesso', 'documentos'].includes(tabParam)
+    tabParam && ['equipe', 'saude', 'recesso'].includes(tabParam)
       ? tabParam
       : 'equipe'
   );
 
   const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Estados para navegação contextual entre abas
-  const [voluntarioParaDoc, setVoluntarioParaDoc] = useState<Voluntario | null>(null);
-  const [tipoDocContexto, setTipoDocContexto] = useState<'termo' | 'certificado' | null>(null);
 
   const supabase = createClient();
 
@@ -64,6 +57,7 @@ function VoluntariosContent() {
       const { data, error } = await supabase
         .from('voluntarios')
         .select('*')
+        .eq('status', 'ativo')
         .order('nome_completo', { ascending: true });
 
       if (error) {
@@ -87,18 +81,12 @@ function VoluntariosContent() {
     router.replace(`/dashboard/voluntarios?tab=${key}`);
   };
 
-  const handleSelectParaDocumento = (vol: Voluntario, tipo: 'termo' | 'certificado') => {
-    setVoluntarioParaDoc(vol);
-    setTipoDocContexto(tipo);
-    handleTabChange('documentos');
-  };
-
   return (
     <div className="flex-1 flex flex-col min-w-0">
       {/* ── 1. CABEÇALHO DA PÁGINA (TOPBAR FIXO NO TOPO) ── */}
       <Topbar
-        title="Gestão de Voluntários & Equipe"
-        subtitle="Ciclo de vida, prontuário operacional de saúde, recessos e emissão de documentos oficiais timbrados."
+        title="Equipe & Contatos"
+        subtitle="Catálogo da equipe, habilidades, prontuário operacional de emergência e calendário de folgas."
         action={
           <div className="flex items-center gap-2">
             <Button
@@ -110,9 +98,9 @@ function VoluntariosContent() {
               Atualizar
             </Button>
 
-            <Link href="/dashboard/voluntarios/novo">
-              <Button size="sm" icon={<Plus className="w-4 h-4" />}>
-                Novo Voluntário
+            <Link href="/dashboard/voluntarios/gestao">
+              <Button variant="secondary" size="sm" icon={<ShieldCheck className="w-4 h-4 text-[#1C9C82]" />}>
+                Gestão de Pessoas
               </Button>
             </Link>
           </div>
@@ -121,7 +109,6 @@ function VoluntariosContent() {
 
       {/* ── 2. CONTAINER COM ESPAÇAMENTO AREJADO E CENTRALIZADO (MAX-W-7XL) ── */}
       <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto transition-all duration-300">
-        
         {/* Seletor de Abas Superiores */}
         <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-[var(--shadow-card)] overflow-x-auto custom-scrollbar">
           {TABS.map((tab) => {
@@ -161,7 +148,6 @@ function VoluntariosContent() {
               voluntarios={voluntarios}
               loading={loading}
               onRefresh={fetchVoluntarios}
-              onSelectParaDocumento={handleSelectParaDocumento}
             />
           )}
 
@@ -175,14 +161,6 @@ function VoluntariosContent() {
           {activeTab === 'recesso' && (
             <VoluntariosRecesso />
           )}
-
-          {activeTab === 'documentos' && (
-            <VoluntariosDocumentos
-              voluntarios={voluntarios}
-              voluntarioPreSelecionado={voluntarioParaDoc}
-              tipoDocInicial={tipoDocContexto}
-            />
-          )}
         </div>
       </div>
     </div>
@@ -193,8 +171,8 @@ export default function VoluntariosPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-12 text-center text-sm text-[var(--text-muted)]">
-          Carregando módulo de voluntários...
+        <div className="p-8 flex items-center justify-center min-h-[50vh]">
+          <div className="w-8 h-8 rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin" />
         </div>
       }
     >

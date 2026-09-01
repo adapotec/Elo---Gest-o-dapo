@@ -26,6 +26,7 @@ import {
   PinOff,
   HelpCircle,
   X,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface MenuItemChild {
@@ -51,8 +52,8 @@ const navigationItems: MenuItem[] = [
     icon: HeartHandshake,
     color: '#F2632D',
     children: [
-      { name: 'Cadastro & Equipe', href: '/dashboard/voluntarios', icon: Users, color: '#F2632D' },
-      { name: 'Saúde & Recesso', href: '/dashboard/voluntarios/recesso', icon: Heart, color: '#1C9C82' },
+      { name: 'Equipe & Contatos', href: '/dashboard/voluntarios', icon: Users, color: '#F2632D' },
+      { name: 'Gestão de Pessoas', href: '/dashboard/voluntarios/gestao', icon: ShieldCheck, color: '#1C9C82' },
     ],
   },
   { name: 'Projetos Sociais', href: '/dashboard/projetos', icon: FolderKanban, color: '#F7955F' },
