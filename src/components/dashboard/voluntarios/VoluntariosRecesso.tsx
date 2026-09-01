@@ -89,11 +89,13 @@ function formatDateBR(dateStr?: string | null): string {
 
 interface VoluntariosRecessoProps {
   showAprovacoes?: boolean;
+  showSolicitar?: boolean;
   defaultSubTab?: 'calendario' | 'solicitar' | 'aprovacoes';
 }
 
 export function VoluntariosRecesso({
   showAprovacoes = true,
+  showSolicitar = true,
   defaultSubTab = 'calendario',
 }: VoluntariosRecessoProps) {
   const supabase = createClient();
@@ -108,9 +110,13 @@ export function VoluntariosRecesso({
   const [loading, setLoading] = useState(true);
 
   // Sub-abas: 'calendario' | 'solicitar' | 'aprovacoes'
-  const [activeSubTab, setActiveSubTab] = useState<'calendario' | 'solicitar' | 'aprovacoes'>(
-    !showAprovacoes && defaultSubTab === 'aprovacoes' ? 'calendario' : defaultSubTab
-  );
+  const getInitialTab = (): 'calendario' | 'solicitar' | 'aprovacoes' => {
+    if (!showAprovacoes && defaultSubTab === 'aprovacoes') return 'calendario';
+    if (!showSolicitar && defaultSubTab === 'solicitar') return showAprovacoes ? 'aprovacoes' : 'calendario';
+    return defaultSubTab;
+  };
+
+  const [activeSubTab, setActiveSubTab] = useState<'calendario' | 'solicitar' | 'aprovacoes'>(getInitialTab);
   const [selectedDayModal, setSelectedDayModal] = useState<number | null>(null);
   const [showRegrasInfo, setShowRegrasInfo] = useState(false);
 
@@ -625,16 +631,18 @@ export function VoluntariosRecesso({
           >
             Calendário Mensal
           </button>
-          <button
-            onClick={() => setActiveSubTab('solicitar')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeSubTab === 'solicitar'
-                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs font-bold'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            Solicitar Folga / Recesso
-          </button>
+          {showSolicitar && (
+            <button
+              onClick={() => setActiveSubTab('solicitar')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeSubTab === 'solicitar'
+                  ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              Solicitar Folga / Recesso
+            </button>
+          )}
           {showAprovacoes && (
             <button
               onClick={() => setActiveSubTab('aprovacoes')}

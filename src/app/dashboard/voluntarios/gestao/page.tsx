@@ -47,8 +47,8 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { key: 'quadro', label: 'Quadro & Admissão', icon: Users, color: '#F2632D' },
-  { key: 'escalas', label: 'Homologação & Escalas', icon: Calendar, color: '#93368F' },
+  { key: 'quadro', label: 'Quadro Geral', icon: Users, color: '#F2632D' },
+  { key: 'escalas', label: 'Gestão de Folgas e Recessos', icon: Calendar, color: '#93368F' },
   { key: 'documentos', label: 'Documentos & Termos', icon: FileText, color: '#1C9C82' },
   { key: 'indicadores', label: 'Indicadores de RH', icon: TrendingUp, color: '#3B82F6' },
 ];
@@ -440,10 +440,10 @@ function GestaoPessoasContent() {
           )}
 
           {/* ========================================================================= */}
-          {/* ABA 2: HOMOLOGAÇÃO & ESCALAS (DIRETORIA) */}
+          {/* ABA 2: GESTÃO DE FOLGAS E RECESSOS (DIRETORIA) */}
           {/* ========================================================================= */}
           {activeTab === 'escalas' && (
-            <VoluntariosRecesso />
+            <VoluntariosRecesso showAprovacoes={true} showSolicitar={false} defaultSubTab="aprovacoes" />
           )}
 
           {/* ========================================================================= */}
