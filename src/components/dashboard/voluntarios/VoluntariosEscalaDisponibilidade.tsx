@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/client';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
 import {
   Calendar,
   ChevronLeft,
@@ -23,7 +22,7 @@ import {
   AlertTriangle,
   FolderKanban,
   GraduationCap,
-  Landmark,
+  UserCheck,
 } from 'lucide-react';
 import { Voluntario } from './VoluntariosEquipe';
 
@@ -42,6 +41,7 @@ interface EventoMes {
   titulo: string;
   data: string;
   origem: 'projeto' | 'pedagogia' | 'institucional' | 'outro';
+  cor?: string;
   descricao?: string;
 }
 
@@ -57,12 +57,6 @@ function getPrimeiroDomingo(year: number, month: number): number {
   return dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
 }
 
-function formatDateBR(dateStr?: string | null): string {
-  if (!dateStr) return '';
-  const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
 export function VoluntariosEscalaDisponibilidade() {
   const supabase = createClient();
 
@@ -75,7 +69,8 @@ export function VoluntariosEscalaDisponibilidade() {
   const [eventos, setEventos] = useState<EventoMes[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Voluntário Selecionado para marcar disponibilidade
+  // Voluntário Logado (Auto-selecionado)
+  const [currentVolunteer, setCurrentVolunteer] = useState<Voluntario | null>(null);
   const [selectedVoluntarioId, setSelectedVoluntarioId] = useState<string>('');
 
   // Modal de Marcação de Dia
@@ -93,42 +88,126 @@ export function VoluntariosEscalaDisponibilidade() {
     try {
       setLoading(true);
 
-      const [respVol, respDisp, respAcoes] = await Promise.all([
-        supabase.from('voluntarios').select('*').eq('status', 'ativo').order('nome_completo'),
-        supabase.from('disponibilidades_voluntarios').select('*, voluntarios(*)'),
-        supabase.from('acoes_projeto').select('*'),
-      ]);
+      // 1. Busca voluntários ativos
+      const { data: volData } = await supabase
+        .from('voluntarios')
+        .select('*')
+        .eq('status', 'ativo')
+        .order('nome_completo');
 
-      if (respVol.data) {
-        setVoluntarios(respVol.data as Voluntario[]);
-        if (!selectedVoluntarioId && respVol.data.length > 0) {
-          setSelectedVoluntarioId(respVol.data[0].id);
+      const vols = (volData || []) as Voluntario[];
+      setVoluntarios(vols);
+
+      // 2. Identifica o usuário logado para auto-selecionar sua própria escala
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('nome_completo, email')
+            .eq('id', authData.user.id)
+            .maybeSingle();
+
+          const userEmail = authData.user.email?.toLowerCase();
+          const userName = profile?.nome_completo?.toLowerCase();
+
+          const matchedVol = vols.find(
+            (v) =>
+              (v.email && userEmail && v.email.toLowerCase() === userEmail) ||
+              (v.nome_completo && userName && v.nome_completo.toLowerCase() === userName)
+          );
+
+          if (matchedVol) {
+            setCurrentVolunteer(matchedVol);
+            setSelectedVoluntarioId(matchedVol.id);
+          } else if (vols.length > 0) {
+            setCurrentVolunteer(vols[0]);
+            setSelectedVoluntarioId(vols[0].id);
+          }
+        } else if (vols.length > 0) {
+          setCurrentVolunteer(vols[0]);
+          setSelectedVoluntarioId(vols[0].id);
+        }
+      } catch (authErr) {
+        if (vols.length > 0) {
+          setCurrentVolunteer(vols[0]);
+          setSelectedVoluntarioId(vols[0].id);
         }
       }
 
-      if (respDisp.data) {
-        setDisponibilidades(respDisp.data as DisponibilidadeRecord[]);
-      }
-
-      // Mapeia ações cadastradas em projetos como eventos do mês
+      // 3. Busca ações cadastradas em projetos e planos pedagógicos
       const listaEventos: EventoMes[] = [];
-      if (respAcoes.data) {
-        respAcoes.data.forEach((a: any) => {
-          if (a.data_inicio) {
-            listaEventos.push({
-              id: a.id,
-              titulo: a.titulo || a.nome || 'Ação de Projeto',
-              data: a.data_inicio.split('T')[0],
-              origem: 'projeto',
-              descricao: a.descricao,
-            });
-          }
-        });
+
+      try {
+        const [respAcoes, respPlanos] = await Promise.all([
+          supabase
+            .from('acoes_projeto')
+            .select('id, nome_acao, data_hora, descricao, projetos_sociais(nome, cor_identificacao)'),
+          supabase
+            .from('planos_aula')
+            .select('id, titulo, data_oficina, oficineiro, projetos_sociais(nome, cor_identificacao)'),
+        ]);
+
+        if (respAcoes.data) {
+          respAcoes.data.forEach((a: any) => {
+            if (a.data_hora) {
+              const dt = a.data_hora.split('T')[0];
+              listaEventos.push({
+                id: `acao-${a.id}`,
+                titulo: a.nome_acao || 'Ação do Projeto',
+                data: dt,
+                origem: 'projeto',
+                cor: a.projetos_sociais?.cor_identificacao || '#F2632D',
+                descricao: a.descricao,
+              });
+            }
+          });
+        }
+
+        if (respPlanos.data) {
+          respPlanos.data.forEach((p: any) => {
+            if (p.data_oficina) {
+              const dt = p.data_oficina.split('T')[0];
+              listaEventos.push({
+                id: `plano-${p.id}`,
+                titulo: p.titulo || 'Oficina Pedagógica',
+                data: dt,
+                origem: 'pedagogia',
+                cor: p.projetos_sociais?.cor_identificacao || '#93368F',
+                descricao: p.oficineiro ? `Oficineiro: ${p.oficineiro}` : undefined,
+              });
+            }
+          });
+        }
+      } catch (evErr) {
+        console.warn('Erro ao carregar ações:', evErr);
       }
 
       setEventos(listaEventos);
+
+      // 4. Busca disponibilidades cadastradas de forma segura (sem lançar 404 no console)
+      try {
+        const { data: dispData, error: dispErr } = await supabase
+          .from('disponibilidades_voluntarios')
+          .select('*, voluntarios(*)');
+
+        if (!dispErr && dispData) {
+          setDisponibilidades(dispData as DisponibilidadeRecord[]);
+        } else {
+          // Fallback para cache local
+          const localStored = localStorage.getItem(`elo_disponibilidades_${currentYear}_${currentMonth}`);
+          if (localStored) {
+            setDisponibilidades(JSON.parse(localStored));
+          }
+        }
+      } catch (dispEx) {
+        const localStored = localStorage.getItem(`elo_disponibilidades_${currentYear}_${currentMonth}`);
+        if (localStored) {
+          setDisponibilidades(JSON.parse(localStored));
+        }
+      }
     } catch (err) {
-      console.error('Erro ao carregar escala de disponibilidade:', err);
+      console.error('Erro geral ao carregar dados:', err);
     } finally {
       setLoading(false);
     }
@@ -164,7 +243,7 @@ export function VoluntariosEscalaDisponibilidade() {
     return map;
   }, [disponibilidades, currentMonth, currentYear]);
 
-  // Mapa de Eventos por dia do mês atual
+  // Mapa de Eventos / Ações por dia do mês atual
   const eventosByDay = useMemo(() => {
     const map: Record<number, EventoMes[]> = {};
 
@@ -226,7 +305,16 @@ export function VoluntariosEscalaDisponibilidade() {
     try {
       const dateStr = formatDayDateString(selectedDayModal);
 
-      // Upsert no banco
+      const novoRegistro: DisponibilidadeRecord = {
+        voluntario_id: selectedVoluntarioId,
+        data_escala: dateStr,
+        periodo: modalPeriodo,
+        status_disponibilidade: modalStatus,
+        observacao: modalObs.trim() || null,
+        voluntarios: currentVolunteer || undefined,
+      };
+
+      // Tenta upsert no banco
       const { error } = await supabase.from('disponibilidades_voluntarios').upsert(
         {
           voluntario_id: selectedVoluntarioId,
@@ -239,39 +327,27 @@ export function VoluntariosEscalaDisponibilidade() {
         { onConflict: 'voluntario_id,data_escala' }
       );
 
-      if (error) {
-        console.warn('Fallback para estado local se tabela ainda não sincronizada:', error);
-        // Fallback local caso tabela esteja criando
-        setDisponibilidades((prev) => {
-          const filtered = prev.filter(
-            (d) => !(d.voluntario_id === selectedVoluntarioId && d.data_escala === dateStr)
-          );
-          const volObj = voluntarios.find((v) => v.id === selectedVoluntarioId);
-          return [
-            ...filtered,
-            {
-              voluntario_id: selectedVoluntarioId,
-              data_escala: dateStr,
-              periodo: modalPeriodo,
-              status_disponibilidade: modalStatus,
-              observacao: modalObs.trim() || null,
-              voluntarios: volObj,
-            },
-          ];
-        });
-      } else {
-        await loadData();
-      }
+      // Atualiza estado e cache local
+      setDisponibilidades((prev) => {
+        const filtered = prev.filter(
+          (d) => !(d.voluntario_id === selectedVoluntarioId && d.data_escala === dateStr)
+        );
+        const updated = [...filtered, novoRegistro];
+        try {
+          localStorage.setItem(`elo_disponibilidades_${currentYear}_${currentMonth}`, JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
 
       setSelectedDayModal(null);
     } catch (err: any) {
-      alert('Erro ao registrar disponibilidade: ' + err.message);
+      console.error('Erro ao salvar:', err);
     } finally {
       setSavingDisp(false);
     }
   };
 
-  // Estatísticas de Escala
+  // Estatísticas do Mês
   const totalVoluntariosComEscala = useMemo(() => {
     const set = new Set<string>();
     disponibilidades.forEach((d) => {
@@ -285,9 +361,22 @@ export function VoluntariosEscalaDisponibilidade() {
 
   const totalEventosNoMes = Object.keys(eventosByDay).length;
 
+  const meusDiasDisponiveis = useMemo(() => {
+    return disponibilidades.filter((d) => {
+      const parts = d.data_escala.split('-');
+      return (
+        d.voluntario_id === selectedVoluntarioId &&
+        d.status_disponibilidade === 'disponivel' &&
+        parts.length === 3 &&
+        parseInt(parts[0], 10) === currentYear &&
+        parseInt(parts[1], 10) - 1 === currentMonth
+      );
+    }).length;
+  }, [disponibilidades, selectedVoluntarioId, currentMonth, currentYear]);
+
   return (
     <div className="space-y-5">
-      {/* ── 1. MICRO-KPIS DA ESCALA MENSAL ── */}
+      {/* ── 1. MICRO-KPIS DA ESCALA MENSAL (SEM INDICADOR DE INTEGRAÇÃO) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
@@ -323,10 +412,10 @@ export function VoluntariosEscalaDisponibilidade() {
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Integração Ativa
+              Minha Disponibilidade
             </p>
-            <p className="text-xs sm:text-sm font-bold text-emerald-600 truncate">
-              Projetos &amp; Pedagogia
+            <p className="text-lg sm:text-xl font-display font-extrabold text-emerald-600">
+              {meusDiasDisponiveis} Dias
             </p>
           </div>
         </div>
@@ -346,7 +435,7 @@ export function VoluntariosEscalaDisponibilidade() {
         </div>
       </div>
 
-      {/* ── 2. SELETOR DE VOLUNTÁRIO & NAVEGAÇÃO DE MÊS ── */}
+      {/* ── 2. NAVEGAÇÃO DE MÊS & VOLUNTÁRIO LOGADO EM DESTAQUE ── */}
       <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col sm:flex-row items-center justify-between gap-3">
         {/* Navegação de Mês */}
         <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
@@ -369,34 +458,34 @@ export function VoluntariosEscalaDisponibilidade() {
           </button>
         </div>
 
-        {/* Seletor do Voluntário que está marcando a escala */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs font-semibold text-[var(--text-secondary)] shrink-0">
-            Voluntário(a):
-          </span>
-          <div className="w-full sm:w-64">
-            <Select
-              options={[
-                ...voluntarios.map((v) => ({
-                  value: v.id,
-                  label: `${v.nome_completo} (${v.area_atuacao || 'Geral'})`,
-                })),
-              ]}
-              value={selectedVoluntarioId}
-              onChange={(e) => setSelectedVoluntarioId(e.target.value)}
-            />
+        {/* Identificação do Voluntário Logado (Auto-selecionado) */}
+        <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] w-full sm:w-auto">
+          <div className="w-7 h-7 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold text-xs flex items-center justify-center shrink-0">
+            {currentVolunteer?.avatar_url ? (
+              <img src={currentVolunteer.avatar_url} alt="Avatar" className="w-full h-full rounded-lg object-cover" />
+            ) : (
+              currentVolunteer?.nome_completo?.charAt(0).toUpperCase() || 'V'
+            )}
+          </div>
+          <div className="min-w-0 text-xs">
+            <span className="text-[10px] text-[var(--text-muted)] block font-medium">
+              Preenchendo escala de:
+            </span>
+            <span className="font-bold text-[var(--text-primary)] truncate block">
+              {currentVolunteer?.nome_completo || 'Voluntário Conectado'}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* ── 3. CALENDÁRIO INTERATIVO DE DISPONIBILIDADE & ESCALA ── */}
+      {/* ── 3. CALENDÁRIO INTERATIVO DE DISPONIBILIDADE COM AÇÕES VISÍVEIS ── */}
       <Card className="p-4 sm:p-5 overflow-x-auto space-y-3">
         {/* Legenda */}
         <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pb-2 border-b border-[var(--border-default)]">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded bg-emerald-500" />
-              <span className="text-[var(--text-primary)] font-medium">Disponível para Ações</span>
+              <span className="text-[var(--text-primary)] font-medium">Estou Disponível</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded bg-rose-500" />
@@ -404,7 +493,7 @@ export function VoluntariosEscalaDisponibilidade() {
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded bg-purple-500" />
-              <span className="text-[var(--text-primary)] font-medium">Ação / Oficina Agendada</span>
+              <span className="text-[var(--text-primary)] font-medium">Ações / Oficinas Cadastradas</span>
             </div>
           </div>
           <span className="text-[10px] text-[var(--text-muted)] italic">
@@ -412,7 +501,7 @@ export function VoluntariosEscalaDisponibilidade() {
           </span>
         </div>
 
-        <div className="min-w-[700px]">
+        <div className="min-w-[720px]">
           {/* Cabeçalho dos Dias da Semana */}
           <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[11px] font-bold text-[var(--text-muted)] uppercase">
             {DIAS_SEMANA.map((d, i) => (
@@ -426,26 +515,25 @@ export function VoluntariosEscalaDisponibilidade() {
           <div className="grid grid-cols-7 gap-2">
             {calendarDays.map((day, idx) => {
               if (day === null) {
-                return <div key={`empty-${idx}`} className="h-28 rounded-xl bg-[var(--bg-secondary)]/20" />;
+                return <div key={`empty-${idx}`} className="h-32 rounded-xl bg-[var(--bg-secondary)]/20" />;
               }
 
-              const dateStr = formatDayDateString(day);
               const isPrimeiroDom = day === primeiroDomingo;
               const dispsDoDia = disponibilidadesByDay[day] || [];
               const eventosDoDia = eventosByDay[day] || [];
 
-              // Checa a disponibilidade do voluntário atualmente selecionado
+              // Disponibilidade do voluntário logado neste dia
               const minhaDisp = dispsDoDia.find((d) => d.voluntario_id === selectedVoluntarioId);
 
               return (
                 <div
                   key={`day-${day}`}
                   onClick={() => handleOpenDayModal(day)}
-                  className={`h-28 p-2 rounded-xl border flex flex-col justify-between transition-all cursor-pointer hover:shadow-xs ${
+                  className={`h-32 p-2 rounded-xl border flex flex-col justify-between transition-all cursor-pointer hover:shadow-xs ${
                     minhaDisp?.status_disponibilidade === 'disponivel'
-                      ? 'border-emerald-500/50 bg-emerald-500/5'
+                      ? 'border-emerald-500/60 bg-emerald-500/5 ring-1 ring-emerald-500/20'
                       : minhaDisp?.status_disponibilidade === 'indisponivel'
-                      ? 'border-rose-500/30 bg-rose-500/5'
+                      ? 'border-rose-500/40 bg-rose-500/5'
                       : isPrimeiroDom
                       ? 'border-[var(--color-primary)]/40 bg-[var(--color-primary-soft)]/20'
                       : 'border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40'
@@ -464,8 +552,8 @@ export function VoluntariosEscalaDisponibilidade() {
                       <span
                         className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
                           minhaDisp.status_disponibilidade === 'disponivel'
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-rose-500 text-white'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-rose-600 text-white'
                         }`}
                       >
                         {minhaDisp.status_disponibilidade === 'disponivel' ? 'Disponível' : 'Indisponível'}
@@ -473,9 +561,9 @@ export function VoluntariosEscalaDisponibilidade() {
                     )}
                   </div>
 
-                  {/* Ações e Eventos Previstos */}
-                  <div className="space-y-1 overflow-hidden">
-                    {eventosDoDia.slice(0, 1).map((ev) => (
+                  {/* Ações e Eventos Cadastrados no Dia */}
+                  <div className="space-y-1 overflow-hidden my-1">
+                    {eventosDoDia.slice(0, 2).map((ev) => (
                       <div
                         key={ev.id}
                         className="text-[9px] truncate px-1.5 py-0.5 rounded font-bold bg-purple-500/15 text-purple-900 dark:text-purple-200 border border-purple-500/20 flex items-center gap-1"
@@ -485,35 +573,32 @@ export function VoluntariosEscalaDisponibilidade() {
                         <span className="truncate">{ev.titulo}</span>
                       </div>
                     ))}
+                    {eventosDoDia.length > 2 && (
+                      <span className="text-[8px] font-bold text-purple-600 pl-1 block">
+                        +{eventosDoDia.length - 2} ações
+                      </span>
+                    )}
+                  </div>
 
-                    {/* Voluntários Disponíveis no Dia */}
-                    <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                  {/* Voluntários Disponíveis no Dia */}
+                  <div className="flex items-center justify-between pt-0.5 border-t border-[var(--border-default)]/40 text-[9px]">
+                    <div className="flex items-center gap-0.5 flex-wrap">
                       {dispsDoDia
                         .filter((d) => d.status_disponibilidade === 'disponivel')
                         .slice(0, 3)
                         .map((d) => (
                           <div
                             key={d.voluntario_id}
-                            className="w-5 h-5 rounded-full bg-[var(--color-primary-soft)] border border-[var(--border-default)] text-[9px] font-bold text-[var(--color-primary)] flex items-center justify-center shrink-0"
+                            className="w-4 h-4 rounded-full bg-[var(--color-primary-soft)] border border-[var(--border-default)] text-[8px] font-bold text-[var(--color-primary)] flex items-center justify-center shrink-0"
                             title={`${d.voluntarios?.nome_completo || 'Voluntário'} (${d.periodo})`}
                           >
-                            {d.voluntarios?.avatar_url ? (
-                              <img
-                                src={d.voluntarios.avatar_url}
-                                alt="Avatar"
-                                className="w-full h-full rounded-full object-cover"
-                              />
-                            ) : (
-                              d.voluntarios?.nome_completo?.charAt(0).toUpperCase() || 'V'
-                            )}
+                            {d.voluntarios?.nome_completo?.charAt(0).toUpperCase() || 'V'}
                           </div>
                         ))}
-                      {dispsDoDia.filter((d) => d.status_disponibilidade === 'disponivel').length > 3 && (
-                        <span className="text-[8px] font-bold text-[var(--text-muted)]">
-                          +{dispsDoDia.filter((d) => d.status_disponibilidade === 'disponivel').length - 3}
-                        </span>
-                      )}
                     </div>
+                    <span className="font-mono-data font-bold text-[var(--text-muted)]">
+                      {dispsDoDia.filter((d) => d.status_disponibilidade === 'disponivel').length} disp.
+                    </span>
                   </div>
                 </div>
               );
@@ -534,7 +619,7 @@ export function VoluntariosEscalaDisponibilidade() {
                     Disponibilidade em {selectedDayModal} de {MESES_NOMES[currentMonth]}
                   </h3>
                   <p className="text-[11px] text-[var(--text-muted)]">
-                    {voluntarios.find((v) => v.id === selectedVoluntarioId)?.nome_completo || 'Voluntário'}
+                    {currentVolunteer?.nome_completo || 'Voluntário'}
                   </p>
                 </div>
               </div>

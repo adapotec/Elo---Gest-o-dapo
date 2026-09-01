@@ -86,7 +86,7 @@ function EscalasContent() {
           )}
 
           {activeTab === 'folgas' && (
-            <VoluntariosRecesso />
+            <VoluntariosRecesso showAprovacoes={false} />
           )}
         </div>
       </div>

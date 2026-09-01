@@ -87,7 +87,15 @@ function formatDateBR(dateStr?: string | null): string {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-export function VoluntariosRecesso() {
+interface VoluntariosRecessoProps {
+  showAprovacoes?: boolean;
+  defaultSubTab?: 'calendario' | 'solicitar' | 'aprovacoes';
+}
+
+export function VoluntariosRecesso({
+  showAprovacoes = true,
+  defaultSubTab = 'calendario',
+}: VoluntariosRecessoProps) {
   const supabase = createClient();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -100,7 +108,9 @@ export function VoluntariosRecesso() {
   const [loading, setLoading] = useState(true);
 
   // Sub-abas: 'calendario' | 'solicitar' | 'aprovacoes'
-  const [activeSubTab, setActiveSubTab] = useState<'calendario' | 'solicitar' | 'aprovacoes'>('calendario');
+  const [activeSubTab, setActiveSubTab] = useState<'calendario' | 'solicitar' | 'aprovacoes'>(
+    !showAprovacoes && defaultSubTab === 'aprovacoes' ? 'calendario' : defaultSubTab
+  );
   const [selectedDayModal, setSelectedDayModal] = useState<number | null>(null);
   const [showRegrasInfo, setShowRegrasInfo] = useState(false);
 
@@ -456,7 +466,7 @@ export function VoluntariosRecesso() {
   return (
     <div className="space-y-5">
       {/* ── 1. MICRO-KPIS COMPACTOS DE RECESSOS & FOLGAS ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className={`grid grid-cols-2 ${showAprovacoes ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3`}>
         <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#1C9C82]/10 text-[#1C9C82] flex items-center justify-center shrink-0">
             <Users className="w-4 h-4" />
@@ -513,26 +523,28 @@ export function VoluntariosRecesso() {
           </div>
         </div>
 
-        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3 col-span-2 lg:col-span-1">
-          <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
-            <Clock className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Aprovações Pendentes
-            </p>
-            <div className="flex items-center gap-1.5">
-              <span className={`text-lg sm:text-xl font-display font-extrabold ${pendentesAprovacao.length > 0 ? 'text-rose-600 animate-pulse' : 'text-[var(--text-primary)]'}`}>
-                {pendentesAprovacao.length}
-              </span>
-              {pendentesAprovacao.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/10 text-rose-600">
-                  Ação
+        {showAprovacoes && (
+          <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3 col-span-2 lg:col-span-1">
+            <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                Aprovações Pendentes
+              </p>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-lg sm:text-xl font-display font-extrabold ${pendentesAprovacao.length > 0 ? 'text-rose-600 animate-pulse' : 'text-[var(--text-primary)]'}`}>
+                  {pendentesAprovacao.length}
                 </span>
-              )}
+                {pendentesAprovacao.length > 0 && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-500/10 text-rose-600">
+                    Ação
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ── 2. NAVEGAÇÃO ENTRE MESES E SUB-ABAS (MINIMALISTA) ── */}
@@ -623,19 +635,21 @@ export function VoluntariosRecesso() {
           >
             Solicitar Folga / Recesso
           </button>
-          <button
-            onClick={() => setActiveSubTab('aprovacoes')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer relative ${
-              activeSubTab === 'aprovacoes'
-                ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs font-bold'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            <span>Aprovações &amp; Diretoria</span>
-            {pendentesAprovacao.length > 0 && (
-              <span className="w-2 h-2 rounded-full bg-rose-500 absolute top-1.5 right-1.5" />
-            )}
-          </button>
+          {showAprovacoes && (
+            <button
+              onClick={() => setActiveSubTab('aprovacoes')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer relative ${
+                activeSubTab === 'aprovacoes'
+                  ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <span>Aprovações &amp; Diretoria</span>
+              {pendentesAprovacao.length > 0 && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 absolute top-1.5 right-1.5" />
+              )}
+            </button>
+          )}
         </div>
       </div>
 
