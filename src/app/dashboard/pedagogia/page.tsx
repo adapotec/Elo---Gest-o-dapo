@@ -59,29 +59,29 @@ export default function PedagogiaPage() {
   const [metas, setMetas] = useState<any[]>([]);
   const [voluntarios, setVoluntarios] = useState<any[]>([]);
 
-  // 1. Carregar lista de projetos sociais
+  // 1. Carregar lista de projetos sociais e voluntários em paralelo
   const carregarProjetos = async () => {
     setLoading(true);
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from('projetos_sociais')
-      .select('id, nome, cor_identificacao, status, estrutura_objetivos, metas')
-      .order('created_at', { ascending: false });
+    const [respProjetos, respVol] = await Promise.all([
+      supabase
+        .from('projetos_sociais')
+        .select('id, nome, cor_identificacao, status, estrutura_objetivos, metas')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('voluntarios')
+        .select('id, nome_completo, area_atuacao')
+        .eq('status', 'ativo'),
+    ]);
 
-    if (!error && data && data.length > 0) {
-      setProjetos(data);
+    if (!respProjetos.error && respProjetos.data && respProjetos.data.length > 0) {
+      setProjetos(respProjetos.data);
       if (!selectedProjetoId) {
-        setSelectedProjetoId(data[0].id);
+        setSelectedProjetoId(respProjetos.data[0].id);
       }
     }
 
-    // Carregar voluntários para selects de responsáveis
-    const { data: volData } = await supabase
-      .from('voluntarios')
-      .select('id, nome_completo, area_atuacao')
-      .eq('status', 'ativo');
-    if (volData) setVoluntarios(volData);
-
+    if (respVol.data) setVoluntarios(respVol.data);
     setLoading(false);
   };
 
@@ -89,18 +89,24 @@ export default function PedagogiaPage() {
     carregarProjetos();
   }, []);
 
-  // 2. Carregar dados específicos do projeto vigente selecionado
+  // 2. Carregar dados específicos do projeto vigente selecionado em paralelo
   const carregarDadosDoProjeto = async () => {
     if (!selectedProjetoId) return;
     const supabase = createClient();
 
-    // A. Beneficiários inscritos neste projeto (Ativos e Desligados)
-    const { data: inscData } = await supabase
-      .from('inscricoes')
-      .select('id, status, data_inscricao, beneficiarios(id, nome_completo, data_nascimento, cpf, rg, telefone, email, rua, numero, complemento, bairro, comunidade, cidade, uf, cep, genero, cor_raca, escolaridade, profissao, nome_responsavel, telefone_responsavel, parentesco_responsavel, renda_familiar, num_dependentes, num_membros_familia, contatos_emergencia, observacoes)')
-      .eq('projeto_id', selectedProjetoId);
+    const [respInsc, respAcoes] = await Promise.all([
+      supabase
+        .from('inscricoes')
+        .select('id, status, data_inscricao, beneficiarios(id, nome_completo, data_nascimento, cpf, rg, telefone, email, rua, numero, complemento, bairro, comunidade, cidade, uf, cep, genero, cor_raca, escolaridade, profissao, nome_responsavel, telefone_responsavel, parentesco_responsavel, renda_familiar, num_dependentes, num_membros_familia, contatos_emergencia, observacoes)')
+        .eq('projeto_id', selectedProjetoId),
+      supabase
+        .from('acoes_projeto')
+        .select('id, nome_acao, data_hora, documento_estruturador')
+        .eq('projeto_id', selectedProjetoId)
+        .order('data_hora', { ascending: true }),
+    ]);
 
-    const listaBeneficiarios = (inscData || [])
+    const listaBeneficiarios = (respInsc.data || [])
       .map((item: any) => {
         if (!item.beneficiarios) return null;
         return {
@@ -112,13 +118,7 @@ export default function PedagogiaPage() {
       .filter(Boolean);
     setInscritos(listaBeneficiarios);
 
-    // B. Ações / Encontros cadastrados para este projeto
-    const { data: acoesData } = await supabase
-      .from('acoes_projeto')
-      .select('id, nome_acao, data_hora, documento_estruturador')
-      .eq('projeto_id', selectedProjetoId)
-      .order('data_hora', { ascending: true });
-    setAcoes(acoesData || []);
+    setAcoes(respAcoes.data || []);
 
     // C. Metas cadastradas para este projeto
     const proj = projetos.find((p) => p.id === selectedProjetoId);

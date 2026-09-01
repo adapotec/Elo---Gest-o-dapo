@@ -165,7 +165,7 @@ export default function DoacoesPage() {
         const mesAtual = agora.getMonth();
         const anoAtual = agora.getFullYear();
 
-        const somaMes = doacData.reduce((acc, curr) => {
+        const somaMes = doacData.reduce((acc: number, curr: any) => {
           if (!curr.data_doacao) return acc;
           const d = new Date(curr.data_doacao);
           if (d.getMonth() === mesAtual && d.getFullYear() === anoAtual) {
@@ -199,12 +199,12 @@ export default function DoacoesPage() {
         .select('cpf, nome_completo');
 
       const mapVoluntarios = new Map<string, string>();
-      voluntariasData?.forEach((v) => {
+      voluntariasData?.forEach((v: any) => {
         if (v.cpf) mapVoluntarios.set(v.cpf.replace(/\D/g, ''), v.nome_completo);
       });
 
       const mapBeneficiarios = new Map<string, string>();
-      beneficiariosData?.forEach((b) => {
+      beneficiariosData?.forEach((b: any) => {
         if (b.cpf) mapBeneficiarios.set(b.cpf.replace(/\D/g, ''), b.nome_completo);
       });
 
@@ -240,7 +240,7 @@ export default function DoacoesPage() {
 
       // Adicionar doadores avulsos manuais que não estão no Asaas
       if (doacData) {
-        doacData.forEach((d) => {
+        doacData.forEach((d: any) => {
           const cleanCpf = (d.cpf_cnpj_doador || '').replace(/\D/g, '');
           if (cleanCpf && cpfsProcessados.has(cleanCpf)) return; // Já incluído pelo Asaas
 

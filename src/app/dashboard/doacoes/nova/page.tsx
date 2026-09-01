@@ -68,7 +68,7 @@ export default function NovaDoacaoPage() {
         .select('id, nome_completo')
         .order('nome_completo');
       if (benData) {
-        setBeneficiariosOptions(benData.map((b) => ({ id: b.id, nome: b.nome_completo })));
+        setBeneficiariosOptions(benData.map((b: any) => ({ id: b.id, nome: b.nome_completo })));
       }
     };
 

@@ -46,50 +46,52 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
 
-  // Carrega os dados do perfil autenticado com fallback para voluntários
+  // Cache em memória para transições instantâneas entre páginas (0ms)
   useEffect(() => {
+    // 1. Tenta recuperar do sessionStorage imediatamente
+    try {
+      const cached = sessionStorage.getItem('elo_user_profile_cache');
+      if (cached) {
+        setUserProfile(JSON.parse(cached));
+      }
+    } catch (e) {}
+
     async function loadProfile() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('nome_completo, email, role, avatar_url')
-            .eq('id', user.id)
-            .maybeSingle();
+          const [respProfile, respVol] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('nome_completo, email, role, avatar_url')
+              .eq('id', user.id)
+              .maybeSingle(),
+            user.email
+              ? supabase
+                  .from('voluntarios')
+                  .select('avatar_url, funcao, area_atuacao')
+                  .eq('email', user.email)
+                  .maybeSingle()
+              : Promise.resolve({ data: null }),
+          ]);
 
-          let userAvatar = profile?.avatar_url || null;
-          let userFuncao = profile?.role || 'voluntario_operacional';
+          const profile = respProfile.data;
+          const vol = respVol.data;
 
-          // Fallback para tabela de voluntários para buscar foto ou função se necessário
-          if (user.email) {
-            const { data: vol } = await supabase
-              .from('voluntarios')
-              .select('avatar_url, funcao, area_atuacao')
-              .eq('email', user.email)
-              .maybeSingle();
+          let userAvatar = profile?.avatar_url || vol?.avatar_url || null;
+          let userFuncao = profile?.role || vol?.funcao || vol?.area_atuacao || 'voluntario_operacional';
 
-            if (vol) {
-              if (!userAvatar && vol.avatar_url) userAvatar = vol.avatar_url;
-              if (vol.funcao || vol.area_atuacao) userFuncao = vol.funcao || vol.area_atuacao;
-            }
-          }
+          const resolvedProfile: UserProfile = {
+            name: profile?.nome_completo || user.email?.split('@')[0] || 'Voluntário Ádapo',
+            email: profile?.email || user.email || '',
+            role: userFuncao,
+            avatarUrl: userAvatar,
+          };
 
-          if (profile) {
-            setUserProfile({
-              name: profile.nome_completo || user.email?.split('@')[0] || 'Voluntário Ádapo',
-              email: profile.email || user.email || '',
-              role: userFuncao,
-              avatarUrl: userAvatar,
-            });
-          } else {
-            setUserProfile({
-              name: user.email?.split('@')[0] || 'Voluntário',
-              email: user.email || '',
-              role: userFuncao,
-              avatarUrl: userAvatar,
-            });
-          }
+          setUserProfile(resolvedProfile);
+          try {
+            sessionStorage.setItem('elo_user_profile_cache', JSON.stringify(resolvedProfile));
+          } catch (e) {}
         }
       } catch (err) {
         console.error('Erro ao carregar perfil na Topbar:', err);

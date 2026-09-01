@@ -88,21 +88,21 @@ export default function IndicadoresSociaisPage() {
       // 2. Estoque Crítico
       const { data: estoqueData } = await supabase.from('estoque_itens').select('quantidade, quantidade_minima');
       if (estoqueData) {
-        setItensCriticos(estoqueData.filter((i) => i.quantidade <= (i.quantidade_minima || 10)).length);
+        setItensCriticos(estoqueData.filter((i: any) => i.quantidade <= (i.quantidade_minima || 10)).length);
       }
 
       // 3. Doações Totais
       const { data: doacoesData } = await supabase.from('doacoes').select('tipo, valor, data_doacao');
       if (doacoesData) {
-        const fin = doacoesData.filter((d) => d.tipo === 'financeira');
-        setTotalDoacoesFinanceiras(fin.reduce((acc, d) => acc + (d.valor || 0), 0));
+        const fin = doacoesData.filter((d: any) => d.tipo === 'financeira');
+        setTotalDoacoesFinanceiras(fin.reduce((acc: number, d: any) => acc + (d.valor || 0), 0));
       }
 
       // 4. Voluntários por Área
       const { data: volData } = await supabase.from('voluntarios').select('area_atuacao').eq('status', 'ativo');
       if (volData) {
         const areaMap: Record<string, number> = {};
-        volData.forEach((v) => {
+        volData.forEach((v: any) => {
           const area = v.area_atuacao || 'Operacional';
           areaMap[area] = (areaMap[area] || 0) + 1;
         });
@@ -122,7 +122,7 @@ export default function IndicadoresSociaisPage() {
 
       if (projData) {
         const pMetrics = await Promise.all(
-          projData.map(async (p) => {
+          projData.map(async (p: any) => {
             const { count } = await supabase
               .from('inscricoes')
               .select('*', { count: 'exact', head: true })
