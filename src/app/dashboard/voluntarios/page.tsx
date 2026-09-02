@@ -3,35 +3,28 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Topbar } from '@/components/layout/Topbar';
 import { Button } from '@/components/ui/Button';
-import { createClient } from '@/lib/supabase/client';
 import {
   VoluntariosEquipe,
   Voluntario,
 } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
-import { RefreshCw, Users } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import { getVoluntarios, getCachedVoluntariosSync } from '@/lib/services/voluntariosService';
 
 function ListaVoluntariosContent() {
-  const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Inicializa instantaneamente com dados do cache (0ms - sem tela de loading)
+  const initialData = getCachedVoluntariosSync('ativo');
+  const [voluntarios, setVoluntarios] = useState<Voluntario[]>(initialData);
+  const [loading, setLoading] = useState(initialData.length === 0);
 
-  const supabase = createClient();
-
-  const fetchVoluntarios = async () => {
+  const fetchVoluntarios = async (force = false) => {
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('voluntarios')
-        .select('*')
-        .eq('status', 'ativo')
-        .order('nome_completo', { ascending: true });
-
-      if (error) {
-        console.error('Erro ao carregar voluntários:', error);
-      } else if (data) {
-        setVoluntarios(data as Voluntario[]);
+      if (voluntarios.length === 0 || force) {
+        setLoading(true);
       }
+      const data = await getVoluntarios({ status: 'ativo', forceRefresh: force });
+      setVoluntarios(data);
     } catch (err) {
-      console.error('Erro inesperado ao buscar voluntários:', err);
+      console.error('Erro ao carregar voluntários:', err);
     } finally {
       setLoading(false);
     }
@@ -51,7 +44,7 @@ function ListaVoluntariosContent() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={fetchVoluntarios}
+            onClick={() => fetchVoluntarios(true)}
             icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
           >
             Atualizar
@@ -63,8 +56,8 @@ function ListaVoluntariosContent() {
       <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto transition-all duration-300">
         <VoluntariosEquipe
           voluntarios={voluntarios}
-          loading={loading}
-          onRefresh={fetchVoluntarios}
+          loading={loading && voluntarios.length === 0}
+          onRefresh={() => fetchVoluntarios(true)}
         />
       </div>
     </div>

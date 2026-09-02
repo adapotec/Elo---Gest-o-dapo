@@ -3,31 +3,23 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Topbar } from '@/components/layout/Topbar';
 import { Button } from '@/components/ui/Button';
-import { createClient } from '@/lib/supabase/client';
 import { VoluntariosSaude } from '@/components/dashboard/voluntarios/VoluntariosSaude';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
-import { RefreshCw, Heart } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import { getVoluntarios, getCachedVoluntariosSync } from '@/lib/services/voluntariosService';
 
 function SaudeEmergenciaContent() {
-  const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialData = getCachedVoluntariosSync('ativo');
+  const [voluntarios, setVoluntarios] = useState<Voluntario[]>(initialData);
+  const [loading, setLoading] = useState(initialData.length === 0);
 
-  const supabase = createClient();
-
-  const fetchVoluntarios = async () => {
+  const fetchVoluntarios = async (force = false) => {
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('voluntarios')
-        .select('*')
-        .eq('status', 'ativo')
-        .order('nome_completo', { ascending: true });
-
-      if (error) {
-        console.error('Erro ao carregar dados de saúde:', error);
-      } else if (data) {
-        setVoluntarios(data as Voluntario[]);
+      if (voluntarios.length === 0 || force) {
+        setLoading(true);
       }
+      const data = await getVoluntarios({ status: 'ativo', forceRefresh: force });
+      setVoluntarios(data);
     } catch (err) {
       console.error('Erro inesperado:', err);
     } finally {
@@ -49,7 +41,7 @@ function SaudeEmergenciaContent() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={fetchVoluntarios}
+            onClick={() => fetchVoluntarios(true)}
             icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
           >
             Atualizar
@@ -61,14 +53,14 @@ function SaudeEmergenciaContent() {
       <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto transition-all duration-300">
         <VoluntariosSaude
           voluntarios={voluntarios}
-          loading={loading}
+          loading={loading && voluntarios.length === 0}
         />
       </div>
     </div>
   );
 }
 
-export default function SaudeEmergenciaPage() {
+export default function SaudePage() {
   return (
     <Suspense
       fallback={

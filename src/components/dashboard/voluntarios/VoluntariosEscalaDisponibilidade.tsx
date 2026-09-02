@@ -25,6 +25,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { Voluntario } from './VoluntariosEquipe';
+import { getVoluntarios, getCachedVoluntariosSync } from '@/lib/services/voluntariosService';
 
 export interface DisponibilidadeRecord {
   id?: string;
@@ -64,14 +65,15 @@ export function VoluntariosEscalaDisponibilidade() {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
-  const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
+  const initialVols = getCachedVoluntariosSync('ativo');
+  const [voluntarios, setVoluntarios] = useState<Voluntario[]>(initialVols);
   const [disponibilidades, setDisponibilidades] = useState<DisponibilidadeRecord[]>([]);
   const [eventos, setEventos] = useState<EventoMes[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialVols.length === 0);
 
   // Voluntário Logado (Auto-selecionado)
-  const [currentVolunteer, setCurrentVolunteer] = useState<Voluntario | null>(null);
-  const [selectedVoluntarioId, setSelectedVoluntarioId] = useState<string>('');
+  const [currentVolunteer, setCurrentVolunteer] = useState<Voluntario | null>(initialVols.length > 0 ? initialVols[0] : null);
+  const [selectedVoluntarioId, setSelectedVoluntarioId] = useState<string>(initialVols.length > 0 ? initialVols[0].id : '');
 
   // Modal de Marcação de Dia
   const [selectedDayModal, setSelectedDayModal] = useState<number | null>(null);
@@ -86,16 +88,10 @@ export function VoluntariosEscalaDisponibilidade() {
 
   async function loadData() {
     try {
-      setLoading(true);
+      if (voluntarios.length === 0) setLoading(true);
 
-      // 1. Busca voluntários ativos
-      const { data: volData } = await supabase
-        .from('voluntarios')
-        .select('*')
-        .eq('status', 'ativo')
-        .order('nome_completo');
-
-      const vols = (volData || []) as Voluntario[];
+      // 1. Busca voluntários ativos via cache rápido
+      const vols = await getVoluntarios({ status: 'ativo' });
       setVoluntarios(vols);
 
       // 2. Identifica o usuário logado para auto-selecionar sua própria escala

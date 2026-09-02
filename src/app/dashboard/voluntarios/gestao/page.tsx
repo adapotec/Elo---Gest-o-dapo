@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
+import { getVoluntarios, getCachedVoluntariosSync, invalidateVoluntariosCache } from '@/lib/services/voluntariosService';
 
 type TabKey = 'quadro' | 'escalas' | 'documentos' | 'indicadores';
 
@@ -64,8 +65,9 @@ function GestaoPessoasContent() {
       : 'quadro'
   );
 
-  const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialData = getCachedVoluntariosSync('todos');
+  const [voluntarios, setVoluntarios] = useState<Voluntario[]>(initialData);
+  const [loading, setLoading] = useState(initialData.length === 0);
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoFilter, setTipoFilter] = useState('todos');
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -73,19 +75,13 @@ function GestaoPessoasContent() {
 
   const supabase = createClient();
 
-  const fetchVoluntarios = async () => {
+  const fetchVoluntarios = async (force = false) => {
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('voluntarios')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Erro ao carregar voluntários:', error);
-      } else if (data) {
-        setVoluntarios(data as Voluntario[]);
+      if (voluntarios.length === 0 || force) {
+        setLoading(true);
       }
+      const data = await getVoluntarios({ status: 'todos', forceRefresh: force });
+      setVoluntarios(data);
     } catch (err) {
       console.error('Erro inesperado:', err);
     } finally {
@@ -119,7 +115,8 @@ function GestaoPessoasContent() {
         .eq('id', id);
 
       if (error) throw error;
-      fetchVoluntarios();
+      invalidateVoluntariosCache();
+      fetchVoluntarios(true);
     } catch (err: any) {
       alert('Erro ao alterar status: ' + err.message);
     }

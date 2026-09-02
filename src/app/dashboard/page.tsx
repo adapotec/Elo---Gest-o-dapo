@@ -228,9 +228,9 @@ export default function DashboardPage() {
           supabase.from('acompanhamento_socioemocional').select('*', { count: 'exact', head: true }).eq('mes_referencia', mesAtualStr),
           supabase.from('projetos_sociais').select('*', { count: 'exact', head: true }).eq('status', 'planejamento'),
           supabase.from('beneficiarios').select('id, nome_completo, data_nascimento').not('data_nascimento', 'is', null).limit(200),
-          supabase.from('voluntarios').select('id, nome_completo, data_nascimento').not('data_nascimento', 'is', null).limit(100),
+          Promise.resolve({ data: [] }),
           supabase.from('beneficiarios').select('id, nome_completo, created_at, comunidade').order('created_at', { ascending: false }).limit(4),
-          supabase.from('doacoes').select('id, tipo_doacao, descricao_itens, created_at, data_doacao, valor').order('created_at', { ascending: false }).limit(4),
+          supabase.from('doacoes').select('id, tipo, descricao, created_at, data_doacao, valor').order('created_at', { ascending: false }).limit(4),
           supabase.from('acoes_projeto').select('id, nome_acao, created_at, data_hora, projetos_sociais(nome)').order('created_at', { ascending: false }).limit(4),
           supabase.from('acoes_projeto').select('*', { count: 'exact', head: true }).gte('data_hora', `${mesAtualStr}-01`),
         ]);
@@ -324,7 +324,7 @@ export default function DashboardPage() {
             feedMerged.push({
               id: 'doac_' + d.id,
               titulo: `Doação registrada`,
-              descricao: `${d.descricao_itens || d.tipo_doacao || 'Doação recebida'} ${d.valor ? `(R$ ${d.valor})` : ''}`,
+              descricao: `${d.descricao || d.tipo || 'Doação recebida'} ${d.valor ? `(R$ ${d.valor})` : ''}`,
               data: d.created_at || d.data_doacao || new Date().toISOString(),
               tipo: 'doacao',
               icon: Gift,
