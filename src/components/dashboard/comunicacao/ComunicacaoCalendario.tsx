@@ -45,6 +45,7 @@ export interface ConteudoItem {
   responsavel_id?: string | null;
   categoria: 'engajamento' | 'informacao' | 'cta' | 'institucional' | 'avulso' | 'depoimento';
   link_producao?: string | null;
+  metricas?: Record<string, any> | null;
   projetos_sociais?: { nome: string; cor_identificacao?: string } | null;
   campanhas_comunicacao?: { titulo: string } | null;
   voluntarios?: { nome_completo: string; avatar_url?: string } | null;
@@ -160,8 +161,7 @@ export function ComunicacaoCalendario({
 
     setSaving(true);
     try {
-      await onSaveConteudo({
-        id: editingConteudo?.id,
+      const payload: Partial<ConteudoItem> = {
         titulo: formTitulo.trim(),
         data_publicacao: formDataPub,
         tipo_conteudo: formTipo,
@@ -172,7 +172,13 @@ export function ComunicacaoCalendario({
         responsavel_id: formResponsavelId || null,
         categoria: formCategoria,
         link_producao: formLinkProducao.trim() || null,
-      });
+      };
+
+      if (editingConteudo?.id) {
+        payload.id = editingConteudo.id;
+      }
+
+      await onSaveConteudo(payload);
 
       setShowModal(false);
     } catch (err: any) {

@@ -144,21 +144,36 @@ function ComunicacaoContent() {
   // Salvar Conteúdo (Calendário)
   const handleSaveConteudo = async (conteudo: Partial<ConteudoItem>) => {
     try {
-      if (conteudo.id) {
+      const payload: Record<string, any> = {
+        titulo: conteudo.titulo,
+        data_publicacao: conteudo.data_publicacao ? new Date(conteudo.data_publicacao).toISOString() : new Date().toISOString(),
+        tipo_conteudo: conteudo.tipo_conteudo || 'reels',
+        descricao: conteudo.descricao || null,
+        projeto_id: conteudo.projeto_id || null,
+        campanha_id: conteudo.campanha_id || null,
+        status: conteudo.status || 'nao_iniciado',
+        responsavel_id: conteudo.responsavel_id || null,
+        categoria: conteudo.categoria || 'engajamento',
+        link_producao: conteudo.link_producao || null,
+        metricas: conteudo.metricas || { alcance: 0, curtidas: 0, salvamentos: 0, compartilhamentos: 0 },
+        updated_at: new Date().toISOString(),
+      };
+
+      if (conteudo.id && !conteudo.id.startsWith('local-')) {
         const { error } = await supabase
           .from('conteudos_comunicacao')
-          .update({ ...conteudo, updated_at: new Date().toISOString() })
+          .update(payload)
           .eq('id', conteudo.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('conteudos_comunicacao')
-          .insert([conteudo]);
+          .insert([payload]);
         if (error) throw error;
       }
-      loadAllData();
+      await loadAllData();
     } catch (err: any) {
-      // Fallback local
+      console.warn('Fallback local ao salvar conteúdo:', err);
       const newId = conteudo.id || `local-${Date.now()}`;
       const updatedList = [
         ...conteudos.filter((c) => c.id !== conteudo.id),
@@ -180,20 +195,40 @@ function ComunicacaoContent() {
   // Salvar Campanha
   const handleSaveCampanha = async (campanha: Partial<CampanhaItem>) => {
     try {
-      if (campanha.id) {
+      const payload: Record<string, any> = {
+        titulo: campanha.titulo,
+        projeto_id: campanha.projeto_id || null,
+        responsavel_id: campanha.responsavel_id || null,
+        status: campanha.status || 'planejamento',
+        data_inicio: campanha.data_inicio || null,
+        data_fim: campanha.data_fim || null,
+        resumo: campanha.resumo || null,
+        diagnostico_contexto: campanha.diagnostico_contexto || null,
+        personas_publico: campanha.personas_publico || {},
+        objetivos: campanha.objetivos || {},
+        estrategia_narrativa: campanha.estrategia_narrativa || {},
+        gatilhos_persuasao: campanha.gatilhos_persuasao || null,
+        canais_ferramentas: campanha.canais_ferramentas || [],
+        recursos_equipe: campanha.recursos_equipe || [],
+        indicadores_esperados: campanha.indicadores_esperados || {},
+        updated_at: new Date().toISOString(),
+      };
+
+      if (campanha.id && !campanha.id.startsWith('local-')) {
         const { error } = await supabase
           .from('campanhas_comunicacao')
-          .update({ ...campanha, updated_at: new Date().toISOString() })
+          .update(payload)
           .eq('id', campanha.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('campanhas_comunicacao')
-          .insert([campanha]);
+          .insert([payload]);
         if (error) throw error;
       }
-      loadAllData();
+      await loadAllData();
     } catch (err: any) {
+      console.warn('Fallback local ao salvar campanha:', err);
       const newId = campanha.id || `local-camp-${Date.now()}`;
       const updatedList = [
         ...campanhas.filter((c) => c.id !== campanha.id),
@@ -215,20 +250,32 @@ function ComunicacaoContent() {
   // Salvar Galeria
   const handleSaveGaleria = async (item: Partial<GaleriaItem>) => {
     try {
-      if (item.id) {
+      const payload: Record<string, any> = {
+        titulo: item.titulo,
+        projeto_id: item.projeto_id || null,
+        acao_id: item.acao_id || null,
+        data_evento: item.data_evento || new Date().toISOString().split('T')[0],
+        link_drive: item.link_drive,
+        fotografo_voluntario_id: item.fotografo_voluntario_id || null,
+        descricao: item.descricao || null,
+        tags: item.tags || [],
+      };
+
+      if (item.id && !item.id.startsWith('local-')) {
         const { error } = await supabase
           .from('galeria_midia_acoes')
-          .update(item)
+          .update(payload)
           .eq('id', item.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('galeria_midia_acoes')
-          .insert([item]);
+          .insert([payload]);
         if (error) throw error;
       }
-      loadAllData();
+      await loadAllData();
     } catch (err: any) {
+      console.warn('Fallback local ao salvar galeria:', err);
       const newId = item.id || `local-gal-${Date.now()}`;
       const updatedList = [
         ...galeria.filter((g) => g.id !== item.id),
