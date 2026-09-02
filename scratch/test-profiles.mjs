@@ -15,7 +15,10 @@ const supabase = createClient(
 
 async function run() {
   const { data: profs, error: profErr } = await supabase.from('profiles').select('*');
-  console.log('PROFILES ALL READ:', { count: profs?.length, error: profErr, profs });
+  console.log('1. PROFILES ANON SELECT (Must be protected/0 rows):', { count: profs?.length, error: profErr });
+
+  const { data: rpcEmails, error: rpcErr } = await supabase.rpc('get_registered_emails');
+  console.log('2. RPC get_registered_emails (Must return active emails safely):', { count: rpcEmails?.length, error: rpcErr, rpcEmails });
 }
 
 run();

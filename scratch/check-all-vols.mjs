@@ -14,11 +14,9 @@ const supabase = createClient(
 );
 
 async function run() {
-  const { data: vols } = await supabase.from('voluntarios').select('*');
-  console.log('TODOS VOLUNTARIOS:', vols.map(v => ({ id: v.id, nome: v.nome_completo, email: v.email, status: v.status })));
-  
-  const { data: profs } = await supabase.from('profiles').select('*');
-  console.log('TODOS PROFILES:', profs.map(p => ({ id: p.id, nome: p.nome_completo, email: p.email })));
+  const { data: vols, error } = await supabase.from('voluntarios').select('*').limit(2);
+  console.log('VOLS COLUMNS:', vols ? Object.keys(vols[0] || {}) : error);
+  console.log('VOLS SAMPLES:', vols);
 }
 
 run();

@@ -112,6 +112,7 @@ export function VoluntariosEscalaDisponibilidade() {
 
           const matchedVol = vols.find(
             (v) =>
+              (v.auth_user_id && v.auth_user_id === authData.user.id) ||
               (v.email && userEmail && v.email.toLowerCase() === userEmail) ||
               (v.nome_completo && userName && v.nome_completo.toLowerCase() === userName)
           );

@@ -85,13 +85,26 @@ export function ProjetoComunicacao({
       const supabase = createClient();
 
       const { data, error } = await supabase
-        .from('pecas_comunicacao_projeto')
+        .from('conteudos_comunicacao')
         .select('*')
         .eq('projeto_id', projetoId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPecas(data || []);
+      
+      const mapped: PecaComunicacao[] = (data || []).map((c: any) => ({
+        id: c.id,
+        projeto_id: c.projeto_id,
+        titulo_peca: c.titulo,
+        tipo_midia: c.tipo_conteudo === 'reels' ? 'video_reels' : c.tipo_conteudo === 'stories' ? 'story' : 'post_instagram',
+        canal_divulgacao: 'Instagram',
+        status: c.status === 'publicado' ? 'publicado' : c.status === 'producao' ? 'em_producao' : 'pendente',
+        link_midia: c.link_producao,
+        prazo_entrega: c.data_publicacao ? c.data_publicacao.split('T')[0] : null,
+        observacoes: c.descricao,
+      }));
+
+      setPecas(mapped);
     } catch (err) {
       console.error('Erro ao carregar peças de comunicação:', err);
     } finally {
@@ -105,10 +118,19 @@ export function ProjetoComunicacao({
       setSaving(true);
       const supabase = createClient();
 
-      const { error } = await supabase.from('pecas_comunicacao_projeto').insert([
+      const dbTipo = formPeca.tipo_midia === 'video_reels' ? 'reels' : formPeca.tipo_midia === 'story' ? 'stories' : 'estatico';
+      const dbStatus = formPeca.status === 'publicado' ? 'publicado' : formPeca.status === 'em_producao' ? 'producao' : 'nao_iniciado';
+
+      const { error } = await supabase.from('conteudos_comunicacao').insert([
         {
-          ...formPeca,
           projeto_id: projetoId,
+          titulo: formPeca.titulo_peca,
+          tipo_conteudo: dbTipo,
+          status: dbStatus,
+          data_publicacao: formPeca.prazo_entrega ? new Date(formPeca.prazo_entrega).toISOString() : new Date().toISOString(),
+          link_producao: formPeca.link_midia || null,
+          descricao: formPeca.observacoes || null,
+          categoria: 'institucional',
           updated_at: new Date().toISOString(),
         },
       ]);
@@ -139,9 +161,11 @@ export function ProjetoComunicacao({
   async function handleUpdateStatus(pecaId: string, newStatus: PecaComunicacao['status']) {
     try {
       const supabase = createClient();
+      const dbStatus = newStatus === 'publicado' ? 'publicado' : newStatus === 'em_producao' ? 'producao' : 'nao_iniciado';
+
       await supabase
-        .from('pecas_comunicacao_projeto')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .from('conteudos_comunicacao')
+        .update({ status: dbStatus, updated_at: new Date().toISOString() })
         .eq('id', pecaId);
 
       loadPecas();
@@ -154,7 +178,7 @@ export function ProjetoComunicacao({
     if (!confirm('Deseja excluir esta peça de comunicação?')) return;
     try {
       const supabase = createClient();
-      await supabase.from('pecas_comunicacao_projeto').delete().eq('id', pecaId);
+      await supabase.from('conteudos_comunicacao').delete().eq('id', pecaId);
       loadPecas();
     } catch (err) {
       console.error('Erro ao remover peça:', err);

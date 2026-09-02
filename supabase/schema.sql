@@ -113,6 +113,10 @@ CREATE TABLE IF NOT EXISTS public.voluntarios (
     alergias TEXT,
     medicamentos_uso_continuo TEXT,
     plano_saude TEXT,
+    habilidades TEXT[] DEFAULT '{}'::text[],
+    horas_acumuladas INTEGER DEFAULT 0,
+    cartao_sus TEXT,
+    auth_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
@@ -631,27 +635,27 @@ CREATE POLICY "Acesso total acompanhamento_socioemocional para autenticados" ON 
 CREATE POLICY "Acesso total rodas_conversa_psicossocial para autenticados" ON public.rodas_conversa_psicossocial FOR ALL TO authenticated USING (true);
 
 -- --------------------------------------------------------
--- 25. PEÇAS & ARTES DE COMUNICAÇÃO DO PROJETO
+-- 25. CONTEÚDOS & POSTAGENS DE COMUNICAÇÃO (CALENDÁRIO EDITORIAL)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.pecas_comunicacao_projeto (
+CREATE TABLE IF NOT EXISTS public.conteudos_comunicacao (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    projeto_id UUID NOT NULL REFERENCES public.projetos_sociais(id) ON DELETE CASCADE,
-    acao_id UUID REFERENCES public.acoes_projeto(id) ON DELETE SET NULL,
-    titulo_peca TEXT NOT NULL,
-    tipo_midia TEXT DEFAULT 'post_instagram',
-    canal_divulgacao TEXT DEFAULT 'Instagram',
-    status TEXT DEFAULT 'pendente',
-    link_midia TEXT,
-    prazo_entrega DATE,
-    responsavel_comunicacao TEXT,
-    observacoes TEXT,
+    titulo TEXT NOT NULL,
+    data_publicacao TIMESTAMPTZ NOT NULL,
+    tipo_conteudo TEXT NOT NULL DEFAULT 'reels' CHECK (tipo_conteudo IN ('reels', 'carrossel', 'stories', 'estatico', 'video_longo', 'artigo')),
+    descricao TEXT,
+    campanha_id UUID REFERENCES public.campanhas_comunicacao(id) ON DELETE SET NULL,
+    projeto_id UUID REFERENCES public.projetos_sociais(id) ON DELETE SET NULL,
+    status TEXT NOT NULL DEFAULT 'nao_iniciado' CHECK (status IN ('nao_iniciado', 'producao', 'analise', 'em_atraso', 'publicado', 'cancelado')),
+    responsavel_id UUID REFERENCES public.voluntarios(id) ON DELETE SET NULL,
+    categoria TEXT NOT NULL DEFAULT 'engajamento' CHECK (categoria IN ('engajamento', 'informacao', 'cta', 'institucional', 'avulso', 'depoimento')),
+    link_producao TEXT,
+    metricas JSONB DEFAULT '{"curtidas": 0, "alcance": 0, "salvamentos": 0, "compartilhamentos": 0}'::jsonb,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE public.pecas_comunicacao_projeto ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Acesso total pecas_comunicacao_projeto para autenticados" ON public.pecas_comunicacao_projeto FOR ALL TO authenticated USING (true);
+ALTER TABLE public.conteudos_comunicacao ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Acesso total conteudos_comunicacao" ON public.conteudos_comunicacao FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 
 -- --------------------------------------------------------
 -- 26. PARCEIROS & FINANCIADORES DE PROJETO

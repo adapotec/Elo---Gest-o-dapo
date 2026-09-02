@@ -75,7 +75,7 @@ export default function BeneficiariosPage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('beneficiarios')
-      .select('*')
+      .select('id, nome_completo, data_nascimento, genero, cpf, rg, cep, rua, numero, bairro, comunidade, cidade, uf, telefone, email, escolaridade, status, nome_responsavel, parentesco_responsavel, telefone_responsavel, renda_familiar, num_dependentes, observacoes, created_at')
       .order('nome_completo', { ascending: true });
 
     if (!error && data) {

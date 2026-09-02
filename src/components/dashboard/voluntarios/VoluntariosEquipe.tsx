@@ -66,6 +66,7 @@ export interface Voluntario {
   observacoes: string | null;
   habilidades?: string[] | null;
   horas_acumuladas?: number | null;
+  auth_user_id?: string | null;
   created_at: string;
 }
 
@@ -597,6 +598,9 @@ export function VoluntariosEquipe({
                   <Badge variant={selectedVoluntario.status === 'ativo' ? 'success' : 'danger'}>
                     {selectedVoluntario.status === 'ativo' ? 'ATIVO' : 'INATIVO'}
                   </Badge>
+                  {selectedVoluntario.auth_user_id && (
+                    <Badge variant="primary">USUÁRIO ELO</Badge>
+                  )}
                   <span className="text-[11px] font-mono-data font-bold text-[var(--text-muted)]">
                     {selectedVoluntario.horas_acumuladas || 0}h dedicadas
                   </span>

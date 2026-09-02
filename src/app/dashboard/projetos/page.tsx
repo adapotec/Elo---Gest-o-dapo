@@ -91,7 +91,9 @@ export default function ProjetosPage() {
   const fetchProjetos = async () => {
     setLoading(true);
     const supabase = createClient();
-    let query = supabase.from('projetos_sociais').select('*');
+    let query = supabase
+      .from('projetos_sociais')
+      .select('id, nome, descricao, tipo, data_inicio, data_fim, status, cor_identificacao, icone, is_pinned, created_at, updated_at');
 
     if (statusFilter !== 'todos') {
       query = query.eq('status', statusFilter);
