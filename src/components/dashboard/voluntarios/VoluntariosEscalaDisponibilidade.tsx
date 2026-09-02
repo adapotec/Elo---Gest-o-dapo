@@ -164,21 +164,39 @@ export function VoluntariosEscalaDisponibilidade() {
 
       setEventos(listaEventos);
 
-      // 4. Carrega disponibilidades e integra folgas e recessos oficiais do banco (sem 404)
+      // 4. Carrega disponibilidades do banco Supabase com fallback local
       const listaDisp: DisponibilidadeRecord[] = [];
 
-      // A. Cache local de disponibilidades salvas
+      // A. Busca disponibilidades na tabela oficial criada no Supabase
+      try {
+        const { data: dispData, error: dispErr } = await supabase
+          .from('disponibilidades_voluntarios')
+          .select('*, voluntarios(id, nome_completo, avatar_url, email)');
+
+        if (!dispErr && dispData) {
+          listaDisp.push(...(dispData as DisponibilidadeRecord[]));
+        }
+      } catch (dispErr) {
+        console.warn('Fallback para cache local de disponibilidades:', dispErr);
+      }
+
+      // B. Complementa com cache local se offline
       try {
         const localStored = typeof window !== 'undefined' ? localStorage.getItem(`elo_disponibilidades_${currentYear}_${currentMonth}`) : null;
         if (localStored) {
           const parsed = JSON.parse(localStored);
           if (Array.isArray(parsed)) {
-            listaDisp.push(...parsed);
+            parsed.forEach((localItem: DisponibilidadeRecord) => {
+              const alreadyIn = listaDisp.some(
+                (d) => d.voluntario_id === localItem.voluntario_id && d.data_escala === localItem.data_escala
+              );
+              if (!alreadyIn) listaDisp.push(localItem);
+            });
           }
         }
       } catch (e) {}
 
-      // B. Folgas e recessos aprovados do banco (tabela recessos_voluntarios existente)
+      // C. Folgas e recessos aprovados do banco (tabela recessos_voluntarios)
       try {
         const { data: recData } = await supabase
           .from('recessos_voluntarios')
@@ -318,7 +336,24 @@ export function VoluntariosEscalaDisponibilidade() {
         voluntarios: currentVolunteer || undefined,
       };
 
-      // Se marcado como indisponível, registra no banco de dados oficial (recessos_voluntarios)
+      // Salva no banco de dados Supabase na tabela oficial disponibilidades_voluntarios
+      try {
+        await supabase.from('disponibilidades_voluntarios').upsert(
+          {
+            voluntario_id: selectedVoluntarioId,
+            data_escala: dateStr,
+            periodo: modalPeriodo,
+            status_disponibilidade: modalStatus,
+            observacao: modalObs.trim() || null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'voluntario_id,data_escala' }
+        );
+      } catch (upsertErr) {
+        console.warn('Erro ao salvar no banco remoto:', upsertErr);
+      }
+
+      // Se marcado como indisponível, registra também no controle oficial de recessos
       if (modalStatus === 'indisponivel') {
         try {
           await supabase.from('recessos_voluntarios').upsert(
