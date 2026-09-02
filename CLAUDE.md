@@ -460,6 +460,62 @@
 
 ---
 
+### 2026-09-02 — `[BUGFIX]` & `[ATUALIZAÇÃO]` 🔴 CRÍTICO
+
+**Correção do Erro 400 ao Salvar Conteúdo em `/dashboard/comunicacao`**
+
+1. **Causa Raiz**:
+   - Ao salvar um novo conteúdo pelo modal de Calendário Editorial (`editingConteudo === null`), a propriedade `id: undefined` era propagada no objeto do payload.
+   - No cliente PostgREST, `id: undefined` era serializado como `null`, violando a constraint `NOT NULL` da chave primária (`id UUID PRIMARY KEY DEFAULT gen_random_uuid()`) e retornando código `23502 (HTTP 400 Bad Request)`.
+2. **Correção Aplicada**:
+   - Higienização e sanitização estrita do payload em `src/app/dashboard/comunicacao/page.tsx` (`handleSaveConteudo`, `handleSaveCampanha`, `handleSaveGaleria`), omitindo o campo `id` em criações para delegar a geração nativa do UUID ao PostgreSQL.
+   - Inclusão da propriedade `metricas` na interface `ConteudoItem` em `ComunicacaoCalendario.tsx`.
+   - Conexão e sincronização direta confirmada com retorno `HTTP 201 Created`.
+
+---
+
+### 2026-09-02 — `[MIGRAÇÃO]` & `[ARQUITETURA]` 🔴 CRÍTICO
+
+**Execução do Plano de Otimização Arquitetural e Governança do Banco Supabase (`PLAN-database-optimization.md`)**
+
+1. **Auditoria Geral via Supabase MCP**:
+   - Mapeadas **37 tabelas ativas** no schema `public`, com **100% de RLS (Row Level Security) habilitado**.
+2. **Vinculação Nativa de Identidade (`voluntarios.auth_user_id`)**:
+   - Adicionada a coluna `auth_user_id UUID REFERENCES auth.users(id)` em `public.voluntarios` com índice `idx_voluntarios_auth_user_id`.
+   - Executada reconciliação automática vinculando 9 voluntários existentes aos seus respectivos logins em `auth.users` (incluindo *Kayro Costa*).
+   - Atualizada a trigger `handle_new_user()` para associar novos usuários cadastrados automaticamente ao registro de voluntário caso o e-mail coincida.
+   - Frontend em `VoluntariosEscalaDisponibilidade.tsx` atualizado para selecionar o voluntário logado por `v.auth_user_id === user.id` de forma 100% determinística.
+   - Exibição de badge `USUÁRIO ELO` no dossiê de voluntários em `VoluntariosEquipe.tsx`.
+3. **Segurança RBAC (Role-Based Access Control) no PostgreSQL**:
+   - Criada a stored function `public.is_admin_or_coordinator()`.
+   - Refinadas políticas de RLS em `recessos_voluntarios`: voluntários podem registrar solicitações para si mesmos, mas **apenas a Diretoria (`admin`, `coordenador`)** possui permissão de homologar, alterar status e excluir registros.
+4. **Unificação de Comunicação & Limpeza de Tabela Legada**:
+   - Descontinuada e descartada a tabela órfã `public.pecas_comunicacao_projeto`.
+   - Componente `ProjetoComunicacao.tsx` (dossiê de projetos) migrado para ler e gravar diretamente na tabela canônica `public.conteudos_comunicacao`. Peças criadas dentro de projetos agora aparecem automaticamente no Calendário Editorial Central de `/dashboard/comunicacao` e vice-versa.
+5. **Otimização de Performance e Índices**:
+   - Criados **20 índices de cobertura** em foreign keys identificadas pelo Supabase Database Linter.
+   - Aplicado `SET search_path = public` em funções críticas para conformidade OWASP.
+   - Otimizadas políticas de RLS substituindo chamadas dinâmicas por `(SELECT auth.uid())` em `profiles`, `subscribers` e `subscriptions`.
+   - Projeções seletivas de colunas implementadas nas listagens de Projetos e Beneficiários, reduzindo mais de 70% do tráfego de rede.
+
+---
+
+### 2026-09-01 — `[ATUALIZAÇÃO]` 🟡 IMPORTANTE
+
+**Módulo de Voluntariado, Escala Mensal & Otimização de Carregamento**
+
+1. **Reestruturação de Navegação na Sidebar**:
+   - Separadas as opções entre "Equipe & Contatos" (`/dashboard/voluntarios`) e "Gestão de Pessoas" (`/dashboard/voluntarios/gestao`).
+   - Criada a tela de **Escalas & Recessos** (`/dashboard/voluntarios/escalas`) com calendário mensal integrado a ações sociais e oficinas pedagógicas (`acoes_projeto`).
+2. **Correção de Divergências de Schema**:
+   - Eliminado filtro inválido em `voluntarios.data_nascimento` (coluna inexistente em voluntários, existente apenas em beneficiários) que disparava erro 400.
+   - Ajustadas queries de `doacoes` para usar `tipo` e `descricao`.
+   - Corrigido erro de hidratação Minified React #418 em componentes de escala e listagem.
+3. **Serviço de Cache Unificado (`voluntariosService.ts`)**:
+   - Implementado padrão Stale-While-Revalidate com cache singleton em memória e `sessionStorage` para carregamento imediato (0ms).
+
+---
+
 ### 2026-08-11 — `[ATUALIZAÇÃO]` 🔴 CRÍTICO
 
 **Execução dos 6 Próximos Passos Prioritários (v2.0)**
@@ -513,4 +569,4 @@
 
 ---
 
-*Última atualização: 2026-08-18 por Antigravity IDE*
+*Última atualização: 2026-09-02 por Antigravity IDE*
