@@ -65,15 +65,14 @@ export function VoluntariosEscalaDisponibilidade() {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
-  const initialVols = getCachedVoluntariosSync('ativo');
-  const [voluntarios, setVoluntarios] = useState<Voluntario[]>(initialVols);
+  const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
   const [disponibilidades, setDisponibilidades] = useState<DisponibilidadeRecord[]>([]);
   const [eventos, setEventos] = useState<EventoMes[]>([]);
-  const [loading, setLoading] = useState(initialVols.length === 0);
+  const [loading, setLoading] = useState(true);
 
   // Voluntário Logado (Auto-selecionado)
-  const [currentVolunteer, setCurrentVolunteer] = useState<Voluntario | null>(initialVols.length > 0 ? initialVols[0] : null);
-  const [selectedVoluntarioId, setSelectedVoluntarioId] = useState<string>(initialVols.length > 0 ? initialVols[0].id : '');
+  const [currentVolunteer, setCurrentVolunteer] = useState<Voluntario | null>(null);
+  const [selectedVoluntarioId, setSelectedVoluntarioId] = useState<string>('');
 
   // Modal de Marcação de Dia
   const [selectedDayModal, setSelectedDayModal] = useState<number | null>(null);
@@ -83,13 +82,17 @@ export function VoluntariosEscalaDisponibilidade() {
   const [savingDisp, setSavingDisp] = useState(false);
 
   useEffect(() => {
+    // 1. Carrega imediatamente do cache local sem causar mismatch de hidratação (0ms)
+    const cached = getCachedVoluntariosSync('ativo');
+    if (cached.length > 0) {
+      setVoluntarios(cached);
+      setLoading(false);
+    }
     loadData();
   }, [currentMonth, currentYear]);
 
   async function loadData() {
     try {
-      if (voluntarios.length === 0) setLoading(true);
-
       // 1. Busca voluntários ativos via cache rápido
       const vols = await getVoluntarios({ status: 'ativo' });
       setVoluntarios(vols);
@@ -131,46 +134,26 @@ export function VoluntariosEscalaDisponibilidade() {
         }
       }
 
-      // 3. Busca ações cadastradas em projetos e planos pedagógicos
+      // 3. Busca ações cadastradas em projetos e oficinas pedagógicas (consulta segura sem 400)
       const listaEventos: EventoMes[] = [];
 
       try {
-        const [respAcoes, respPlanos] = await Promise.all([
-          supabase
-            .from('acoes_projeto')
-            .select('id, nome_acao, data_hora, descricao, projetos_sociais(nome, cor_identificacao)'),
-          supabase
-            .from('planos_aula')
-            .select('id, titulo, data_oficina, oficineiro, projetos_sociais(nome, cor_identificacao)'),
-        ]);
+        const { data: acoesData } = await supabase
+          .from('acoes_projeto')
+          .select('id, nome_acao, data_hora, descricao, documento_estruturador, projetos_sociais(nome, cor_identificacao)')
+          .order('data_hora', { ascending: true });
 
-        if (respAcoes.data) {
-          respAcoes.data.forEach((a: any) => {
+        if (acoesData) {
+          acoesData.forEach((a: any) => {
             if (a.data_hora) {
               const dt = a.data_hora.split('T')[0];
               listaEventos.push({
                 id: `acao-${a.id}`,
                 titulo: a.nome_acao || 'Ação do Projeto',
                 data: dt,
-                origem: 'projeto',
+                origem: a.documento_estruturador?.toLowerCase().includes('oficina') || a.documento_estruturador?.toLowerCase().includes('aula') ? 'pedagogia' : 'projeto',
                 cor: a.projetos_sociais?.cor_identificacao || '#F2632D',
                 descricao: a.descricao,
-              });
-            }
-          });
-        }
-
-        if (respPlanos.data) {
-          respPlanos.data.forEach((p: any) => {
-            if (p.data_oficina) {
-              const dt = p.data_oficina.split('T')[0];
-              listaEventos.push({
-                id: `plano-${p.id}`,
-                titulo: p.titulo || 'Oficina Pedagógica',
-                data: dt,
-                origem: 'pedagogia',
-                cor: p.projetos_sociais?.cor_identificacao || '#93368F',
-                descricao: p.oficineiro ? `Oficineiro: ${p.oficineiro}` : undefined,
               });
             }
           });
@@ -181,27 +164,52 @@ export function VoluntariosEscalaDisponibilidade() {
 
       setEventos(listaEventos);
 
-      // 4. Busca disponibilidades cadastradas de forma segura (sem lançar 404 no console)
-      try {
-        const { data: dispData, error: dispErr } = await supabase
-          .from('disponibilidades_voluntarios')
-          .select('*, voluntarios(*)');
+      // 4. Carrega disponibilidades e integra folgas e recessos oficiais do banco (sem 404)
+      const listaDisp: DisponibilidadeRecord[] = [];
 
-        if (!dispErr && dispData) {
-          setDisponibilidades(dispData as DisponibilidadeRecord[]);
-        } else {
-          // Fallback para cache local
-          const localStored = localStorage.getItem(`elo_disponibilidades_${currentYear}_${currentMonth}`);
-          if (localStored) {
-            setDisponibilidades(JSON.parse(localStored));
+      // A. Cache local de disponibilidades salvas
+      try {
+        const localStored = typeof window !== 'undefined' ? localStorage.getItem(`elo_disponibilidades_${currentYear}_${currentMonth}`) : null;
+        if (localStored) {
+          const parsed = JSON.parse(localStored);
+          if (Array.isArray(parsed)) {
+            listaDisp.push(...parsed);
           }
         }
-      } catch (dispEx) {
-        const localStored = localStorage.getItem(`elo_disponibilidades_${currentYear}_${currentMonth}`);
-        if (localStored) {
-          setDisponibilidades(JSON.parse(localStored));
+      } catch (e) {}
+
+      // B. Folgas e recessos aprovados do banco (tabela recessos_voluntarios existente)
+      try {
+        const { data: recData } = await supabase
+          .from('recessos_voluntarios')
+          .select('id, voluntario_id, data_folga, tipo, motivo, status, voluntarios(id, nome_completo, avatar_url, email)')
+          .eq('mes_referencia', currentMonth + 1)
+          .eq('ano_referencia', currentYear)
+          .eq('status', 'aprovada');
+
+        if (recData) {
+          recData.forEach((r: any) => {
+            const alreadyIn = listaDisp.some(
+              (d) => d.voluntario_id === r.voluntario_id && d.data_escala === r.data_folga
+            );
+            if (!alreadyIn) {
+              listaDisp.push({
+                id: `recesso-${r.id}`,
+                voluntario_id: r.voluntario_id,
+                data_escala: r.data_folga,
+                periodo: 'integral',
+                status_disponibilidade: 'indisponivel',
+                observacao: r.motivo || 'Recesso / Folga Aprovada',
+                voluntarios: r.voluntarios,
+              });
+            }
+          });
         }
+      } catch (recErr) {
+        console.warn('Erro ao verificar recessos:', recErr);
       }
+
+      setDisponibilidades(listaDisp);
     } catch (err) {
       console.error('Erro geral ao carregar dados:', err);
     } finally {
@@ -310,18 +318,25 @@ export function VoluntariosEscalaDisponibilidade() {
         voluntarios: currentVolunteer || undefined,
       };
 
-      // Tenta upsert no banco
-      const { error } = await supabase.from('disponibilidades_voluntarios').upsert(
-        {
-          voluntario_id: selectedVoluntarioId,
-          data_escala: dateStr,
-          periodo: modalPeriodo,
-          status_disponibilidade: modalStatus,
-          observacao: modalObs.trim() || null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'voluntario_id,data_escala' }
-      );
+      // Se marcado como indisponível, registra no banco de dados oficial (recessos_voluntarios)
+      if (modalStatus === 'indisponivel') {
+        try {
+          await supabase.from('recessos_voluntarios').upsert(
+            {
+              voluntario_id: selectedVoluntarioId,
+              data_folga: dateStr,
+              tipo: 'individual',
+              motivo: modalObs.trim() || 'Indisponibilidade informada na Escala Mensal',
+              status: 'aprovada',
+              mes_referencia: currentMonth + 1,
+              ano_referencia: currentYear,
+            },
+            { onConflict: 'voluntario_id,data_folga' }
+          );
+        } catch (e) {
+          console.warn('Erro ao sincronizar indisponibilidade:', e);
+        }
+      }
 
       // Atualiza estado e cache local
       setDisponibilidades((prev) => {

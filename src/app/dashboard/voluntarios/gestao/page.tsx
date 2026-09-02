@@ -65,9 +65,8 @@ function GestaoPessoasContent() {
       : 'quadro'
   );
 
-  const initialData = getCachedVoluntariosSync('todos');
-  const [voluntarios, setVoluntarios] = useState<Voluntario[]>(initialData);
-  const [loading, setLoading] = useState(initialData.length === 0);
+  const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoFilter, setTipoFilter] = useState('todos');
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -77,7 +76,7 @@ function GestaoPessoasContent() {
 
   const fetchVoluntarios = async (force = false) => {
     try {
-      if (voluntarios.length === 0 || force) {
+      if (force) {
         setLoading(true);
       }
       const data = await getVoluntarios({ status: 'todos', forceRefresh: force });
@@ -90,6 +89,11 @@ function GestaoPessoasContent() {
   };
 
   useEffect(() => {
+    const cached = getCachedVoluntariosSync('todos');
+    if (cached.length > 0) {
+      setVoluntarios(cached);
+      setLoading(false);
+    }
     fetchVoluntarios();
   }, []);
 

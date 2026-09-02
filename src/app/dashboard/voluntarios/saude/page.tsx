@@ -9,13 +9,12 @@ import { RefreshCw } from 'lucide-react';
 import { getVoluntarios, getCachedVoluntariosSync } from '@/lib/services/voluntariosService';
 
 function SaudeEmergenciaContent() {
-  const initialData = getCachedVoluntariosSync('ativo');
-  const [voluntarios, setVoluntarios] = useState<Voluntario[]>(initialData);
-  const [loading, setLoading] = useState(initialData.length === 0);
+  const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchVoluntarios = async (force = false) => {
     try {
-      if (voluntarios.length === 0 || force) {
+      if (force) {
         setLoading(true);
       }
       const data = await getVoluntarios({ status: 'ativo', forceRefresh: force });
@@ -28,6 +27,11 @@ function SaudeEmergenciaContent() {
   };
 
   useEffect(() => {
+    const cached = getCachedVoluntariosSync('ativo');
+    if (cached.length > 0) {
+      setVoluntarios(cached);
+      setLoading(false);
+    }
     fetchVoluntarios();
   }, []);
 
