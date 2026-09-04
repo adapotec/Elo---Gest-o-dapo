@@ -187,7 +187,9 @@ export function ComunicacaoCalendario({
   const handleConfirmQuickPublish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickPublishItem) return;
-    if (!quickPublishUrl.trim()) {
+
+    // Stories são temporários e não exigem link obrigatório
+    if (quickPublishItem.tipo_conteudo !== 'stories' && !quickPublishUrl.trim()) {
       alert('Por favor, informe o link do conteúdo publicado na rede social.');
       return;
     }
@@ -197,7 +199,7 @@ export function ComunicacaoCalendario({
       await onSaveConteudo({
         id: quickPublishItem.id,
         status: 'publicado',
-        link_publicacao: quickPublishUrl.trim(),
+        link_publicacao: quickPublishUrl.trim() || null,
       });
       setQuickPublishItem(null);
       setQuickPublishUrl('');
@@ -216,9 +218,9 @@ export function ComunicacaoCalendario({
       return;
     }
 
-    // Validação obrigatória do Link de Publicação ao marcar como publicado
-    if (formStatus === 'publicado' && !formLinkPublicacao.trim()) {
-      alert('Ao marcar um conteúdo como "Publicado", é obrigatório inserir o link dele na rede social publicada.');
+    // Validação obrigatória do Link de Publicação ao marcar como publicado (exceto para Stories que são temporários)
+    if (formStatus === 'publicado' && formTipo !== 'stories' && !formLinkPublicacao.trim()) {
+      alert('Ao marcar um conteúdo como "Publicado", é obrigatório inserir o link dele na rede social publicada (exceto Stories).');
       return;
     }
 
@@ -516,15 +518,24 @@ export function ComunicacaoCalendario({
                 <span>Ver Post</span>
               </a>
             ) : isPublicado ? (
-              <button
-                type="button"
-                onClick={() => handleOpenQuickPublish(item)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-all cursor-pointer"
-                title="Conteúdo marcado como publicado mas sem link. Clique para adicionar."
-              >
-                <AlertTriangle className="w-3 h-3 text-amber-600" />
-                <span>+ Inserir Link</span>
-              </button>
+              item.tipo_conteudo === 'stories' ? (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border-default)]"
+                  title="Stories são temporários (24h) e não possuem link permanente fixo"
+                >
+                  <span>Story (24h)</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleOpenQuickPublish(item)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-all cursor-pointer"
+                  title="Conteúdo marcado como publicado mas sem link. Clique para adicionar."
+                >
+                  <AlertTriangle className="w-3 h-3 text-amber-600" />
+                  <span>+ Inserir Link</span>
+                </button>
+              )
             ) : null}
 
             {/* Link de Produção (Canva / Drive) */}
@@ -1300,23 +1311,29 @@ export function ComunicacaoCalendario({
                 </div>
               </div>
 
-              {/* CAMPO OBRIGATÓRIO SE PUBLICADO: LINK NA REDE SOCIAL */}
+              {/* CAMPO DE LINK NA REDE SOCIAL (OBRIGATÓRIO SE PUBLICADO, EXCETO STORIES) */}
               {formStatus === 'publicado' && (
                 <div className="p-3.5 rounded-2xl bg-pink-500/10 border border-pink-500/30 space-y-1.5 animate-in fade-in">
                   <label className="font-bold text-pink-700 dark:text-pink-300 flex items-center gap-1.5">
                     <ExternalLink className="w-4 h-4 text-pink-600" />
-                    Link da Publicação na Rede Social (Instagram, TikTok, YouTube) *
+                    Link da Publicação na Rede Social {formTipo === 'stories' ? '(Opcional para Stories)' : '*'}
                   </label>
                   <input
                     type="url"
-                    required
-                    placeholder="https://www.instagram.com/p/... ou https://youtube.com/watch?v=..."
+                    required={formTipo !== 'stories'}
+                    placeholder={
+                      formTipo === 'stories'
+                        ? 'Opcional (stories são temporários de 24h e não possuem link fixo)'
+                        : 'https://www.instagram.com/p/... ou https://youtube.com/watch?v=...'
+                    }
                     value={formLinkPublicacao}
                     onChange={(e) => setFormLinkPublicacao(e.target.value)}
                     className="w-full px-3.5 py-2 rounded-xl bg-[var(--bg-elevated)] border border-pink-500/40 text-[var(--text-primary)] focus:outline-none focus:border-pink-600 font-medium"
                   />
                   <p className="text-[11px] text-pink-600 dark:text-pink-400">
-                    Obrigatório informar a URL do post no ar para monitoramento de métricas e histórico.
+                    {formTipo === 'stories'
+                      ? 'Como stories são conteúdos de 24 horas, a inserção de link não é obrigatória para marcar como publicado.'
+                      : 'Obrigatório informar a URL do post no ar para monitoramento de métricas e histórico.'}
                   </p>
                 </div>
               )}
@@ -1396,19 +1413,25 @@ export function ComunicacaoCalendario({
 
               <div className="space-y-1.5">
                 <label className="font-bold text-[var(--text-primary)] block">
-                  Link da Publicação na Rede Social *
+                  Link da Publicação na Rede Social {quickPublishItem.tipo_conteudo === 'stories' ? '(Opcional para Stories)' : '*'}
                 </label>
                 <input
                   type="url"
-                  required
-                  placeholder="https://www.instagram.com/p/... ou https://tiktok.com/@..."
+                  required={quickPublishItem.tipo_conteudo !== 'stories'}
+                  placeholder={
+                    quickPublishItem.tipo_conteudo === 'stories'
+                      ? 'Opcional (stories não possuem link permanente fixo)'
+                      : 'https://www.instagram.com/p/... ou https://tiktok.com/@...'
+                  }
                   value={quickPublishUrl}
                   onChange={(e) => setQuickPublishUrl(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-emerald-500 font-medium"
                   autoFocus
                 />
                 <p className="text-[11px] text-[var(--text-muted)]">
-                  Cole o link oficial do post para comprovar a publicação.
+                  {quickPublishItem.tipo_conteudo === 'stories'
+                    ? 'Como stories são conteúdos de 24 horas, você pode confirmar a publicação sem inserir link.'
+                    : 'Cole o link oficial do post para comprovar a publicação.'}
                 </p>
               </div>
 

@@ -577,7 +577,7 @@
   - Integrada persistência no frontend com suporte a fallback defensivo local.
 - **Calendário Editorial**:
   - Tabela refinada com tipografia aprimorada, badges de formato (Reels, Carrossel, Stories, etc.) com alto contraste, badge de dia da semana e botões de acesso direto ao post publicado (`link_publicacao`) e à peça de produção (`link_producao`).
-  - Campo obrigatório de Link da Publicação na Rede Social (Instagram/TikTok/YouTube) ao selecionar status "Publicado", com modal rápido para confirmação e inclusão de link.
+  - Campo obrigatório de Link da Publicação na Rede Social (Instagram/TikTok/YouTube) ao selecionar status "Publicado", com modal rápido para confirmação e inclusão de link. Exceção de negócio implementada para **Stories** (temporários de 24h sem URL fixa), onde o preenchimento do link é opcional.
   - Modo Calendário Mensal despoluído para visualização pura: ao clicar em qualquer dia, abre modal completo de **Detalhes dos Posts do Dia** com listagem detalhada, roteiro/legenda, ações e opção de agendamento pré-preenchido.
   - Exportação em PDF Timbrado oficial do Calendário Editorial direto pela barra de ferramentas.
 - **Campanhas Estratégicas**:
