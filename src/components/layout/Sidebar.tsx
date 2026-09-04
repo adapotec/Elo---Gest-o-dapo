@@ -60,7 +60,7 @@ const navigationItems: MenuItem[] = [
   },
   { name: 'Projetos Sociais', href: '/dashboard/projetos', icon: FolderKanban, color: '#F7955F' },
   { name: 'Pedagogia', href: '/dashboard/pedagogia', icon: GraduationCap, color: '#93368F' },
-  { name: 'Comunicação & Mídia', href: '/dashboard/comunicacao', icon: Megaphone, color: '#EF4444' },
+  { name: 'Comunicação', href: '/dashboard/comunicacao', icon: Megaphone, color: '#EF4444' },
   {
     name: 'Recursos',
     icon: Layers,

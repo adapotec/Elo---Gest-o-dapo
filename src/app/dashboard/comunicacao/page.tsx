@@ -155,6 +155,7 @@ function ComunicacaoContent() {
         responsavel_id: conteudo.responsavel_id || null,
         categoria: conteudo.categoria || 'engajamento',
         link_producao: conteudo.link_producao || null,
+        link_publicacao: conteudo.link_publicacao || null,
         metricas: conteudo.metricas || { alcance: 0, curtidas: 0, salvamentos: 0, compartilhamentos: 0 },
         updated_at: new Date().toISOString(),
       };
@@ -321,7 +322,7 @@ function ComunicacaoContent() {
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <Topbar
-        title="Comunicação & Mídia"
+        title="Comunicação"
         subtitle="Calendário Editorial, Campanhas Estratégicas, Redes Sociais e Acervo"
       />
 

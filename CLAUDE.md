@@ -569,4 +569,24 @@
 
 ---
 
-*Última atualização: 2026-09-02 por Antigravity IDE*
+### 2026-09-04 — `[MELHORIAS]` 🟢 Comunicação & Mídia → Comunicação
+- **Renomeação**:
+  - Módulo renomeado de "Comunicação & Mídia" para **"Comunicação"** em `Sidebar.tsx` e `src/app/dashboard/comunicacao/page.tsx`.
+- **Banco de Dados (Supabase)**:
+  - Adicionada coluna `link_publicacao TEXT` na tabela `conteudos_comunicacao`.
+  - Integrada persistência no frontend com suporte a fallback defensivo local.
+- **Calendário Editorial**:
+  - Tabela refinada com tipografia aprimorada, badges de formato (Reels, Carrossel, Stories, etc.) com alto contraste, badge de dia da semana e botões de acesso direto ao post publicado (`link_publicacao`) e à peça de produção (`link_producao`).
+  - Campo obrigatório de Link da Publicação na Rede Social (Instagram/TikTok/YouTube) ao selecionar status "Publicado", com modal rápido para confirmação e inclusão de link.
+  - Modo Calendário Mensal despoluído para visualização pura: ao clicar em qualquer dia, abre modal completo de **Detalhes dos Posts do Dia** com listagem detalhada, roteiro/legenda, ações e opção de agendamento pré-preenchido.
+  - Exportação em PDF Timbrado oficial do Calendário Editorial direto pela barra de ferramentas.
+- **Campanhas Estratégicas**:
+  - Correção de contraste da campanha selecionada na lista lateral (`border-2 border-[var(--color-primary)] border-l-6 border-l-[var(--color-primary)] bg-[var(--bg-elevated)]`, badge `SELECIONADA`, tipografia Slate-900 / Branco de alto contraste).
+  - Componente de textarea autoexpansível dinâmico (`AutoResizeTextarea`) aplicado nos campos de texto longo (Resumo, Diagnóstico, Personas, Metas, Narrativa, Gatilhos).
+  - Adicionado o bloco 8 (**Calendário Editorial da Campanha**) com tabela completa no PDF Timbrado da campanha.
+- **Validação**: Build Turbopack e checagem TypeScript executados com 0 erros (36 rotas compiladas com sucesso).
+
+---
+
+*Última atualização: 2026-09-04 por Antigravity IDE*
+

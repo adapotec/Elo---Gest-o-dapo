@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -29,6 +29,7 @@ import {
   Save,
   Share2,
   TrendingUp,
+  ExternalLink,
 } from 'lucide-react';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
 import { ConteudoItem } from './ComunicacaoCalendario';
@@ -92,6 +93,53 @@ interface ComunicacaoCampanhasProps {
   onDeleteCampanha: (id: string) => Promise<void>;
 }
 
+// Componente de Textarea com Redimensionamento Automático Conforme Conteúdo Digitado
+interface AutoResizeTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  value: string;
+  onChangeValue: (value: string) => void;
+  minRows?: number;
+}
+
+function AutoResizeTextarea({
+  value,
+  onChangeValue,
+  minRows = 2,
+  placeholder,
+  className = '',
+  required = false,
+  ...props
+}: AutoResizeTextareaProps) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const adjustHeight = useCallback(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const minHeight = minRows * 24 + 16;
+      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, minHeight)}px`;
+    }
+  }, [minRows]);
+
+  useEffect(() => {
+    adjustHeight();
+  }, [value, adjustHeight]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      rows={minRows}
+      required={required}
+      value={value}
+      onChange={(e) => {
+        onChangeValue(e.target.value);
+        adjustHeight();
+      }}
+      placeholder={placeholder}
+      className={`w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-all resize-y overflow-hidden leading-relaxed font-medium ${className}`}
+      {...props}
+    />
+  );
+}
+
 export function ComunicacaoCampanhas({
   campanhas,
   conteudos,
@@ -141,23 +189,28 @@ export function ComunicacaoCampanhas({
   const [formNarrativaCtaPri, setFormNarrativaCtaPri] = useState('');
   const [formNarrativaCtaSec, setFormNarrativaCtaSec] = useState('');
 
-  // Bloco 6: Gatilhos
+  // Bloco 6-10: Tático, Recursos & Métricas
   const [formGatilhos, setFormGatilhos] = useState('');
-
-  // Bloco 7: Canais
   const [formCanais, setFormCanais] = useState<string[]>(['Instagram Feed', 'Instagram Stories', 'Reels']);
-
-  // Bloco 9: Recursos
   const [formRecursos, setFormRecursos] = useState<string[]>([]);
-
-  // Bloco 10: Indicadores
   const [formIndAlcance, setFormIndAlcance] = useState('');
   const [formIndEngajamento, setFormIndEngajamento] = useState('');
   const [formIndConversoes, setFormIndConversoes] = useState('');
 
   const [saving, setSaving] = useState(false);
 
-  // Filtragem
+  // Inicializar seleção com a primeira campanha se houver e nenhuma selecionada
+  React.useEffect(() => {
+    if (!selectedCampanha && campanhas.length > 0) {
+      setSelectedCampanha(campanhas[0]);
+    } else if (selectedCampanha) {
+      // Atualizar dados da campanha selecionada se lista mudar
+      const updated = campanhas.find((c) => c.id === selectedCampanha.id);
+      if (updated) setSelectedCampanha(updated);
+    }
+  }, [campanhas]);
+
+  // Filtragem de Campanhas
   const filteredCampanhas = useMemo(() => {
     return campanhas.filter((c) => {
       const matchSearch =
@@ -168,17 +221,10 @@ export function ComunicacaoCampanhas({
     });
   }, [campanhas, searchTerm]);
 
-  // Se nenhuma campanha selecionada, seleciona a primeira por padrão
-  React.useEffect(() => {
-    if (!selectedCampanha && filteredCampanhas.length > 0) {
-      setSelectedCampanha(filteredCampanhas[0]);
-    }
-  }, [filteredCampanhas, selectedCampanha]);
-
-  // Posts vinculados à campanha selecionada
+  // Peças de Conteúdo vinculadas à campanha selecionada (Bloco 8)
   const postsDaCampanha = useMemo(() => {
     if (!selectedCampanha) return [];
-    return conteudos.filter((c) => c.campanha_id === selectedCampanha.id);
+    return conteudos.filter((cnt) => cnt.campanha_id === selectedCampanha.id);
   }, [conteudos, selectedCampanha]);
 
   const handleOpenNewModal = () => {
@@ -188,15 +234,15 @@ export function ComunicacaoCampanhas({
     setFormProjetoId('');
     setFormResponsavelId('');
     setFormStatus('planejamento');
-    setFormDataInicio(new Date().toISOString().slice(0, 10));
+    setFormDataInicio('');
     setFormDataFim('');
     setFormResumo('');
     setFormDiagnostico('');
     setFormPersonaIdade('');
-    setFormPersonaHabitos('');
+    setFormPersonaHabitos('Engajados com causas sociais locais');
     setFormPersonaDores('');
     setFormPersonaDesejos('');
-    setFormPersonaTom('Acolhedor, Inspirador e Educativo');
+    setFormPersonaTom('Acolhedor, Inspirador, Educativo');
     setFormMetaPrincipal('');
     setFormMetasSecundarias('');
     setFormNarrativaTransf('');
@@ -337,7 +383,7 @@ export function ComunicacaoCampanhas({
             placeholder="Buscar campanha por título, resumo ou projeto social..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+            className="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
           />
         </div>
 
@@ -371,46 +417,69 @@ export function ComunicacaoCampanhas({
             ) : (
               filteredCampanhas.map((camp) => {
                 const isSelected = selectedCampanha?.id === camp.id;
+
                 return (
                   <div
                     key={camp.id}
                     onClick={() => setSelectedCampanha(camp)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2 ${
+                    className={`p-4 rounded-2xl transition-all cursor-pointer space-y-2.5 ${
                       isSelected
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/20 shadow-xs ring-1 ring-[var(--color-primary)]/30'
-                        : 'border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40 hover:bg-[var(--bg-secondary)]/30'
+                        ? 'border-2 border-[var(--color-primary)] border-l-6 border-l-[var(--color-primary)] bg-[var(--bg-elevated)] shadow-md ring-2 ring-[var(--color-primary)]/20'
+                        : 'border border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40 hover:bg-[var(--bg-secondary)]/30'
                     }`}
                   >
+                    {/* Topo do Card: Projeto & Status / Badge Selecionada */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs"
                           style={{ backgroundColor: camp.projetos_sociais?.cor_identificacao || '#F2632D' }}
                         />
-                        <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] truncate">
+                        <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] truncate">
                           {camp.projetos_sociais?.nome || 'Institucional'}
                         </span>
                       </div>
-                      {renderStatusBadge(camp.status)}
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isSelected && (
+                          <span className="px-2 py-0.5 rounded text-[9px] font-black bg-[var(--color-primary)] text-white shadow-2xs uppercase tracking-wider">
+                            SELECIONADA
+                          </span>
+                        )}
+                        {renderStatusBadge(camp.status)}
+                      </div>
                     </div>
 
-                    <h4 className="font-display font-bold text-sm text-[var(--text-primary)] leading-snug line-clamp-2">
+                    {/* Título com Alto Contraste */}
+                    <h4
+                      className={`font-display font-extrabold text-sm sm:text-base leading-snug line-clamp-2 ${
+                        isSelected ? 'text-[var(--text-primary)]' : 'text-[var(--text-primary)]'
+                      }`}
+                    >
                       {camp.titulo}
                     </h4>
 
+                    {/* Resumo com Alto Contraste */}
                     {camp.resumo && (
-                      <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
+                      <p
+                        className={`text-xs line-clamp-2 leading-relaxed ${
+                          isSelected
+                            ? 'text-[var(--text-primary)]/90 font-medium'
+                            : 'text-[var(--text-secondary)]'
+                        }`}
+                      >
                         {camp.resumo}
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between pt-2 border-t border-[var(--border-default)]/60 text-[11px] text-[var(--text-muted)]">
+                    {/* Rodapé do Card */}
+                    <div className="flex items-center justify-between pt-2 border-t border-[var(--border-default)]/70 text-[11px] text-[var(--text-muted)]">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5" />
                         <span>{camp.data_inicio ? new Date(camp.data_inicio).toLocaleDateString('pt-BR') : 'Sem data'}</span>
                       </div>
-                      <span className="font-semibold text-[var(--color-primary)] flex items-center gap-0.5">
-                        Ver 10 Blocos <ChevronRight className="w-3 h-3" />
+                      <span className="font-bold text-[var(--color-primary)] flex items-center gap-0.5">
+                        Ver 10 Blocos <ChevronRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
                   </div>
@@ -433,7 +502,7 @@ export function ComunicacaoCampanhas({
                       {selectedCampanha.projetos_sociais?.nome || 'Projeto Institucional'}
                     </span>
                   </div>
-                  <h2 className="font-display font-bold text-xl sm:text-2xl text-[var(--text-primary)]">
+                  <h2 className="font-display font-extrabold text-xl sm:text-2xl text-[var(--text-primary)]">
                     {selectedCampanha.titulo}
                   </h2>
                   <p className="text-xs text-[var(--text-muted)]">
@@ -447,7 +516,7 @@ export function ComunicacaoCampanhas({
                     size="sm"
                     icon={<Printer className="w-4 h-4 text-[var(--color-primary)]" />}
                     onClick={() => handleOpenPdf(selectedCampanha)}
-                    title="Gerar PDF Timbrado do Plano Completo"
+                    title="Gerar PDF Timbrado do Plano Completo com Calendário"
                   >
                     Exportar PDF Timbrado
                   </Button>
@@ -459,6 +528,14 @@ export function ComunicacaoCampanhas({
                   >
                     Editar
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={<Trash2 className="w-4 h-4 text-rose-600" />}
+                    onClick={() => onDeleteCampanha(selectedCampanha.id)}
+                  >
+                    Excluir
+                  </Button>
                 </div>
               </div>
 
@@ -466,79 +543,79 @@ export function ComunicacaoCampanhas({
               <div className="space-y-4 text-xs">
                 {/* 1. Resumo & Diagnóstico */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
                       1. Resumo da Campanha
                     </p>
-                    <p className="text-xs text-[var(--text-primary)] leading-relaxed">
+                    <p className="text-xs text-[var(--text-primary)] font-medium leading-relaxed">
                       {selectedCampanha.resumo || 'Nenhum resumo informado.'}
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
                       2. Diagnóstico &amp; Contexto
                     </p>
-                    <p className="text-xs text-[var(--text-primary)] leading-relaxed">
+                    <p className="text-xs text-[var(--text-primary)] font-medium leading-relaxed">
                       {selectedCampanha.diagnostico_contexto || 'Nenhum contexto registrado.'}
                     </p>
                   </div>
                 </div>
 
                 {/* 3. Personas e Público-Alvo */}
-                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
                     3. Personas &amp; Público-Alvo
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
                     <div>
                       <span className="text-[10px] font-bold text-[var(--text-muted)] block">Perfil &amp; Idade:</span>
-                      <span className="font-semibold text-[var(--text-primary)]">{selectedCampanha.personas_publico?.perfil_idade || 'Geral'}</span>
+                      <span className="font-bold text-[var(--text-primary)]">{selectedCampanha.personas_publico?.perfil_idade || 'Geral'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-[var(--text-muted)] block">Tom de Voz:</span>
-                      <span className="font-semibold text-[#93368F]">{selectedCampanha.personas_publico?.tom_marca || 'Acolhedor e Educativo'}</span>
+                      <span className="font-bold text-[#93368F]">{selectedCampanha.personas_publico?.tom_marca || 'Acolhedor e Educativo'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-[var(--text-muted)] block">Hábitos e Valores:</span>
-                      <span className="text-[var(--text-secondary)]">{selectedCampanha.personas_publico?.habitos_valores || 'Comunitário'}</span>
+                      <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.habitos_valores || 'Comunitário'}</span>
                     </div>
                     <div className="sm:col-span-2">
                       <span className="text-[10px] font-bold text-[var(--text-muted)] block">Dores e Medos:</span>
-                      <span className="text-[var(--text-secondary)]">{selectedCampanha.personas_publico?.dores_medos || 'Falta de oportunidades'}</span>
+                      <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.dores_medos || 'Falta de oportunidades'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-[var(--text-muted)] block">Desejos:</span>
-                      <span className="text-[var(--text-secondary)]">{selectedCampanha.personas_publico?.desejos || 'Desenvolvimento das crianças'}</span>
+                      <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.desejos || 'Desenvolvimento das crianças'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 4. Objetivos & 5. Estratégia Narrativa */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
                       4. Objetivos &amp; Metas
                     </p>
                     <div>
                       <span className="text-[10px] font-bold text-[var(--text-muted)] block">Meta Principal:</span>
-                      <p className="font-bold text-[var(--text-primary)]">{selectedCampanha.objetivos?.meta_principal || 'Aumentar engajamento e captação'}</p>
+                      <p className="font-bold text-[var(--text-primary)] text-sm">{selectedCampanha.objetivos?.meta_principal || 'Aumentar engajamento e captação'}</p>
                     </div>
                     {selectedCampanha.objetivos?.metas_secundarias && (
                       <div>
                         <span className="text-[10px] font-bold text-[var(--text-muted)] block">Metas Secundárias:</span>
-                        <p className="text-[var(--text-secondary)]">{selectedCampanha.objetivos.metas_secundarias}</p>
+                        <p className="text-[var(--text-secondary)] font-medium">{selectedCampanha.objetivos.metas_secundarias}</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
                       5. Estratégia Narrativa
                     </p>
                     <div>
                       <span className="text-[10px] font-bold text-[var(--text-muted)] block">Transformação &amp; Protagonista:</span>
-                      <p className="text-[var(--text-primary)]">
+                      <p className="text-[var(--text-primary)] font-medium">
                         <strong>Protagonista:</strong> {selectedCampanha.estrategia_narrativa?.protagonista || 'Crianças e Famílias'}<br />
                         <strong>Transformação:</strong> {selectedCampanha.estrategia_narrativa?.transformacao || 'Acesso à arte e educação'}
                       </p>
@@ -552,33 +629,33 @@ export function ComunicacaoCampanhas({
 
                 {/* 6. Gatilhos, 7. Canais & 10. Indicadores */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
                       6. Gatilhos Persuasivos
                     </p>
-                    <p className="text-xs text-[var(--text-secondary)]">
+                    <p className="text-xs text-[var(--text-primary)] font-medium">
                       {selectedCampanha.gatilhos_persuasao || 'Prova Social, Pertencimento'}
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
                       7. Canais Utilizados
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {(selectedCampanha.canais_ferramentas || ['Instagram', 'WhatsApp']).map((canal, idx) => (
-                        <span key={idx} className="px-2 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[10px] font-bold text-[var(--text-primary)]">
+                        <span key={idx} className="px-2 py-0.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[10px] font-bold text-[var(--text-primary)]">
                           {canal}
                         </span>
                       ))}
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
                       10. Indicadores Esperados
                     </p>
-                    <p className="text-xs text-[var(--text-secondary)]">
+                    <p className="text-xs text-[var(--text-primary)] font-medium">
                       <strong>Alcance:</strong> {selectedCampanha.indicadores_esperados?.alcance_esperado || '5.000 pessoas'}<br />
                       <strong>Doações/Metas:</strong> {selectedCampanha.indicadores_esperados?.conversoes_doacoes || 'Meta aberta'}
                     </p>
@@ -586,9 +663,9 @@ export function ComunicacaoCampanhas({
                 </div>
 
                 {/* 8. Calendário Editorial Vinculado a Esta Campanha */}
-                <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-3">
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
                       8. Calendário Editorial Vinculado ({postsDaCampanha.length} Peças)
                     </p>
                   </div>
@@ -602,7 +679,7 @@ export function ComunicacaoCampanhas({
                       {postsDaCampanha.map((p) => (
                         <div
                           key={p.id}
-                          className="p-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center justify-between gap-2"
+                          className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center justify-between gap-2 shadow-2xs"
                         >
                           <div className="min-w-0 text-xs">
                             <span className="font-bold text-[var(--text-primary)] block truncate">
@@ -612,9 +689,22 @@ export function ComunicacaoCampanhas({
                               {new Date(p.data_publicacao).toLocaleDateString('pt-BR')} • {p.tipo_conteudo.toUpperCase()}
                             </span>
                           </div>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-                            {p.status}
-                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {p.link_publicacao && (
+                              <a
+                                href={p.link_publicacao}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1 rounded bg-pink-500/10 text-pink-600 hover:bg-pink-500/20 transition-colors"
+                                title="Abrir postagem"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+                              {p.status}
+                            </span>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -631,13 +721,13 @@ export function ComunicacaoCampanhas({
         </div>
       </div>
 
-      {/* ── 3. MODAL DE CRIAÇÃO / EDIÇÃO DE CAMPANHA (WIZARD 10 BLOCOS) ── */}
+      {/* ── 3. MODAL DE CRIAÇÃO / EDIÇÃO DE CAMPANHA (WIZARD 10 BLOCOS COM TEXTAREAS AUTOEXPANSÍVEIS) ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-3xl bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-3xl shadow-2xl p-6 space-y-5 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center">
                   <Megaphone className="w-5 h-5" />
                 </div>
                 <div>
@@ -649,7 +739,11 @@ export function ComunicacaoCampanhas({
                   </p>
                 </div>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-muted)]">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="p-1.5 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-muted)] cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -767,29 +861,29 @@ export function ComunicacaoCampanhas({
                     </div>
                   </div>
 
+                  {/* 1. Resumo Executivo (Textarea Autoexpansível) */}
                   <div>
                     <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                      1. Resumo Executivo da Campanha
+                      1. Resumo Executivo da Campanha (Expansível)
                     </label>
-                    <textarea
-                      rows={2}
-                      placeholder="Breve descrição da campanha e propósito..."
+                    <AutoResizeTextarea
+                      minRows={2}
+                      placeholder="Breve descrição da campanha, seu propósito e a transformação almejada..."
                       value={formResumo}
-                      onChange={(e) => setFormResumo(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] resize-none"
+                      onChangeValue={setFormResumo}
                     />
                   </div>
 
+                  {/* 2. Diagnóstico & Contexto (Textarea Autoexpansível) */}
                   <div>
                     <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                      2. Diagnóstico &amp; Contexto Atual
+                      2. Diagnóstico &amp; Contexto Atual (Expansível)
                     </label>
-                    <textarea
-                      rows={2}
-                      placeholder="O que está acontecendo atualmente que justifica esta campanha..."
+                    <AutoResizeTextarea
+                      minRows={2}
+                      placeholder="O que está acontecendo atualmente que justifica esta campanha? Qual o cenário social e institucional..."
                       value={formDiagnostico}
-                      onChange={(e) => setFormDiagnostico(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] resize-none"
+                      onChangeValue={setFormDiagnostico}
                     />
                   </div>
 
@@ -804,7 +898,7 @@ export function ComunicacaoCampanhas({
                           placeholder="Ex: Famílias de 25 a 45 anos, doadores locais"
                           value={formPersonaIdade}
                           onChange={(e) => setFormPersonaIdade(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                          className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
                         />
                       </div>
                       <div>
@@ -814,27 +908,27 @@ export function ComunicacaoCampanhas({
                           placeholder="Ex: Acolhedor, Inspirador, Educativo"
                           value={formPersonaTom}
                           onChange={(e) => setFormPersonaTom(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                          className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Dores &amp; Medos</label>
-                        <input
-                          type="text"
-                          placeholder="Ex: Desejo de ajudar mas sem saber onde confiar"
+                        <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Dores &amp; Medos (Expansível)</label>
+                        <AutoResizeTextarea
+                          minRows={2}
+                          placeholder="Ex: Desejo de ajudar mas sem saber onde confiar ou falta de tempo..."
                           value={formPersonaDores}
-                          onChange={(e) => setFormPersonaDores(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                          onChangeValue={setFormPersonaDores}
+                          className="bg-[var(--bg-elevated)]"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Desejos &amp; Aspirações</label>
-                        <input
-                          type="text"
-                          placeholder="Ex: Ver o impacto real na vida das crianças"
+                        <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Desejos &amp; Aspirações (Expansível)</label>
+                        <AutoResizeTextarea
+                          minRows={2}
+                          placeholder="Ex: Ver o impacto real na vida das crianças e pertencer a uma comunidade ativa..."
                           value={formPersonaDesejos}
-                          onChange={(e) => setFormPersonaDesejos(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                          onChangeValue={setFormPersonaDesejos}
+                          className="bg-[var(--bg-elevated)]"
                         />
                       </div>
                     </div>
@@ -858,13 +952,13 @@ export function ComunicacaoCampanhas({
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-[var(--text-secondary)] block mb-1">Metas Secundárias</label>
-                      <textarea
-                        rows={2}
-                        placeholder="Ex: 5 matérias na imprensa local, 100 compartilhamentos orgânicos..."
+                      <label className="font-semibold text-[var(--text-secondary)] block mb-1">Metas Secundárias (Expansível)</label>
+                      <AutoResizeTextarea
+                        minRows={2}
+                        placeholder="Ex: 5 matérias na imprensa local, 100 compartilhamentos orgânicos, captação de 10 novos voluntários..."
                         value={formMetasSecundarias}
-                        onChange={(e) => setFormMetasSecundarias(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] resize-none"
+                        onChangeValue={setFormMetasSecundarias}
+                        className="bg-[var(--bg-elevated)]"
                       />
                     </div>
                   </div>
@@ -895,13 +989,13 @@ export function ComunicacaoCampanhas({
                     </div>
 
                     <div>
-                      <label className="font-semibold text-[var(--text-secondary)] block mb-1">Transformação Esperada</label>
-                      <textarea
-                        rows={2}
-                        placeholder="De onde saem e onde chegam através da ação do Instituto Ádapo..."
+                      <label className="font-semibold text-[var(--text-secondary)] block mb-1">Transformação Esperada (Expansível)</label>
+                      <AutoResizeTextarea
+                        minRows={2}
+                        placeholder="De onde saem e onde chegam através da ação acolhedora do Instituto Ádapo..."
                         value={formNarrativaTransf}
-                        onChange={(e) => setFormNarrativaTransf(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] resize-none"
+                        onChangeValue={setFormNarrativaTransf}
+                        className="bg-[var(--bg-elevated)]"
                       />
                     </div>
 
@@ -936,14 +1030,13 @@ export function ComunicacaoCampanhas({
                 <div className="space-y-4 animate-in fade-in duration-150">
                   <div>
                     <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                      6. Estratégia de Persuasão &amp; Gatilhos Mentais
+                      6. Estratégia de Persuasão &amp; Gatilhos Mentais (Expansível)
                     </label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Prova Social (depoimentos de voluntários), Reciprocidade, Pertencimento Comunitário"
+                    <AutoResizeTextarea
+                      minRows={2}
+                      placeholder="Ex: Prova Social (depoimentos de voluntários), Reciprocidade, Pertencimento Comunitário..."
                       value={formGatilhos}
-                      onChange={(e) => setFormGatilhos(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                      onChangeValue={setFormGatilhos}
                     />
                   </div>
 
@@ -1028,7 +1121,7 @@ export function ComunicacaoCampanhas({
         </div>
       )}
 
-      {/* ── 4. MODAL: EXPORTAR PLANO ESTRATÉGICO EM PAPEL TIMBRADO (PDF) ── */}
+      {/* ── 4. MODAL: EXPORTAR PLANO ESTRATÉGICO EM PAPEL TIMBRADO (PDF COM CALENDÁRIO EDITORIAL INCLUSO) ── */}
       {showPdfModal && campanhaParaPdf && (
         <PapelTimbradoModal
           isOpen={showPdfModal}
@@ -1111,6 +1204,88 @@ export function ComunicacaoCampanhas({
                 </p>
               </div>
             </div>
+
+            {/* ── 8. CALENDÁRIO EDITORIAL DA CAMPANHA (CRONOGRAMA DE PEÇAS) ── */}
+            {(() => {
+              const postsCampanhaPdf = conteudos.filter((c) => c.campanha_id === campanhaParaPdf.id);
+
+              return (
+                <div className="space-y-2 pt-2 border-t border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-[11px] uppercase tracking-wider text-[#F2632D]">
+                      8. Calendário Editorial da Campanha ({postsCampanhaPdf.length} {postsCampanhaPdf.length === 1 ? 'Peça' : 'Peças'})
+                    </h3>
+                    <span className="text-[10px] text-slate-500 font-semibold">
+                      Publicados: {postsCampanhaPdf.filter((c) => c.status === 'publicado').length} / {postsCampanhaPdf.length}
+                    </span>
+                  </div>
+
+                  {postsCampanhaPdf.length === 0 ? (
+                    <div className="p-3 bg-slate-50 rounded border border-slate-200 text-center text-slate-500 italic">
+                      Nenhuma postagem vinculada a esta campanha no calendário editorial até o momento.
+                    </div>
+                  ) : (
+                    <table className="w-full border-collapse border border-slate-300 text-[10px]">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-700">
+                          <th className="border border-slate-300 p-1.5 text-left w-24">Data / Hora</th>
+                          <th className="border border-slate-300 p-1.5 text-left w-16">Formato</th>
+                          <th className="border border-slate-300 p-1.5 text-left">Título da Peça &amp; Roteiro</th>
+                          <th className="border border-slate-300 p-1.5 text-left w-24">Responsável</th>
+                          <th className="border border-slate-300 p-1.5 text-center w-20">Status</th>
+                          <th className="border border-slate-300 p-1.5 text-left w-28">Link da Publicação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {postsCampanhaPdf.map((p) => {
+                          const d = new Date(p.data_publicacao);
+                          const dtStr = `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}h`;
+
+                          return (
+                            <tr key={p.id} className="hover:bg-slate-50">
+                              <td className="border border-slate-300 p-1.5 font-bold font-mono">
+                                {dtStr}
+                              </td>
+                              <td className="border border-slate-300 p-1.5 uppercase font-semibold">
+                                {p.tipo_conteudo}
+                              </td>
+                              <td className="border border-slate-300 p-1.5">
+                                <p className="font-bold text-slate-900">{p.titulo}</p>
+                                {p.descricao && (
+                                  <p className="text-[9px] text-slate-600 line-clamp-2 italic">
+                                    &quot;{p.descricao}&quot;
+                                  </p>
+                                )}
+                              </td>
+                              <td className="border border-slate-300 p-1.5">
+                                {p.voluntarios?.nome_completo || 'Equipe Geral'}
+                              </td>
+                              <td className="border border-slate-300 p-1.5 text-center font-bold">
+                                {p.status.toUpperCase()}
+                              </td>
+                              <td className="border border-slate-300 p-1.5 truncate text-[9px]">
+                                {p.link_publicacao ? (
+                                  <a
+                                    href={p.link_publicacao}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-600 underline truncate block"
+                                  >
+                                    {p.link_publicacao}
+                                  </a>
+                                ) : (
+                                  <span className="text-slate-400">Pendente</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Assinaturas */}
             <div className="pt-8 grid grid-cols-2 gap-8 text-center text-[10px]">
