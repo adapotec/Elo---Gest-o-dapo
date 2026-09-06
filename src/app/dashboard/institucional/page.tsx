@@ -126,7 +126,10 @@ export default function InstitucionalPage() {
         })
         .eq('id', editingReuniao.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar reunião:', error);
+        throw error;
+      }
     } else {
       // Inserir nova
       const { error } = await supabase.from('reunioes_institucional').insert([
@@ -137,7 +140,28 @@ export default function InstitucionalPage() {
         },
       ]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao inserir reunião:', error);
+        // Fallback resiliente caso alguma coluna nova ainda não tenha sido criada no Supabase
+        if (error.message?.includes('column') || error.code === '42703') {
+          console.warn('Executando fallback com campos essenciais para retrocompatibilidade...');
+          const { error: fallbackError } = await supabase.from('reunioes_institucional').insert([
+            {
+              titulo: data.titulo,
+              data_hora: data.data_hora,
+              tipo: data.tipo,
+              local_reuniao: data.local_reuniao,
+              pauta: data.pauta,
+              participantes: data.participantes,
+              status: 'agendada',
+              updated_at: new Date().toISOString(),
+            },
+          ]);
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw error;
+        }
+      }
     }
 
     await loadInitialData();
