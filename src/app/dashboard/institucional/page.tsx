@@ -1,14 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Topbar } from '@/components/layout/Topbar';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { PapelTimbradoModal } from '@/components/ui/PapelTimbradoModal';
+import { ModalNovaReuniao } from '@/components/dashboard/institucional/ModalNovaReuniao';
+import { ReuniaoPautaTab } from '@/components/dashboard/institucional/ReuniaoPautaTab';
+import { ReuniaoPresencaTab } from '@/components/dashboard/institucional/ReuniaoPresencaTab';
+import { ReuniaoAtaTab } from '@/components/dashboard/institucional/ReuniaoAtaTab';
+import { ReuniaoPrintTemplate } from '@/components/dashboard/institucional/ReuniaoPrintTemplate';
+import { Reuniao, ProjetoResumo } from '@/types/reuniao';
 import {
   Landmark,
   Plus,
@@ -16,63 +20,58 @@ import {
   Clock,
   Users,
   FileText,
-  Save,
   Trash2,
-  Printer,
   CheckCircle,
-  MapPin,
+  Search,
+  FolderKanban,
+  Edit,
+  Sparkles,
+  Printer,
+  ChevronRight,
+  ListFilter,
+  Play,
   ClipboardList,
 } from 'lucide-react';
 
-interface Reuniao {
-  id?: string;
-  titulo: string;
-  data_hora: string;
-  tipo: 'ordinaria' | 'extraordinaria' | 'assembleia' | 'conselho' | 'planejamento';
-  local_reuniao: string;
-  pauta: string;
-  ata: string;
-  participantes: string[];
-  status: 'agendada' | 'em_andamento' | 'concluida' | 'cancelada';
-}
-
 export default function InstitucionalPage() {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [reunioes, setReunioes] = useState<Reuniao[]>([]);
-  const [filterStatus, setFilterStatus] = useState<string>('todos');
-
-  // Modal Nova Reunião
-  const [showModal, setShowModal] = useState(false);
-  const [formReuniao, setFormReuniao] = useState<Reuniao>({
-    titulo: '',
-    data_hora: new Date().toISOString().slice(0, 16),
-    tipo: 'ordinaria',
-    local_reuniao: 'Sede do Instituto Ádapo',
-    pauta: '',
-    ata: '',
-    participantes: [],
-    status: 'agendada',
-  });
-
-  // Reunião selecionada para edição da ATA
+  const [projetos, setProjetos] = useState<ProjetoResumo[]>([]);
   const [selectedReuniao, setSelectedReuniao] = useState<Reuniao | null>(null);
-  const [editingAta, setEditingAta] = useState(false);
-  const [ataText, setAtaText] = useState('');
+  const [activeTab, setActiveTab] = useState<'pauta' | 'presenca' | 'ata'>('pauta');
 
-  // Modal de Impressão
-  const [showPrintModal, setShowPrintModal] = useState(false);
+  // Filtros
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('todos');
+  const [filterProjeto, setFilterProjeto] = useState<string>('todos');
+  const [filterTipo, setFilterTipo] = useState<string>('todos');
+
+  // Modais
+  const [showModalReuniao, setShowModalReuniao] = useState(false);
+  const [editingReuniao, setEditingReuniao] = useState<Reuniao | null>(null);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [printModo, setPrintModo] = useState<'convocacao' | 'ata'>('convocacao');
 
   useEffect(() => {
-    loadData();
+    loadInitialData();
   }, []);
 
-  async function loadData() {
+  async function loadInitialData() {
     try {
       setLoading(true);
       const supabase = createClient();
 
-      const { data, error } = await supabase
+      // 1. Carregar Projetos Sociais
+      const { data: projData } = await supabase
+        .from('projetos_sociais')
+        .select('id, nome, cor_identificacao, icone')
+        .order('nome');
+
+      const projetosLista: ProjetoResumo[] = projData || [];
+      setProjetos(projetosLista);
+
+      // 2. Carregar Reuniões Institucionais
+      const { data: reunioesData, error } = await supabase
         .from('reunioes_institucional')
         .select('*')
         .order('data_hora', { ascending: false });
@@ -81,91 +80,143 @@ export default function InstitucionalPage() {
         console.error('Erro ao buscar reunioes_institucional:', error.message || error);
         setReunioes([]);
       } else {
-        setReunioes(
-          (data || []).map((r: any) => ({
+        const formatadas: Reuniao[] = (reunioesData || []).map((r: any) => {
+          const proj = projetosLista.find((p) => p.id === r.projeto_id);
+          return {
             ...r,
+            projeto: proj,
             participantes: Array.isArray(r.participantes) ? r.participantes : [],
-          }))
-        );
+            presentes: Array.isArray(r.presentes) ? r.presentes : [],
+            ausentes: Array.isArray(r.ausentes) ? r.ausentes : [],
+            pautas_topicos: Array.isArray(r.pautas_topicos) ? r.pautas_topicos : [],
+            encaminhamentos: Array.isArray(r.encaminhamentos) ? r.encaminhamentos : [],
+          };
+        });
+
+        setReunioes(formatadas);
+
+        // Manter ou atualizar a reunião selecionada
+        if (formatadas.length > 0) {
+          setSelectedReuniao((prev) => {
+            if (!prev) return formatadas[0];
+            const updated = formatadas.find((r) => r.id === prev.id);
+            return updated || formatadas[0];
+          });
+        }
       }
     } catch (err: any) {
-      console.error('Erro ao carregar reuniões:', err?.message || err);
+      console.error('Erro ao carregar dados:', err?.message || err);
       setReunioes([]);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleSaveReuniao() {
-    if (!formReuniao.titulo) return alert('Preencha o título da reunião.');
-    try {
-      setSaving(true);
-      const supabase = createClient();
+  // Salvar Reunião (Criação ou Edição)
+  async function handleSaveReuniao(data: Partial<Reuniao>) {
+    const supabase = createClient();
 
+    if (editingReuniao?.id) {
+      // Atualizar existente
+      const { error } = await supabase
+        .from('reunioes_institucional')
+        .update({
+          ...data,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingReuniao.id);
+
+      if (error) throw error;
+    } else {
+      // Inserir nova
       const { error } = await supabase.from('reunioes_institucional').insert([
         {
-          ...formReuniao,
+          ...data,
+          status: 'agendada',
           updated_at: new Date().toISOString(),
         },
       ]);
 
       if (error) throw error;
-
-      setShowModal(false);
-      setFormReuniao({
-        titulo: '',
-        data_hora: new Date().toISOString().slice(0, 16),
-        tipo: 'ordinaria',
-        local_reuniao: 'Sede do Instituto Ádapo',
-        pauta: '',
-        ata: '',
-        participantes: [],
-        status: 'agendada',
-      });
-      loadData();
-    } catch (err) {
-      console.error('Erro ao salvar reunião:', err);
-      alert('Erro ao salvar reunião.');
-    } finally {
-      setSaving(false);
     }
+
+    await loadInitialData();
   }
 
-  async function handleSaveAta() {
+  // Atualizações pontuais vindas das abas (presença, notas, ata, encaminhamentos)
+  async function handleUpdateSelected(updates: Partial<Reuniao>) {
     if (!selectedReuniao?.id) return;
-    try {
-      setSaving(true);
-      const supabase = createClient();
-      await supabase
-        .from('reunioes_institucional')
-        .update({ ata: ataText, status: 'concluida', updated_at: new Date().toISOString() })
-        .eq('id', selectedReuniao.id);
+    const supabase = createClient();
 
-      setEditingAta(false);
-      loadData();
-    } catch (err) {
-      console.error('Erro ao salvar ata:', err);
-    } finally {
-      setSaving(false);
-    }
+    const { error } = await supabase
+      .from('reunioes_institucional')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', selectedReuniao.id);
+
+    if (error) throw error;
+
+    // Atualizar estado local imediatamente
+    setSelectedReuniao((prev) => (prev ? { ...prev, ...updates } : null));
+    setReunioes((prev) =>
+      prev.map((r) => (r.id === selectedReuniao.id ? { ...r, ...updates } : r))
+    );
   }
 
-  async function handleRemoveReuniao(id: string) {
-    if (!confirm('Deseja excluir esta reunião?')) return;
+  async function handleDeleteReuniao(id: string) {
+    if (!confirm('Deseja realmente excluir esta reunião e todos os seus registros de ata?')) return;
     try {
       const supabase = createClient();
       await supabase.from('reunioes_institucional').delete().eq('id', id);
-      if (selectedReuniao?.id === id) setSelectedReuniao(null);
-      loadData();
+      if (selectedReuniao?.id === id) {
+        setSelectedReuniao(null);
+      }
+      await loadInitialData();
     } catch (err) {
       console.error('Erro ao excluir reunião:', err);
+      alert('Erro ao excluir reunião.');
     }
   }
 
-  const filteredReunioes = reunioes.filter((r) => {
-    if (filterStatus === 'todos') return true;
-    return r.status === filterStatus;
-  });
+  // Reuniões Filtradas
+  const filteredReunioes = useMemo(() => {
+    return reunioes.filter((r) => {
+      // Busca
+      if (search.trim()) {
+        const query = search.toLowerCase();
+        const matchTitulo = r.titulo.toLowerCase().includes(query);
+        const matchPauta = r.pauta?.toLowerCase().includes(query);
+        const matchAta = r.ata?.toLowerCase().includes(query);
+        const matchProj = r.projeto?.nome.toLowerCase().includes(query);
+        if (!matchTitulo && !matchPauta && !matchAta && !matchProj) return false;
+      }
+
+      // Status
+      if (filterStatus !== 'todos' && r.status !== filterStatus) return false;
+
+      // Projeto
+      if (filterProjeto !== 'todos') {
+        if (filterProjeto === 'geral') {
+          if (r.projeto_id) return false;
+        } else {
+          if (r.projeto_id !== filterProjeto) return false;
+        }
+      }
+
+      // Tipo
+      if (filterTipo !== 'todos' && r.tipo !== filterTipo) return false;
+
+      return true;
+    });
+  }, [reunioes, search, filterStatus, filterProjeto, filterTipo]);
+
+  // Micro-KPIs
+  const kpiTotal = reunioes.length;
+  const kpiAgendadas = reunioes.filter((r) => r.status === 'agendada').length;
+  const kpiConcluidas = reunioes.filter((r) => r.status === 'concluida').length;
+  const kpiProjetos = reunioes.filter((r) => Boolean(r.projeto_id)).length;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -185,10 +236,14 @@ export default function InstitucionalPage() {
     switch (tipo) {
       case 'extraordinaria':
         return <Badge variant="warning">EXTRAORDINÁRIA</Badge>;
+      case 'alinhamento_projeto':
+        return <Badge variant="primary">ALINHAMENTO</Badge>;
       case 'assembleia':
         return <Badge variant="purple">ASSEMBLEIA</Badge>;
       case 'conselho':
         return <Badge variant="neutral">CONSELHO</Badge>;
+      case 'diretoria':
+        return <Badge variant="purple">DIRETORIA</Badge>;
       case 'planejamento':
         return <Badge variant="primary">PLANEJAMENTO</Badge>;
       case 'ordinaria':
@@ -197,250 +252,385 @@ export default function InstitucionalPage() {
     }
   };
 
-  const reunioesAgendadas = reunioes.filter((r) => r.status === 'agendada').length;
-  const reunioesConcluidas = reunioes.filter((r) => r.status === 'concluida').length;
-
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <Topbar
-        title="Gestão Institucional"
-        subtitle="Reuniões, Pautas, Atas e Processos Administrativos do Instituto Ádapo"
+        title="Reuniões & Governança"
+        subtitle="Agendamentos, pautas, condução, atas timbradas em PDF e alinhamento de projetos"
         action={
           <Button
             variant="primary"
             size="sm"
             icon={<Plus className="w-4 h-4" />}
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditingReuniao(null);
+              setShowModalReuniao(true);
+            }}
           >
             Nova Reunião
           </Button>
         }
       />
 
-      <div className="p-4 sm:p-6 lg:p-8 max-w-6xl space-y-6 flex-1 overflow-y-auto">
-        {/* Cards de Resumo */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="p-4 flex items-center gap-4 border-l-4 border-l-[#F2632D]">
-            <div className="p-3 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-              <ClipboardList className="w-6 h-6" />
+      {/* Container Centralizado Arejado (Design System padrão Elo) */}
+      <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto">
+        {/* Micro-KPIs Compactos */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <Card className="p-3.5 flex items-center gap-3 border-l-4 border-l-[#F2632D] shadow-xs">
+            <div className="p-2.5 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+              <ClipboardList className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Total de Reuniões</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">{reunioes.length}</p>
+              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Total de Reuniões</p>
+              <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiTotal}</p>
             </div>
           </Card>
 
-          <Card className="p-4 flex items-center gap-4 border-l-4 border-l-purple-500">
-            <div className="p-3 rounded-xl bg-purple-500/10 text-purple-500">
-              <Calendar className="w-6 h-6" />
+          <Card className="p-3.5 flex items-center gap-3 border-l-4 border-l-purple-500 shadow-xs">
+            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500">
+              <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Agendadas</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">{reunioesAgendadas}</p>
+              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Agendadas / Próximas</p>
+              <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiAgendadas}</p>
             </div>
           </Card>
 
-          <Card className="p-4 flex items-center gap-4 border-l-4 border-l-emerald-500">
-            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
-              <CheckCircle className="w-6 h-6" />
+          <Card className="p-3.5 flex items-center gap-3 border-l-4 border-l-emerald-500 shadow-xs">
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500">
+              <CheckCircle className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Concluídas (com Ata)</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">{reunioesConcluidas}</p>
+              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Atas Lavradas</p>
+              <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiConcluidas}</p>
+            </div>
+          </Card>
+
+          <Card className="p-3.5 flex items-center gap-3 border-l-4 border-l-blue-500 shadow-xs">
+            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500">
+              <FolderKanban className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">De Projetos Sociais</p>
+              <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiProjetos}</p>
             </div>
           </Card>
         </div>
 
-        {/* LAYOUT MASTER-DETAIL */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LISTA DE REUNIÕES */}
-          <div className="lg:col-span-1 space-y-4">
-            <Card className="p-4 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[var(--border-default)]">
-                <h3 className="font-bold text-sm text-[var(--text-primary)]">Reuniões ({filteredReunioes.length})</h3>
-                <Select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="text-xs w-32"
-                >
-                  <option value="todos">Todos</option>
-                  <option value="agendada">Agendadas</option>
-                  <option value="concluida">Concluídas</option>
-                  <option value="cancelada">Canceladas</option>
-                </Select>
-              </div>
+        {/* Barra de Ferramentas / Filtros em Linha Única */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+            <input
+              type="text"
+              placeholder="Buscar reunião por título, pauta, projeto ou conteúdo da ata..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-all"
+            />
+          </div>
 
-              {filteredReunioes.length === 0 ? (
-                <div className="p-6 text-center text-xs text-[var(--text-muted)] border border-dashed border-[var(--border-default)] rounded-xl">
-                  Nenhuma reunião cadastrada.
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
-                  {filteredReunioes.map((r) => (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+            {/* Filtro Status */}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-2.5 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] shrink-0 focus:outline-none focus:border-[var(--color-primary)]"
+            >
+              <option value="todos">Status: Todos</option>
+              <option value="agendada">Agendadas</option>
+              <option value="em_andamento">Em Andamento</option>
+              <option value="concluida">Concluídas</option>
+              <option value="cancelada">Canceladas</option>
+            </select>
+
+            {/* Filtro Projeto */}
+            <select
+              value={filterProjeto}
+              onChange={(e) => setFilterProjeto(e.target.value)}
+              className="px-2.5 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] shrink-0 focus:outline-none focus:border-[var(--color-primary)]"
+            >
+              <option value="todos">Vínculo: Todos</option>
+              <option value="geral">Geral / Diretoria</option>
+              {projetos.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                </option>
+              ))}
+            </select>
+
+            {/* Filtro Tipo */}
+            <select
+              value={filterTipo}
+              onChange={(e) => setFilterTipo(e.target.value)}
+              className="px-2.5 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] shrink-0 focus:outline-none focus:border-[var(--color-primary)]"
+            >
+              <option value="todos">Tipo: Todos</option>
+              <option value="ordinaria">Ordinária</option>
+              <option value="extraordinaria">Extraordinária</option>
+              <option value="alinhamento_projeto">Alinhamento</option>
+              <option value="diretoria">Diretoria</option>
+              <option value="assembleia">Assembleia</option>
+              <option value="conselho">Conselho</option>
+              <option value="planejamento">Planejamento</option>
+            </select>
+          </div>
+        </div>
+
+        {/* LAYOUT MASTER-DETAIL */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* COLUNA ESQUERDA: LISTA DE REUNIÕES (lg:col-span-5) */}
+          <div className="lg:col-span-5 space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-[var(--text-secondary)]">
+                Lista de Reuniões ({filteredReunioes.length})
+              </h3>
+              {loading && <span className="text-xs text-[var(--text-muted)] animate-pulse">Atualizando...</span>}
+            </div>
+
+            {filteredReunioes.length === 0 ? (
+              <Card className="p-8 text-center space-y-3">
+                <Calendar className="w-10 h-10 mx-auto text-[var(--text-muted)] opacity-40" />
+                <p className="text-xs text-[var(--text-muted)]">Nenhuma reunião encontrada com os filtros selecionados.</p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setSearch('');
+                    setFilterStatus('todos');
+                    setFilterProjeto('todos');
+                    setFilterTipo('todos');
+                  }}
+                >
+                  Limpar Filtros
+                </Button>
+              </Card>
+            ) : (
+              <div className="space-y-2.5 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+                {filteredReunioes.map((r) => {
+                  const isSelected = selectedReuniao?.id === r.id;
+                  const dataDate = new Date(r.data_hora);
+
+                  return (
                     <button
                       key={r.id}
                       onClick={() => {
                         setSelectedReuniao(r);
-                        setAtaText(r.ata || '');
-                        setEditingAta(false);
                       }}
-                      className={`w-full text-left p-3 rounded-xl border transition-colors ${
-                        selectedReuniao?.id === r.id
-                          ? 'bg-[var(--color-primary-soft)] border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]'
+                      className={`w-full text-left p-3.5 rounded-2xl border transition-all text-xs ${
+                        isSelected
+                          ? 'bg-[var(--color-primary-soft)] border-[var(--color-primary)] ring-1 ring-[var(--color-primary)] shadow-xs'
                           : 'bg-[var(--bg-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-elevated)]'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="font-bold text-sm text-[var(--text-primary)] truncate">{r.titulo}</p>
-                          <div className="flex items-center gap-2 mt-1 text-[10px] text-[var(--text-muted)]">
-                            <Calendar className="w-3 h-3" />
-                            <span>
-                              {new Date(r.data_hora).toLocaleDateString('pt-BR')} •{' '}
-                              {new Date(r.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        <div className="min-w-0 flex-1">
+                          {/* Tag de Projeto ou Geral */}
+                          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                            {r.projeto ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                <FolderKanban className="w-3 h-3" />
+                                {r.projeto.nome}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium text-[10px] bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-default)]">
+                                🏢 Geral
+                              </span>
+                            )}
+                            {getTipoBadge(r.tipo)}
+                          </div>
+
+                          <p className="font-bold text-sm text-[var(--text-primary)] truncate leading-snug">
+                            {r.titulo}
+                          </p>
+
+                          {/* Data e Horário */}
+                          <div className="flex items-center gap-2 mt-1.5 text-[11px] text-[var(--text-muted)] flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-[var(--color-primary)]" />
+                              {dataDate.toLocaleDateString('pt-BR')}
                             </span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {dataDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {r.participantes && r.participantes.length > 0 && (
+                              <>
+                                <span>•</span>
+                                <span className="flex items-center gap-1">
+                                  <Users className="w-3 h-3" />
+                                  {r.participantes.length}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
-                        {getStatusBadge(r.status)}
+
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          {getStatusBadge(r.status)}
+                          <ChevronRight
+                            className={`w-4 h-4 transition-transform ${
+                              isSelected ? 'text-[var(--color-primary)] translate-x-0.5' : 'text-[var(--text-muted)] opacity-50'
+                            }`}
+                          />
+                        </div>
                       </div>
                     </button>
-                  ))}
-                </div>
-              )}
-            </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* DETALHE DA REUNIÃO SELECIONADA */}
-          <div className="lg:col-span-2">
+          {/* COLUNA DIREITA: DETALHE DA REUNIÃO EM 3 ABAS (lg:col-span-7) */}
+          <div className="lg:col-span-7">
             {!selectedReuniao ? (
               <Card className="p-12 text-center space-y-4">
-                <Landmark className="w-12 h-12 mx-auto text-[var(--text-muted)] opacity-50" />
+                <Landmark className="w-12 h-12 mx-auto text-[var(--text-muted)] opacity-40" />
                 <div>
-                  <h3 className="font-bold text-lg text-[var(--text-primary)]">Selecione uma Reunião</h3>
-                  <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto mt-1">
-                    Clique em uma reunião da lista para visualizar seus detalhes, pauta, ata e participantes.
+                  <h3 className="font-bold text-base text-[var(--text-primary)]">Selecione uma Reunião</h3>
+                  <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto mt-1">
+                    Clique em qualquer reunião da lista à esquerda para consultar a pauta, registrar a presença ou lavrar a ata oficial.
                   </p>
                 </div>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={<Plus className="w-4 h-4" />}
+                  onClick={() => {
+                    setEditingReuniao(null);
+                    setShowModalReuniao(true);
+                  }}
+                >
+                  Criar Nova Reunião
+                </Button>
               </Card>
             ) : (
-              <Card className="p-6 space-y-6 border-l-4 border-l-[#F2632D]">
-                {/* Header da Reunião */}
-                <div className="flex items-start justify-between gap-4 pb-4 border-b border-[var(--border-default)]">
-                  <div>
-                    <h2 className="font-bold text-lg text-[var(--text-primary)]">{selectedReuniao.titulo}</h2>
-                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+              <Card className="p-5 sm:p-6 space-y-6 border-l-4 border-l-[#F2632D] shadow-sm">
+                {/* Header do Detalhe */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-[var(--border-default)]">
+                  <div className="space-y-1.5 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {selectedReuniao.projeto ? (
+                        <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center gap-1">
+                          <FolderKanban className="w-3.5 h-3.5" />
+                          {selectedReuniao.projeto.nome}
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)]">
+                          🏢 Institucional Geral
+                        </span>
+                      )}
                       {getTipoBadge(selectedReuniao.tipo)}
                       {getStatusBadge(selectedReuniao.status)}
                     </div>
+
+                    <h2 className="font-bold text-lg text-[var(--text-primary)] leading-tight">
+                      {selectedReuniao.titulo}
+                    </h2>
                   </div>
 
+                  {/* Ações da Reunião */}
                   <div className="flex items-center gap-2 shrink-0">
                     <Button
                       size="sm"
                       variant="secondary"
                       onClick={() => {
-                        setShowPrintModal(true);
+                        setEditingReuniao(selectedReuniao);
+                        setShowModalReuniao(true);
                       }}
-                      icon={<Printer className="w-4 h-4 text-[#F2632D]" />}
+                      icon={<Edit className="w-3.5 h-3.5 text-[var(--text-secondary)]" />}
                     >
-                      Imprimir Ata
+                      Editar
                     </Button>
                     <Button
                       size="sm"
                       variant="danger"
-                      onClick={() => handleRemoveReuniao(selectedReuniao.id!)}
-                      icon={<Trash2 className="w-4 h-4" />}
+                      onClick={() => handleDeleteReuniao(selectedReuniao.id!)}
+                      icon={<Trash2 className="w-3.5 h-3.5" />}
                     >
                       Excluir
                     </Button>
                   </div>
                 </div>
 
-                {/* Metadados */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-[var(--text-secondary)]">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[var(--text-muted)]" />
-                    <div>
-                      <p className="font-semibold">Data & Horário</p>
-                      <p>
-                        {new Date(selectedReuniao.data_hora).toLocaleDateString('pt-BR', {
-                          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-                        })} às {new Date(selectedReuniao.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
+                {/* Abas de Ciclo de Vida da Reunião */}
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-1 overflow-x-auto">
+                  <button
+                    onClick={() => setActiveTab('pauta')}
+                    className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                      activeTab === 'pauta'
+                        ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                    }`}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    1. Pauta & Convocação
+                  </button>
 
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[var(--text-muted)]" />
-                    <div>
-                      <p className="font-semibold">Local</p>
-                      <p>{selectedReuniao.local_reuniao || 'Não informado'}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[var(--text-muted)]" />
-                    <div>
-                      <p className="font-semibold">Participantes</p>
-                      <p>{selectedReuniao.participantes.length > 0 ? selectedReuniao.participantes.join(', ') : 'Não informado'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pauta */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase flex items-center gap-2">
-                    <ClipboardList className="w-4 h-4 text-[#F2632D]" />
-                    Pauta da Reunião
-                  </h4>
-                  <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-sm text-[var(--text-primary)] whitespace-pre-line min-h-[60px]">
-                    {selectedReuniao.pauta || 'Pauta não preenchida.'}
-                  </div>
-                </div>
-
-                {/* Ata */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-emerald-500" />
-                      Ata da Reunião
-                    </h4>
-                    {!editingAta ? (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          setEditingAta(true);
-                          setAtaText(selectedReuniao.ata || '');
-                        }}
-                      >
-                        {selectedReuniao.ata ? 'Editar Ata' : 'Redigir Ata'}
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="primary"
-                        onClick={handleSaveAta}
-                        disabled={saving}
-                        icon={<Save className="w-4 h-4" />}
-                      >
-                        {saving ? 'Salvando...' : 'Salvar Ata & Concluir'}
-                      </Button>
+                  <button
+                    onClick={() => setActiveTab('presenca')}
+                    className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                      activeTab === 'presenca'
+                        ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    2. Condução & Presença
+                    {selectedReuniao.presentes && selectedReuniao.presentes.length > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 ml-1">
+                        {selectedReuniao.presentes.length}
+                      </span>
                     )}
-                  </div>
+                  </button>
 
-                  {editingAta ? (
-                    <textarea
-                      rows={10}
-                      value={ataText}
-                      onChange={(e) => setAtaText(e.target.value)}
-                      placeholder="Redija a ata da reunião aqui... Inclua deliberações, encaminhamentos e responsáveis."
-                      className="w-full p-4 rounded-xl text-sm bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D]"
+                  <button
+                    onClick={() => setActiveTab('ata')}
+                    className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                      activeTab === 'ata'
+                        ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    3. Ata & Encaminhamentos
+                    {selectedReuniao.ata && (
+                      <CheckCircle className="w-3 h-3 text-emerald-400 ml-1" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Conteúdo da Aba Ativa */}
+                <div className="pt-2">
+                  {activeTab === 'pauta' && (
+                    <ReuniaoPautaTab
+                      reuniao={selectedReuniao}
+                      onOpenConvocacaoPrint={() => {
+                        setPrintModo('convocacao');
+                        setPrintModalOpen(true);
+                      }}
                     />
-                  ) : (
-                    <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-sm text-[var(--text-primary)] whitespace-pre-line min-h-[60px]">
-                      {selectedReuniao.ata || 'Ata não redigida. Clique em "Redigir Ata" após a reunião.'}
-                    </div>
+                  )}
+
+                  {activeTab === 'presenca' && (
+                    <ReuniaoPresencaTab
+                      reuniao={selectedReuniao}
+                      onUpdateReuniao={handleUpdateSelected}
+                      onNavigateToAta={() => setActiveTab('ata')}
+                    />
+                  )}
+
+                  {activeTab === 'ata' && (
+                    <ReuniaoAtaTab
+                      reuniao={selectedReuniao}
+                      onUpdateReuniao={handleUpdateSelected}
+                      onOpenAtaPrint={() => {
+                        setPrintModo('ata');
+                        setPrintModalOpen(true);
+                      }}
+                    />
                   )}
                 </div>
               </Card>
@@ -449,115 +639,34 @@ export default function InstitucionalPage() {
         </div>
       </div>
 
-      {/* MODAL NOVA REUNIÃO */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="w-full max-w-lg p-6 space-y-4">
-            <h3 className="font-bold text-base text-[var(--text-primary)]">Agendar Nova Reunião Institucional</h3>
+      {/* MODAL NOVO/EDITAR AGENDAMENTO DE REUNIÃO */}
+      <ModalNovaReuniao
+        isOpen={showModalReuniao}
+        onClose={() => {
+          setShowModalReuniao(false);
+          setEditingReuniao(null);
+        }}
+        onSave={handleSaveReuniao}
+        initialData={editingReuniao}
+        projetos={projetos}
+      />
 
-            <div className="space-y-3">
-              <Input
-                label="Título da Reunião"
-                value={formReuniao.titulo}
-                onChange={(e) => setFormReuniao({ ...formReuniao, titulo: e.target.value })}
-                placeholder="Ex: Reunião Ordinária de Diretoria - Agosto/2026"
-              />
-
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label="Data e Horário"
-                  type="datetime-local"
-                  value={formReuniao.data_hora}
-                  onChange={(e) => setFormReuniao({ ...formReuniao, data_hora: e.target.value })}
-                />
-
-                <Select
-                  label="Tipo de Reunião"
-                  value={formReuniao.tipo}
-                  onChange={(e: any) => setFormReuniao({ ...formReuniao, tipo: e.target.value })}
-                >
-                  <option value="ordinaria">Ordinária</option>
-                  <option value="extraordinaria">Extraordinária</option>
-                  <option value="assembleia">Assembleia Geral</option>
-                  <option value="conselho">Conselho Fiscal / Administrativo</option>
-                  <option value="planejamento">Planejamento Estratégico</option>
-                </Select>
-              </div>
-
-              <Input
-                label="Local"
-                value={formReuniao.local_reuniao}
-                onChange={(e) => setFormReuniao({ ...formReuniao, local_reuniao: e.target.value })}
-                placeholder="Ex: Sede do Instituto Ádapo, Sala Virtual, etc."
-              />
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-[var(--text-secondary)]">Pauta (Tópicos a Discutir)</label>
-                <textarea
-                  rows={4}
-                  value={formReuniao.pauta}
-                  onChange={(e) => setFormReuniao({ ...formReuniao, pauta: e.target.value })}
-                  placeholder={"1. Abertura e verificação de quórum\n2. Aprovação da ata anterior\n3. ...\n4. Encaminhamentos e encerramento"}
-                  className="w-full p-2.5 rounded-lg text-xs bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3">
-              <Button size="sm" variant="ghost" onClick={() => setShowModal(false)}>
-                Cancelar
-              </Button>
-              <Button size="sm" variant="primary" onClick={handleSaveReuniao} disabled={saving}>
-                Agendar Reunião
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* MODAL IMPRESSÃO ATA EM PAPEL TIMBRADO */}
+      {/* MODAL DE IMPRESSÃO / PDF TIMBRADO (PAPEL TIMBRADO INSTITUTO ÁDAPO) */}
       <PapelTimbradoModal
-        isOpen={showPrintModal}
-        onClose={() => setShowPrintModal(false)}
-        tituloDocumento={`ATA DE REUNIÃO ${selectedReuniao?.tipo?.toUpperCase() || ''}`}
-        subtituloDocumento={selectedReuniao ? `${selectedReuniao.titulo} | ${new Date(selectedReuniao.data_hora).toLocaleDateString('pt-BR')}` : ''}
+        isOpen={printModalOpen}
+        onClose={() => setPrintModalOpen(false)}
+        tituloDocumento={
+          printModo === 'convocacao'
+            ? 'CONVOCAÇÃO OFICIAL DE REUNIÃO'
+            : `ATA DE REUNIÃO ${selectedReuniao?.tipo?.toUpperCase() || ''}`
+        }
+        subtituloDocumento={
+          selectedReuniao
+            ? `${selectedReuniao.titulo} | ${new Date(selectedReuniao.data_hora).toLocaleDateString('pt-BR')}`
+            : ''
+        }
       >
-        {selectedReuniao && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4 text-xs border p-3 rounded bg-slate-50">
-              <div><strong>Reunião:</strong> {selectedReuniao.titulo}</div>
-              <div><strong>Tipo:</strong> {selectedReuniao.tipo?.toUpperCase()}</div>
-              <div><strong>Data:</strong> {new Date(selectedReuniao.data_hora).toLocaleDateString('pt-BR')}</div>
-              <div><strong>Horário:</strong> {new Date(selectedReuniao.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
-              <div><strong>Local:</strong> {selectedReuniao.local_reuniao || '-'}</div>
-              <div>
-                <strong>Participantes:</strong>{' '}
-                {selectedReuniao.participantes.length > 0 ? selectedReuniao.participantes.join(', ') : 'Não informado'}
-              </div>
-            </div>
-
-            <section>
-              <h4 className="font-bold text-xs uppercase text-[#F2632D] border-b pb-1">Pauta</h4>
-              <p className="mt-1 whitespace-pre-line text-sm">{selectedReuniao.pauta || 'Não preenchida.'}</p>
-            </section>
-
-            <section>
-              <h4 className="font-bold text-xs uppercase text-emerald-600 border-b pb-1">Ata da Reunião</h4>
-              <p className="mt-1 whitespace-pre-line text-sm">{selectedReuniao.ata || 'Ata não redigida.'}</p>
-            </section>
-
-            <div className="pt-8 grid grid-cols-2 gap-8 text-xs text-center">
-              <div className="border-t border-slate-400 pt-2">
-                <p className="font-semibold">Presidente / Coordenador</p>
-                <p className="text-slate-500">Assinatura</p>
-              </div>
-              <div className="border-t border-slate-400 pt-2">
-                <p className="font-semibold">Secretário(a) da Reunião</p>
-                <p className="text-slate-500">Assinatura</p>
-              </div>
-            </div>
-          </div>
-        )}
+        {selectedReuniao && <ReuniaoPrintTemplate reuniao={selectedReuniao} modo={printModo} />}
       </PapelTimbradoModal>
     </div>
   );

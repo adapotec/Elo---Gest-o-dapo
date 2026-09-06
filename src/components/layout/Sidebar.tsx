@@ -73,7 +73,7 @@ const navigationItems: MenuItem[] = [
   },
   { name: 'Calendário Geral', href: '/dashboard/calendario', icon: Calendar, color: '#E85D04' },
   { name: 'Indicadores Sociais', href: '/dashboard/indicadores', icon: BarChart3, color: '#3B82F6' },
-  { name: 'Gestão Institucional', href: '/dashboard/institucional', icon: Landmark, color: '#6D28D9' },
+  { name: 'Reuniões & Governança', href: '/dashboard/institucional', icon: Landmark, color: '#6D28D9' },
 ];
 
 export function Sidebar() {

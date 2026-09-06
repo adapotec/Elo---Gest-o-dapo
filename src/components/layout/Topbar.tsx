@@ -256,8 +256,8 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
                 >
                   <Landmark className="w-4 h-4 text-[#6D28D9] shrink-0" />
                   <div>
-                    <p className="font-semibold leading-tight">Gestão Institucional</p>
-                    <p className="text-[10px] text-[var(--text-muted)]">Dados oficiais do Instituto Ádapo</p>
+                    <p className="font-semibold leading-tight">Reuniões & Governança</p>
+                    <p className="text-[10px] text-[var(--text-muted)]">Reuniões, pautas, atas e projetos</p>
                   </div>
                 </Link>
               </div>
