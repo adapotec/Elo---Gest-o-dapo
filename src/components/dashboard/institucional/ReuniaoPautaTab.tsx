@@ -102,7 +102,7 @@ export function ReuniaoPautaTab({ reuniao, onOpenConvocacaoPrint }: ReuniaoPauta
           <div>
             <p className="font-semibold text-[var(--text-primary)]">Vínculo Institucional</p>
             <p className="text-[var(--text-secondary)] mt-0.5">
-              {reuniao.projeto ? `Projeto: ${reuniao.projeto.nome}` : '🏢 Gestão Geral do Instituto Ádapo (Diretoria)'}
+              {reuniao.projeto ? `Projeto: ${reuniao.projeto.nome}` : 'Gestão Geral do Instituto Ádapo (Diretoria)'}
             </p>
           </div>
         </div>

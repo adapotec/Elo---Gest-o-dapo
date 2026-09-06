@@ -434,7 +434,7 @@ export default function InstitucionalPage() {
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium text-[10px] bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-default)]">
-                                🏢 Geral
+                                Geral
                               </span>
                             )}
                             {getTipoBadge(r.tipo)}
@@ -519,7 +519,7 @@ export default function InstitucionalPage() {
                         </span>
                       ) : (
                         <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)]">
-                          🏢 Institucional Geral
+                          Institucional Geral
                         </span>
                       )}
                       {getTipoBadge(selectedReuniao.tipo)}

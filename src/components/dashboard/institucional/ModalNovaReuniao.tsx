@@ -251,10 +251,10 @@ export function ModalNovaReuniao({
                 onChange={(e) => setProjetoId(e.target.value)}
                 className="w-full px-3 py-2 text-sm bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
               >
-                <option value="">🏢 Institucional Geral (Diretoria / Coordenação Geral)</option>
+                <option value="">Institucional Geral (Diretoria / Coordenação Geral)</option>
                 {projetos.map((proj) => (
                   <option key={proj.id} value={proj.id}>
-                    🌱 Projeto: {proj.nome}
+                    Projeto: {proj.nome}
                   </option>
                 ))}
               </select>
