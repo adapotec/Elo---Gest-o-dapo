@@ -53,6 +53,19 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-09-09 — `[UI/UX] & [COMUNICAÇÃO] & [CALENDÁRIO EDITORIAL]` 🟢 IMPLEMENTADO
+
+**Otimização da Tabela do Calendário Editorial & Correção de Quebra de Linha em Status**
+- **Eliminação de Scroll Horizontal na Tabela**:
+  - A coluna redundante de "Publicação & Links" (200px) foi mesclada diretamente dentro da coluna de "Ações".
+  - Botões de "Ver Post", "+ Inserir Link" (com alerta para posts publicados sem URL, respeitando exceção para stories) e ícone do Canva/Drive agora coexistem de forma compacta e intuitiva na coluna de Ações.
+  - Larguras das 6 colunas restantes recalibradas para caber 100% no viewport da tela sem gerar barra de rolagem horizontal.
+- **Correção de Quebra do Badge "EM PRODUÇÃO"**:
+  - Adicionada a classe `whitespace-nowrap` nas classes base do componente `Badge.tsx` e reforçada na renderização dos badges de status em `ComunicacaoCalendario.tsx`.
+  - O status "EM PRODUÇÃO" agora permanece estritamente em linha única com espaçamento e contraste ideais.
+
+---
+
 ### 2026-08-29 — `[RECESSOS & FOLGAS] & [2 FOLGAS MENSAIS + RECESSO 15 DIAS + APROVAÇÃO DIRETORIA]` 🟢 IMPLEMENTADO
 
 **Regras de Negócio Diferenciadas para Folgas Mensais e Recesso Anual**

@@ -338,17 +338,17 @@ export function ComunicacaoCalendario({
   const renderStatusBadge = (status: ConteudoItem['status']) => {
     switch (status) {
       case 'publicado':
-        return <Badge variant="success">PUBLICADO</Badge>;
+        return <Badge variant="success" className="whitespace-nowrap">PUBLICADO</Badge>;
       case 'producao':
-        return <Badge variant="warning">EM PRODUÇÃO</Badge>;
+        return <Badge variant="warning" className="whitespace-nowrap">EM PRODUÇÃO</Badge>;
       case 'analise':
-        return <Badge variant="purple">EM ANÁLISE</Badge>;
+        return <Badge variant="purple" className="whitespace-nowrap">EM ANÁLISE</Badge>;
       case 'em_atraso':
-        return <Badge variant="danger">EM ATRASO</Badge>;
+        return <Badge variant="danger" className="whitespace-nowrap">EM ATRASO</Badge>;
       case 'cancelado':
-        return <Badge variant="neutral">CANCELADO</Badge>;
+        return <Badge variant="neutral" className="whitespace-nowrap">CANCELADO</Badge>;
       default:
-        return <Badge variant="neutral">NÃO INICIADO</Badge>;
+        return <Badge variant="neutral" className="whitespace-nowrap">NÃO INICIADO</Badge>;
     }
   };
 
@@ -405,12 +405,12 @@ export function ComunicacaoCalendario({
     {
       key: 'data_publicacao',
       header: 'Data & Horário',
-      width: '150px',
+      width: '140px',
       render: (item) => {
         const d = new Date(item.data_publicacao);
         const diaSemana = DIAS_SEMANA[d.getDay()];
         return (
-          <div className="text-xs font-mono-data space-y-0.5">
+          <div className="text-xs font-mono-data space-y-0.5 whitespace-nowrap">
             <div className="flex items-center gap-1.5">
               <span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-secondary)]">
                 {diaSemana}
@@ -430,7 +430,7 @@ export function ComunicacaoCalendario({
     {
       key: 'titulo',
       header: 'Título & Formato',
-      width: '280px',
+      width: '260px',
       render: (item) => (
         <div className="space-y-1.5 min-w-0 pr-2">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -453,7 +453,7 @@ export function ComunicacaoCalendario({
     {
       key: 'projeto_id',
       header: 'Projeto & Campanha',
-      width: '200px',
+      width: '180px',
       render: (item) => (
         <div className="space-y-1 text-xs">
           <div className="flex items-center gap-1.5">
@@ -477,7 +477,7 @@ export function ComunicacaoCalendario({
     {
       key: 'responsavel_id',
       header: 'Responsável',
-      width: '160px',
+      width: '140px',
       render: (item) => (
         <div className="flex items-center gap-2 text-xs">
           <div className="w-7 h-7 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold text-xs flex items-center justify-center shrink-0 border border-[var(--color-primary)]/20 shadow-2xs">
@@ -492,26 +492,31 @@ export function ComunicacaoCalendario({
     {
       key: 'status',
       header: 'Status',
-      width: '130px',
+      width: '140px',
       align: 'center',
+      className: 'whitespace-nowrap',
+      headerClassName: 'whitespace-nowrap',
       render: (item) => renderStatusBadge(item.status),
     },
     {
-      key: 'link_publicacao',
-      header: 'Publicação & Links',
-      width: '200px',
+      key: 'acoes',
+      header: 'Ações',
+      width: '190px',
+      align: 'right',
+      className: 'whitespace-nowrap',
+      headerClassName: 'whitespace-nowrap',
       render: (item) => {
         const isPublicado = item.status === 'publicado';
 
         return (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {/* Link da Publicação na Rede Social */}
+          <div className="flex items-center justify-end gap-1.5">
+            {/* Link da Publicação na Rede Social / Inserir Link */}
             {item.link_publicacao ? (
               <a
                 href={item.link_publicacao}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-pink-500/10 text-pink-700 dark:text-pink-300 border border-pink-500/25 hover:bg-pink-500/20 transition-all shadow-2xs"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-pink-500/10 text-pink-700 dark:text-pink-300 border border-pink-500/25 hover:bg-pink-500/20 transition-all shadow-2xs whitespace-nowrap"
                 title="Abrir postagem na rede social"
               >
                 <ExternalLink className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
@@ -520,25 +525,34 @@ export function ComunicacaoCalendario({
             ) : isPublicado ? (
               item.tipo_conteudo === 'stories' ? (
                 <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border-default)]"
+                  className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border-default)] whitespace-nowrap"
                   title="Stories são temporários (24h) e não possuem link permanente fixo"
                 >
-                  <span>Story (24h)</span>
+                  Story (24h)
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={() => handleOpenQuickPublish(item)}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-all cursor-pointer whitespace-nowrap"
                   title="Conteúdo marcado como publicado mas sem link. Clique para adicionar."
                 >
                   <AlertTriangle className="w-3 h-3 text-amber-600" />
-                  <span>+ Inserir Link</span>
+                  <span>+ Link</span>
                 </button>
               )
-            ) : null}
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleOpenQuickPublish(item)}
+                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                title="Marcar como Publicado (Inserir Link)"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+              </button>
+            )}
 
-            {/* Link de Produção (Canva / Drive) */}
+            {/* Link de Produção (Canva / Google Drive) */}
             {item.link_producao && (
               <a
                 href={item.link_producao}
@@ -550,47 +564,31 @@ export function ComunicacaoCalendario({
                 <Link2 className="w-3.5 h-3.5" />
               </a>
             )}
+
+            {/* Editar Peça */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleOpenEditModal(item)}
+              className="p-1.5 h-auto text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              title="Editar peça"
+            >
+              <Edit className="w-3.5 h-3.5" />
+            </Button>
+
+            {/* Excluir Peça */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDeleteConteudo(item.id)}
+              className="p-1.5 h-auto text-rose-600 hover:bg-rose-500/10"
+              title="Excluir peça"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
           </div>
         );
       },
-    },
-    {
-      key: 'acoes',
-      header: 'Ações',
-      width: '120px',
-      align: 'right',
-      render: (item) => (
-        <div className="flex items-center justify-end gap-1">
-          {item.status !== 'publicado' && (
-            <button
-              type="button"
-              onClick={() => handleOpenQuickPublish(item)}
-              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-500/10 transition-colors cursor-pointer"
-              title="Marcar como Publicado (Inserir Link)"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-            </button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleOpenEditModal(item)}
-            className="p-1.5 h-auto text-[var(--text-secondary)]"
-            title="Editar peça"
-          >
-            <Edit className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDeleteConteudo(item.id)}
-            className="p-1.5 h-auto text-rose-600 hover:bg-rose-500/10"
-            title="Excluir peça"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      ),
     },
   ];
 

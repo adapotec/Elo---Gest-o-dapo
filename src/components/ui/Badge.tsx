@@ -19,7 +19,7 @@ export function Badge({
   className,
   style,
 }: BadgeProps) {
-  const baseStyles = 'inline-flex items-center font-medium rounded-full border';
+  const baseStyles = 'inline-flex items-center font-medium rounded-full border whitespace-nowrap';
 
   const variants = {
     primary: 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] border-[var(--color-primary)]/20',
