@@ -55,11 +55,16 @@
 
 ### 2026-09-09 — `[UI/UX] & [COMUNICAÇÃO] & [CALENDÁRIO EDITORIAL]` 🟢 IMPLEMENTADO
 
-**Otimização da Tabela do Calendário Editorial & Correção de Quebra de Linha em Status**
+**Otimização da Tabela do Calendário Editorial, Filtro de Mês & Paginação Completa**
 - **Eliminação de Scroll Horizontal na Tabela**:
   - A coluna redundante de "Publicação & Links" (200px) foi mesclada diretamente dentro da coluna de "Ações".
   - Botões de "Ver Post", "+ Inserir Link" (com alerta para posts publicados sem URL, respeitando exceção para stories) e ícone do Canva/Drive agora coexistem de forma compacta e intuitiva na coluna de Ações.
   - Larguras das 6 colunas restantes recalibradas para caber 100% no viewport da tela sem gerar barra de rolagem horizontal.
+- **Filtro Dinâmico de Mês**:
+  - Adicionado seletor de mês na barra de filtros superior ("Todos os Meses", "Janeiro" a "Dezembro") com sincronização direta nos dados filtrados e exportação de PDF.
+- **Seletor de Linhas por Página & Paginação Completa**:
+  - Adicionadas opções pré-configuradas de visualização: **7, 15 e 30 itens por página** tanto na barra superior quanto no rodapé da tabela.
+  - Barra de paginação interativa no rodapé com exibição de range ("Exibindo X a Y de Z conteúdos"), badge de indicação de filtro ativo, botão rápido para limpar filtros e navegação completa (Primeira, Anterior, Contador X/Y, Próxima, Última).
 - **Correção de Quebra do Badge "EM PRODUÇÃO"**:
   - Adicionada a classe `whitespace-nowrap` nas classes base do componente `Badge.tsx` e reforçada na renderização dos badges de status em `ComunicacaoCalendario.tsx`.
   - O status "EM PRODUÇÃO" agora permanece estritamente em linha única com espaçamento e contraste ideais.

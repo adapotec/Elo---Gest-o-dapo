@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +14,8 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Filter,
   Film,
   Layers,
@@ -97,10 +99,13 @@ export function ComunicacaoCalendario({
 }: ComunicacaoCalendarioProps) {
   const [viewMode, setViewMode] = useState<'tabela' | 'calendario'>('tabela');
   const [searchTerm, setSearchTerm] = useState('');
+  const [mesFilter, setMesFilter] = useState('todos');
   const [projetoFilter, setProjetoFilter] = useState('todos');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [tipoFilter, setTipoFilter] = useState('todos');
   const [categoriaFilter, setCategoriaFilter] = useState('todos');
+  const [pageSize, setPageSize] = useState(15);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Navegação de Mês para o modo Calendário
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -266,14 +271,48 @@ export function ComunicacaoCalendario({
         (c.descricao && c.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (c.projetos_sociais?.nome && c.projetos_sociais.nome.toLowerCase().includes(searchTerm.toLowerCase()));
 
+      const matchMes =
+        mesFilter === 'todos' ||
+        (c.data_publicacao && new Date(c.data_publicacao).getMonth() === Number(mesFilter));
+
       const matchProj = projetoFilter === 'todos' || c.projeto_id === projetoFilter;
       const matchStat = statusFilter === 'todos' || c.status === statusFilter;
       const matchTipo = tipoFilter === 'todos' || c.tipo_conteudo === tipoFilter;
       const matchCat = categoriaFilter === 'todos' || c.categoria === categoriaFilter;
 
-      return matchSearch && matchProj && matchStat && matchTipo && matchCat;
+      return matchSearch && matchMes && matchProj && matchStat && matchTipo && matchCat;
     });
-  }, [conteudos, searchTerm, projetoFilter, statusFilter, tipoFilter, categoriaFilter]);
+  }, [conteudos, searchTerm, mesFilter, projetoFilter, statusFilter, tipoFilter, categoriaFilter]);
+
+  // Indicador e Ação de Limpeza de Filtros
+  const hasActiveFilters =
+    searchTerm !== '' ||
+    mesFilter !== 'todos' ||
+    projetoFilter !== 'todos' ||
+    statusFilter !== 'todos' ||
+    tipoFilter !== 'todos' ||
+    categoriaFilter !== 'todos';
+
+  const handleLimparFiltros = () => {
+    setSearchTerm('');
+    setMesFilter('todos');
+    setProjetoFilter('todos');
+    setStatusFilter('todos');
+    setTipoFilter('todos');
+    setCategoriaFilter('todos');
+  };
+
+  // Paginação
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, mesFilter, projetoFilter, statusFilter, tipoFilter, categoriaFilter, pageSize]);
+
+  const totalItems = filteredConteudos.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedConteudos = useMemo(() => {
+    return filteredConteudos.slice(startIndex, startIndex + pageSize);
+  }, [filteredConteudos, startIndex, pageSize]);
 
   // Estatísticas de Produção
   const stats = useMemo(() => {
@@ -721,6 +760,20 @@ export function ComunicacaoCalendario({
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
+            {/* Filtro por Mês */}
+            <select
+              value={mesFilter}
+              onChange={(e) => setMesFilter(e.target.value)}
+              className="px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none font-semibold cursor-pointer"
+            >
+              <option value="todos">Todos os Meses</option>
+              {MESES_NOMES.map((nome, idx) => (
+                <option key={idx} value={String(idx)}>
+                  {nome}
+                </option>
+              ))}
+            </select>
+
             <select
               value={projetoFilter}
               onChange={(e) => setProjetoFilter(e.target.value)}
@@ -775,18 +828,122 @@ export function ComunicacaoCalendario({
               <option value="depoimento">Depoimento</option>
               <option value="avulso">Avulso</option>
             </select>
+
+            {/* Seletor Rápido de Itens por Página */}
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none font-semibold cursor-pointer"
+              title="Quantidade de linhas por página"
+            >
+              <option value={7}>7 por pág</option>
+              <option value={15}>15 por pág</option>
+              <option value={30}>30 por pág</option>
+            </select>
+
+            {/* Limpar Filtros */}
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleLimparFiltros}
+                className="px-2.5 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-500/10 border border-rose-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                title="Limpar todos os filtros"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Limpar</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* ── 3. VISUALIZAÇÃO: MODO TABELA ── */}
       {viewMode === 'tabela' && (
-        <DataTable
-          columns={columns}
-          data={filteredConteudos}
-          keyExtractor={(c) => c.id}
-          emptyMessage="Nenhum conteúdo encontrado para os filtros selecionados."
-        />
+        <div className="space-y-3">
+          <DataTable
+            columns={columns}
+            data={paginatedConteudos}
+            keyExtractor={(c) => c.id}
+            emptyMessage="Nenhum conteúdo encontrado para os filtros selecionados."
+          />
+
+          {/* ── BARRA DE PAGINAÇÃO ── */}
+          {totalItems > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)] text-xs">
+              <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                <span>
+                  Exibindo <strong>{startIndex + 1}</strong> a <strong>{Math.min(startIndex + pageSize, totalItems)}</strong> de <strong>{totalItems}</strong> conteúdos
+                </span>
+                {hasActiveFilters && (
+                  <Badge variant="primary" className="text-[10px] whitespace-nowrap">
+                    Filtrado
+                  </Badge>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Seletor de itens por página */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-[var(--text-muted)]">Itens por página:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    className="px-2 py-1 rounded-lg text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:border-[var(--color-primary)] cursor-pointer"
+                  >
+                    <option value={7}>7</option>
+                    <option value={15}>15</option>
+                    <option value={30}>30</option>
+                  </select>
+                </div>
+
+                {/* Controles de navegação de páginas */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(1)}
+                    className="p-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    title="Primeira página"
+                  >
+                    <ChevronsLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="p-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    title="Página anterior"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+
+                  <span className="px-3 py-1 font-semibold text-[var(--text-primary)] whitespace-nowrap">
+                    {currentPage} / {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="p-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    title="Próxima página"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(totalPages)}
+                    className="p-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    title="Última página"
+                  >
+                    <ChevronsRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* ── 4. VISUALIZAÇÃO: MODO CALENDÁRIO MENSAL (EXCLUSIVO PARA VISUALIZAÇÃO COM DETALHES AO CLICAR) ── */}
