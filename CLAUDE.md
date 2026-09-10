@@ -53,6 +53,22 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-09-10 — `[COMUNICAÇÃO] & [MICRO-KPIS DINÂMICOS & CARDS INTERATIVOS]` 🟢 IMPLEMENTADO
+
+**Dinamização dos Indicadores de Topo com Filtros Ativos (Mês, Projeto, Formato, Categoria e Busca)**
+- **Cálculo Reativo dos Micro-KPIs**:
+  - Anteriormente, os 4 cards do topo ("Total de Peças", "Publicados", "Em Produção", "Em Atraso") calculavam suas contagens sobre todo o acervo sem considerar os filtros selecionados na barra de controle.
+  - Implementada a base reativa `baseConteudosParaKpis`, calculando as contagens dinamicamente de acordo com o Mês filtrado, Projeto vinculado, Formato, Categoria e Termo de busca textual.
+  - Implementado o helper `getMesFromDateStr` imune a distorções de fuso horário UTC vs local (evitando que datas no início do mês fossem contabilizadas no mês anterior).
+  - Sincronização automática da visualização do Calendário Mensal para navegar diretamente ao mês selecionado no filtro.
+- **Cards de Indicadores Interativos**:
+  - Os 4 cards no topo foram transformados em botões de ação rápida para alternar o filtro de status:
+    - **Total de Peças**: Redefine para exibir todos os status (`statusFilter = 'todos'`).
+    - **Publicados**: Alterna filtro para `publicado`.
+    - **Em Produção**: Alterna filtro para `producao`.
+    - **Em Atraso**: Alterna filtro para `em_atraso`.
+  - Adicionados estados visuais ativos com anel (*ring* colorido), bordas destacadas e indicador de ponto ativo para feedback imediato ao usuário.
+
 ### 2026-09-10 — `[UI/UX] & [COMUNICAÇÃO] & [DETALHES DA PUBLICAÇÃO & CAMPOS]` 🟢 IMPLEMENTADO
 
 **Janela Flutuante de Detalhes da Publicação & Separação de Descrição/Observações e Roteiro/Legenda**

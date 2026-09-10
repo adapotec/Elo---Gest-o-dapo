@@ -290,17 +290,39 @@ export function ComunicacaoCalendario({
     }
   };
 
-  // Filtragem
+  // Sincronizar mês no calendário quando selecionado no filtro
+  useEffect(() => {
+    if (mesFilter !== 'todos') {
+      const targetMonth = Number(mesFilter);
+      setCurrentDate((prev) => new Date(prev.getFullYear(), targetMonth, 1));
+    }
+  }, [mesFilter]);
+
+  // Helper robusto para extrair o mês (0 a 11) independente de timezone UTC/local
+  const getMesFromDateStr = (dateStr?: string | null): number | null => {
+    if (!dateStr) return null;
+    const match = dateStr.match(/^\d{4}-(\d{2})/);
+    if (match) {
+      const m = parseInt(match[1], 10);
+      return !isNaN(m) && m >= 1 && m <= 12 ? m - 1 : null;
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d.getMonth();
+  };
+
+  // Filtragem Geral
   const filteredConteudos = useMemo(() => {
     return conteudos.filter((c) => {
       const matchSearch =
+        searchTerm === '' ||
         c.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.descricao && c.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.observacoes && c.observacoes.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.roteiro_legenda && c.roteiro_legenda.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (c.projetos_sociais?.nome && c.projetos_sociais.nome.toLowerCase().includes(searchTerm.toLowerCase()));
 
-      const matchMes =
-        mesFilter === 'todos' ||
-        (c.data_publicacao && new Date(c.data_publicacao).getMonth() === Number(mesFilter));
+      const postMes = getMesFromDateStr(c.data_publicacao);
+      const matchMes = mesFilter === 'todos' || postMes === Number(mesFilter);
 
       const matchProj = projetoFilter === 'todos' || c.projeto_id === projetoFilter;
       const matchStat = statusFilter === 'todos' || c.status === statusFilter;
@@ -341,14 +363,36 @@ export function ComunicacaoCalendario({
     return filteredConteudos.slice(startIndex, startIndex + pageSize);
   }, [filteredConteudos, startIndex, pageSize]);
 
-  // Estatísticas de Produção
+  // Base para os Micro-KPIs: atualizada dinamicamente com filtros de Mês, Projeto, Categoria, Formato e Busca (independente do status para demonstrar a proporção real)
+  const baseConteudosParaKpis = useMemo(() => {
+    return conteudos.filter((c) => {
+      const matchSearch =
+        searchTerm === '' ||
+        c.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.descricao && c.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.observacoes && c.observacoes.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.roteiro_legenda && c.roteiro_legenda.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.projetos_sociais?.nome && c.projetos_sociais.nome.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const postMes = getMesFromDateStr(c.data_publicacao);
+      const matchMes = mesFilter === 'todos' || postMes === Number(mesFilter);
+
+      const matchProj = projetoFilter === 'todos' || c.projeto_id === projetoFilter;
+      const matchTipo = tipoFilter === 'todos' || c.tipo_conteudo === tipoFilter;
+      const matchCat = categoriaFilter === 'todos' || c.categoria === categoriaFilter;
+
+      return matchSearch && matchMes && matchProj && matchTipo && matchCat;
+    });
+  }, [conteudos, searchTerm, mesFilter, projetoFilter, tipoFilter, categoriaFilter]);
+
+  // Micro-KPIs Dinâmicos (atualizam instantaneamente com o filtro de mês e demais filtros contextuais)
   const stats = useMemo(() => {
-    const total = conteudos.length;
-    const publicados = conteudos.filter((c) => c.status === 'publicado').length;
-    const emProducao = conteudos.filter((c) => c.status === 'producao' || c.status === 'analise').length;
-    const atrasados = conteudos.filter((c) => c.status === 'em_atraso').length;
+    const total = baseConteudosParaKpis.length;
+    const publicados = baseConteudosParaKpis.filter((c) => c.status === 'publicado').length;
+    const emProducao = baseConteudosParaKpis.filter((c) => c.status === 'producao' || c.status === 'analise').length;
+    const atrasados = baseConteudosParaKpis.filter((c) => c.status === 'em_atraso').length;
     return { total, publicados, emProducao, atrasados };
-  }, [conteudos]);
+  }, [baseConteudosParaKpis]);
 
   // Formatação de data no calendário
   const conteudosByDay = useMemo(() => {
@@ -673,63 +717,119 @@ export function ComunicacaoCalendario({
 
   return (
     <div className="space-y-5">
-      {/* ── 1. MICRO-KPIS DE PRODUÇÃO EDITORIAL ── */}
+      {/* ── 1. MICRO-KPIS DE PRODUÇÃO EDITORIAL (INTERATIVOS & DINÂMICOS) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setStatusFilter('todos')}
+          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 ${
+            statusFilter === 'todos'
+              ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/20 shadow-xs ring-2 ring-[var(--color-primary)]/25'
+              : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]/50'
+          }`}
+          title="Clique para exibir todos os status"
+        >
           <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
             <Layers className="w-4 h-4" />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Total de Peças
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                Total de Peças
+              </p>
+              {statusFilter === 'todos' && (
+                <span className="w-2 h-2 rounded-full bg-[var(--color-primary)] shrink-0" />
+              )}
+            </div>
             <p className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
               {stats.total}
             </p>
           </div>
-        </div>
+        </button>
 
-        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'publicado' ? 'todos' : 'publicado')}
+          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 ${
+            statusFilter === 'publicado'
+              ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-2 ring-emerald-500/25'
+              : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-emerald-500/50'
+          }`}
+          title="Clique para filtrar apenas Publicados"
+        >
           <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-4 h-4" />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Publicados
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                Publicados
+              </p>
+              {statusFilter === 'publicado' && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              )}
+            </div>
             <p className="text-lg sm:text-xl font-display font-extrabold text-emerald-600">
               {stats.publicados}
             </p>
           </div>
-        </div>
+        </button>
 
-        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'producao' ? 'todos' : 'producao')}
+          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 ${
+            statusFilter === 'producao'
+              ? 'border-amber-500 bg-amber-500/10 shadow-xs ring-2 ring-amber-500/25'
+              : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-amber-500/50'
+          }`}
+          title="Clique para filtrar conteúdos Em Produção"
+        >
           <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
             <Clock className="w-4 h-4" />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Em Produção
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                Em Produção
+              </p>
+              {statusFilter === 'producao' && (
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+              )}
+            </div>
             <p className="text-lg sm:text-xl font-display font-extrabold text-amber-600">
               {stats.emProducao}
             </p>
           </div>
-        </div>
+        </button>
 
-        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'em_atraso' ? 'todos' : 'em_atraso')}
+          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 ${
+            statusFilter === 'em_atraso'
+              ? 'border-rose-500 bg-rose-500/10 shadow-xs ring-2 ring-rose-500/25'
+              : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-rose-500/50'
+          }`}
+          title="Clique para filtrar conteúdos Em Atraso"
+        >
           <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-4 h-4" />
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Em Atraso
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                Em Atraso
+              </p>
+              {statusFilter === 'em_atraso' && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+              )}
+            </div>
             <p className="text-lg sm:text-xl font-display font-extrabold text-rose-600">
               {stats.atrasados}
             </p>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* ── 2. BARRA DE CONTROLE: ALTERNADOR TABELA/CALENDÁRIO, FILTROS, EXPORTAR PDF E NOVO CONTEÚDO ── */}
