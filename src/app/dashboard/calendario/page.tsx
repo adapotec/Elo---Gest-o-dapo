@@ -127,7 +127,7 @@ export default function CalendarioPage() {
           .order('data_hora', { ascending: true }),
         supabase
           .from('reunioes_institucional')
-          .select('id, titulo, data_hora, horario_fim, tipo, modalidade, local_reuniao, link_virtual, status, projeto_id, pauta')
+          .select('*')
           .order('data_hora', { ascending: true }),
         supabase
           .from('conteudos_comunicacao')
@@ -168,18 +168,19 @@ export default function CalendarioPage() {
         if (!r.data_hora) return;
         const proj = r.projeto_id ? projetosMap.get(r.projeto_id) : null;
         const tipoFormatado = r.tipo ? r.tipo.replace('_', ' ') : 'ordinária';
+        const isUrl = r.local_reuniao && (r.local_reuniao.startsWith('http://') || r.local_reuniao.startsWith('https://'));
         listaUnificada.push({
           id: `reuniao-${r.id}`,
           origem: 'reuniao',
           titulo: r.titulo || 'Reunião Institucional',
           data_hora: r.data_hora,
-          horario_fim: r.horario_fim,
-          descricao: r.pauta,
+          horario_fim: r.horario_fim || null,
+          descricao: r.pauta || r.ata || null,
           subtipo: `Reunião ${tipoFormatado}`,
           status: r.status || 'agendada',
-          local_ou_link: r.link_virtual || r.local_reuniao || 'Sede do Instituto Ádapo',
-          link_externo: r.link_virtual || null,
-          projeto_id: r.projeto_id,
+          local_ou_link: r.local_reuniao || 'Sede do Instituto Ádapo',
+          link_externo: isUrl ? r.local_reuniao : null,
+          projeto_id: r.projeto_id || null,
           projeto_nome: proj ? proj.nome : 'Institucional Geral',
           projeto_cor: '#F2632D',
           projeto_icone: 'Calendar',
