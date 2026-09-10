@@ -53,6 +53,27 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-09-10 — `[UI/UX] & [COMUNICAÇÃO] & [DETALHES DA PUBLICAÇÃO & CAMPOS]` 🟢 IMPLEMENTADO
+
+**Janela Flutuante de Detalhes da Publicação & Separação de Descrição/Observações e Roteiro/Legenda**
+- **Janela Flutuante de Detalhes da Publicação (Modal ao clicar no Título)**:
+  - Ao clicar no título de qualquer conteúdo na tabela, abre-se uma janela flutuante com visual moderno e estruturado, contendo:
+    - Badges de formato, categoria e status com contraste otimizado.
+    - Micro-cards com Data e Horário completo, Responsável, Projeto Social vinculado e Campanha Estratégica.
+    - Bloco destacado para **Descrição do Post / Observações da Equipe**.
+    - Bloco para **Roteiro / Legenda Completa da Publicação** com botão de **"Copiar Legenda"** em 1 clique (com feedback visual de copiado).
+    - Links rápidos: Abrir Postagem no Ar (ou Inserir Link) e Abrir no Canva / Drive.
+    - Botões de Ação integrados: Marcar como Publicado, Editar Peça, Excluir Peça e Fechar.
+- **Separação de Campos no Formulário & Exibição na Tabela**:
+  - **Descrição do Post ou Observações**: Novo campo específico para anotações, resumo e observações da equipe, exibido logo abaixo do nome do post na tabela.
+  - **Roteiro / Legenda da Publicação**: Campo dedicado para o texto completo que irá na legenda da rede social, hashtags e roteiro de gravação.
+- **Banco de Dados (Supabase)**:
+  - Adicionadas as colunas `observacoes TEXT` e `roteiro_legenda TEXT` na tabela `public.conteudos_comunicacao`.
+  - Migration criada em `supabase/migrations/20260910_add_observacoes_and_roteiro_legenda_to_conteudos.sql`.
+  - Compatibilidade retroativa mantida com `descricao` para postagens anteriores.
+
+---
+
 ### 2026-09-09 — `[UI/UX] & [COMUNICAÇÃO] & [CALENDÁRIO EDITORIAL]` 🟢 IMPLEMENTADO
 
 **Otimização da Tabela do Calendário Editorial, Filtro de Mês & Paginação Completa**

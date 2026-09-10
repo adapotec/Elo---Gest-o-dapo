@@ -37,6 +37,8 @@ import {
   Share2,
   Eye,
   FileText,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
 
@@ -46,6 +48,8 @@ export interface ConteudoItem {
   data_publicacao: string;
   tipo_conteudo: 'reels' | 'carrossel' | 'stories' | 'estatico' | 'video_longo' | 'artigo';
   descricao?: string | null;
+  observacoes?: string | null;
+  roteiro_legenda?: string | null;
   campanha_id?: string | null;
   projeto_id?: string | null;
   status: 'nao_iniciado' | 'producao' | 'analise' | 'em_atraso' | 'publicado' | 'cancelado';
@@ -121,6 +125,10 @@ export function ComunicacaoCalendario({
     posts: ConteudoItem[];
   } | null>(null);
 
+  // Modal Flutuante: Detalhes Completos da Publicação (ao clicar no título)
+  const [selectedConteudoDetalhes, setSelectedConteudoDetalhes] = useState<ConteudoItem | null>(null);
+  const [copiedLegenda, setCopiedLegenda] = useState(false);
+
   // Modal de Criar / Editar Conteúdo
   const [showModal, setShowModal] = useState(false);
   const [editingConteudo, setEditingConteudo] = useState<ConteudoItem | null>(null);
@@ -128,6 +136,8 @@ export function ComunicacaoCalendario({
   const [formDataPub, setFormDataPub] = useState('');
   const [formTipo, setFormTipo] = useState<ConteudoItem['tipo_conteudo']>('reels');
   const [formDescricao, setFormDescricao] = useState('');
+  const [formObservacoes, setFormObservacoes] = useState('');
+  const [formRoteiroLegenda, setFormRoteiroLegenda] = useState('');
   const [formProjetoId, setFormProjetoId] = useState('');
   const [formCampanhaId, setFormCampanhaId] = useState('');
   const [formStatus, setFormStatus] = useState<ConteudoItem['status']>('nao_iniciado');
@@ -148,12 +158,22 @@ export function ComunicacaoCalendario({
   const handlePrevMonth = () => setCurrentDate(new Date(currentYear, currentMonth - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(currentYear, currentMonth + 1, 1));
 
+  // Copiar Legenda
+  const handleCopyLegenda = (texto: string) => {
+    if (!texto) return;
+    navigator.clipboard.writeText(texto);
+    setCopiedLegenda(true);
+    setTimeout(() => setCopiedLegenda(false), 2000);
+  };
+
   // Abrir Modal para Novo Conteúdo
   const handleOpenNewModal = (datePrefill?: string) => {
     setEditingConteudo(null);
     setFormTitulo('');
     setFormDataPub(datePrefill || new Date().toISOString().slice(0, 16));
     setFormTipo('reels');
+    setFormObservacoes('');
+    setFormRoteiroLegenda('');
     setFormDescricao('');
     setFormProjetoId('');
     setFormCampanhaId('');
@@ -171,6 +191,8 @@ export function ComunicacaoCalendario({
     setFormTitulo(item.titulo);
     setFormDataPub(item.data_publicacao ? item.data_publicacao.slice(0, 16) : '');
     setFormTipo(item.tipo_conteudo);
+    setFormObservacoes(item.observacoes || (item.roteiro_legenda ? item.descricao || '' : item.descricao || ''));
+    setFormRoteiroLegenda(item.roteiro_legenda || '');
     setFormDescricao(item.descricao || '');
     setFormProjetoId(item.projeto_id || '');
     setFormCampanhaId(item.campanha_id || '');
@@ -235,7 +257,9 @@ export function ComunicacaoCalendario({
         titulo: formTitulo.trim(),
         data_publicacao: formDataPub,
         tipo_conteudo: formTipo,
-        descricao: formDescricao.trim() || null,
+        observacoes: formObservacoes.trim() || null,
+        roteiro_legenda: formRoteiroLegenda.trim() || null,
+        descricao: formObservacoes.trim() || formRoteiroLegenda.trim() || null,
         projeto_id: formProjetoId || null,
         campanha_id: formCampanhaId || null,
         status: formStatus,
@@ -252,9 +276,12 @@ export function ComunicacaoCalendario({
       await onSaveConteudo(payload);
       setShowModal(false);
 
-      // Se estiver com modal de detalhes do dia aberto, fecha para recarregar
+      // Se estiver com modal de detalhes aberto, fecha para recarregar
       if (selectedDiaDetalhes) {
         setSelectedDiaDetalhes(null);
+      }
+      if (selectedConteudoDetalhes) {
+        setSelectedConteudoDetalhes(null);
       }
     } catch (err: any) {
       alert('Erro ao salvar conteúdo: ' + err.message);
@@ -470,24 +497,37 @@ export function ComunicacaoCalendario({
       key: 'titulo',
       header: 'Título & Formato',
       width: '260px',
-      render: (item) => (
-        <div className="space-y-1.5 min-w-0 pr-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {renderTipoBadge(item.tipo_conteudo)}
-            <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)]">
-              {item.categoria}
-            </span>
+      render: (item) => {
+        const descricaoExibicao = item.observacoes || item.descricao;
+        return (
+          <div className="space-y-1.5 min-w-0 pr-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {renderTipoBadge(item.tipo_conteudo)}
+              <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)]">
+                {item.categoria}
+              </span>
+            </div>
+            {/* Título clicável para abrir janela flutuante com todos os detalhes */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedConteudoDetalhes(item);
+              }}
+              className="text-left font-bold text-xs sm:text-sm text-[var(--text-primary)] leading-snug line-clamp-2 hover:text-[var(--color-primary)] transition-colors cursor-pointer group flex items-start gap-1"
+              title="Clique para abrir detalhes completos da publicação"
+            >
+              <span className="group-hover:underline">{item.titulo}</span>
+            </button>
+            {/* Descrição do post ou observações logo abaixo do nome */}
+            {descricaoExibicao && (
+              <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2 italic bg-[var(--bg-secondary)]/40 px-2 py-0.5 rounded border border-[var(--border-default)]/40">
+                &quot;{descricaoExibicao}&quot;
+              </p>
+            )}
           </div>
-          <p className="font-bold text-xs sm:text-sm text-[var(--text-primary)] leading-snug line-clamp-2">
-            {item.titulo}
-          </p>
-          {item.descricao && (
-            <p className="text-[11px] text-[var(--text-secondary)] line-clamp-1 italic bg-[var(--bg-secondary)]/40 px-2 py-0.5 rounded border border-[var(--border-default)]/40">
-              &quot;{item.descricao}&quot;
-            </p>
-          )}
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'projeto_id',
@@ -1196,13 +1236,23 @@ export function ComunicacaoCalendario({
                         </div>
                       </div>
 
-                      {/* Linha 4: Descrição / Roteiro */}
-                      {post.descricao && (
+                      {/* Linha 4: Descrição do Post / Observações */}
+                      {(post.observacoes || post.descricao) && (
                         <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
                           <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
-                            Roteiro / Legenda / Instruções:
+                            Descrição / Observações:
                           </p>
-                          <p className="whitespace-pre-line">{post.descricao}</p>
+                          <p className="whitespace-pre-line">{post.observacoes || post.descricao}</p>
+                        </div>
+                      )}
+
+                      {/* Roteiro / Legenda Completa */}
+                      {post.roteiro_legenda && (
+                        <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
+                          <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                            Roteiro / Legenda da Publicação:
+                          </p>
+                          <p className="whitespace-pre-line font-mono-data">{post.roteiro_legenda}</p>
                         </div>
                       )}
 
@@ -1298,6 +1348,265 @@ export function ComunicacaoCalendario({
                 }}
               >
                 + Novo Conteúdo para este Dia
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL FLUTUANTE: DETALHES COMPLETOS DA PUBLICAÇÃO (CLIQUE NO TÍTULO) ── */}
+      {selectedConteudoDetalhes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-3xl shadow-2xl p-5 sm:p-6 space-y-5 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+            {/* Topo do Modal: Badges e Botão Fechar */}
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--border-default)] pb-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {renderTipoBadge(selectedConteudoDetalhes.tipo_conteudo)}
+                  <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)]">
+                    {selectedConteudoDetalhes.categoria}
+                  </span>
+                  {renderStatusBadge(selectedConteudoDetalhes.status)}
+                </div>
+                <h3 className="font-display font-extrabold text-base sm:text-xl text-[var(--text-primary)] leading-snug">
+                  {selectedConteudoDetalhes.titulo}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedConteudoDetalhes(null)}
+                className="p-1.5 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer shrink-0"
+                title="Fechar janela"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Grid de Informações Básicas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Data & Horário */}
+              <div className="p-3 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider">
+                    Data & Horário
+                  </p>
+                  <p className="text-xs font-bold text-[var(--text-primary)] font-mono-data">
+                    {new Date(selectedConteudoDetalhes.data_publicacao).toLocaleDateString('pt-BR', {
+                      weekday: 'short',
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                    })}{' '}
+                    às {new Date(selectedConteudoDetalhes.data_publicacao).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}h
+                  </p>
+                </div>
+              </div>
+
+              {/* Responsável */}
+              <div className="p-3 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold text-xs flex items-center justify-center shrink-0">
+                  {selectedConteudoDetalhes.voluntarios?.nome_completo?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider">
+                    Responsável
+                  </p>
+                  <p className="text-xs font-bold text-[var(--text-primary)] truncate">
+                    {selectedConteudoDetalhes.voluntarios?.nome_completo || 'Não atribuído'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Projeto Social */}
+              <div className="p-3 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] flex items-center gap-3">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-2xs"
+                  style={{
+                    backgroundColor: `${selectedConteudoDetalhes.projetos_sociais?.cor_identificacao || '#F2632D'}20`,
+                    color: selectedConteudoDetalhes.projetos_sociais?.cor_identificacao || '#F2632D',
+                  }}
+                >
+                  <FolderKanban className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider">
+                    Projeto Social
+                  </p>
+                  <p className="text-xs font-bold text-[var(--text-primary)] truncate">
+                    {selectedConteudoDetalhes.projetos_sociais?.nome || 'Institucional Geral'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Campanha Estratégica */}
+              <div className="p-3 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-[#93368F] flex items-center justify-center shrink-0">
+                  <Megaphone className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider">
+                    Campanha Estratégica
+                  </p>
+                  <p className="text-xs font-bold text-[var(--text-primary)] truncate">
+                    {selectedConteudoDetalhes.campanhas_comunicacao?.titulo || 'Nenhuma campanha vinculada'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Descrição do Post ou Observações */}
+            {(selectedConteudoDetalhes.observacoes || selectedConteudoDetalhes.descricao) && (
+              <div className="p-3.5 rounded-2xl bg-[var(--bg-secondary)]/40 border border-[var(--border-default)] space-y-1">
+                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                  <span>Descrição do Post / Observações</span>
+                </p>
+                <p className="text-xs text-[var(--text-primary)] leading-relaxed whitespace-pre-line">
+                  {selectedConteudoDetalhes.observacoes || selectedConteudoDetalhes.descricao}
+                </p>
+              </div>
+            )}
+
+            {/* Roteiro / Legenda Completa da Publicação */}
+            {selectedConteudoDetalhes.roteiro_legenda && (
+              <div className="p-3.5 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                    <span>Roteiro / Legenda da Publicação</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyLegenda(selectedConteudoDetalhes.roteiro_legenda || '')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-[var(--bg-secondary)] hover:bg-[var(--color-primary-soft)] text-[var(--text-secondary)] hover:text-[var(--color-primary)] border border-[var(--border-default)] transition-colors cursor-pointer"
+                  >
+                    {copiedLegenda ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span className="text-emerald-600 font-bold">Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copiar Legenda</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/60 text-xs text-[var(--text-primary)] leading-relaxed whitespace-pre-line max-h-48 overflow-y-auto border border-[var(--border-default)]/40">
+                  {selectedConteudoDetalhes.roteiro_legenda}
+                </div>
+              </div>
+            )}
+
+            {/* Links de Publicação e Produção */}
+            <div className="flex items-center gap-2 flex-wrap pt-1">
+              {/* Link da Publicação */}
+              {selectedConteudoDetalhes.link_publicacao ? (
+                <a
+                  href={selectedConteudoDetalhes.link_publicacao}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-pink-500/15 text-pink-700 dark:text-pink-300 border border-pink-500/30 hover:bg-pink-500/25 transition-all shadow-2xs"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Abrir Postagem no Ar</span>
+                </a>
+              ) : selectedConteudoDetalhes.status === 'publicado' ? (
+                selectedConteudoDetalhes.tipo_conteudo === 'stories' ? (
+                  <span className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border-default)]">
+                    Story temporário (24h)
+                  </span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={<AlertTriangle className="w-3.5 h-3.5 text-amber-600" />}
+                    onClick={() => {
+                      const item = selectedConteudoDetalhes;
+                      setSelectedConteudoDetalhes(null);
+                      handleOpenQuickPublish(item);
+                    }}
+                  >
+                    Inserir Link da Publicação
+                  </Button>
+                )
+              ) : null}
+
+              {/* Link de Produção Canva / Drive */}
+              {selectedConteudoDetalhes.link_producao && (
+                <a
+                  href={selectedConteudoDetalhes.link_producao}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--color-primary-soft)] hover:text-[var(--color-primary)] transition-all"
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span>Abrir no Canva / Google Drive</span>
+                </a>
+              )}
+            </div>
+
+            {/* Rodapé: Botões de Ação */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[var(--border-default)]">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {selectedConteudoDetalhes.status !== 'publicado' && (
+                  <Button
+                    size="sm"
+                    icon={<CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                    onClick={() => {
+                      const item = selectedConteudoDetalhes;
+                      setSelectedConteudoDetalhes(null);
+                      handleOpenQuickPublish(item);
+                    }}
+                    className="flex-1 sm:flex-none justify-center"
+                  >
+                    Marcar como Publicado
+                  </Button>
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Edit className="w-3.5 h-3.5" />}
+                  onClick={() => {
+                    const item = selectedConteudoDetalhes;
+                    setSelectedConteudoDetalhes(null);
+                    handleOpenEditModal(item);
+                  }}
+                  className="flex-1 sm:flex-none justify-center"
+                >
+                  Editar
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<Trash2 className="w-3.5 h-3.5 text-rose-600" />}
+                  onClick={async () => {
+                    if (confirm('Deseja realmente excluir esta publicação do calendário?')) {
+                      const id = selectedConteudoDetalhes.id;
+                      setSelectedConteudoDetalhes(null);
+                      await onDeleteConteudo(id);
+                    }
+                  }}
+                  className="text-rose-600 hover:bg-rose-500/10 flex-1 sm:flex-none justify-center"
+                >
+                  Excluir
+                </Button>
+              </div>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setSelectedConteudoDetalhes(null)}
+                className="w-full sm:w-auto justify-center"
+              >
+                Fechar
               </Button>
             </div>
           </div>
@@ -1509,21 +1818,41 @@ export function ComunicacaoCalendario({
                 </div>
               </div>
 
-              {/* ROTEIRO / LEGENDA AUTOEXPANSÍVEL */}
+              {/* DESCRIÇÃO DO POST OU OBSERVAÇÕES (EXIBIDO NA TABELA) */}
               <div>
-                <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                  Roteiro / Legenda / Observações
+                <label className="font-semibold text-[var(--text-secondary)] block mb-1 flex items-center justify-between">
+                  <span>Descrição do Post ou Observações</span>
+                  <span className="text-[10px] text-[var(--text-muted)] font-normal">Exibido abaixo do título na tabela</span>
                 </label>
                 <textarea
-                  rows={3}
-                  placeholder="Insira o texto da legenda, hashtags, orientações para o designer ou roteiro de gravação do vídeo..."
-                  value={formDescricao}
+                  rows={2}
+                  placeholder="Breve resumo, objetivo do post ou orientações rápidas para a equipe..."
+                  value={formObservacoes}
                   onChange={(e) => {
-                    setFormDescricao(e.target.value);
+                    setFormObservacoes(e.target.value);
                     e.currentTarget.style.height = 'auto';
                     e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] min-h-[80px] resize-y"
+                  className="w-full px-3.5 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] min-h-[60px] resize-y text-xs"
+                />
+              </div>
+
+              {/* ROTEIRO / LEGENDA COMPLETA DA PUBLICAÇÃO */}
+              <div>
+                <label className="font-semibold text-[var(--text-secondary)] block mb-1 flex items-center justify-between">
+                  <span>Roteiro / Legenda da Publicação</span>
+                  <span className="text-[10px] text-[var(--text-muted)] font-normal">Texto completo, hashtags e roteiro</span>
+                </label>
+                <textarea
+                  rows={4}
+                  placeholder="Insira o texto completo da legenda do post, hashtags, orientações para o designer ou roteiro de gravação do vídeo..."
+                  value={formRoteiroLegenda}
+                  onChange={(e) => {
+                    setFormRoteiroLegenda(e.target.value);
+                    e.currentTarget.style.height = 'auto';
+                    e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] min-h-[100px] resize-y text-xs font-sans"
                 />
               </div>
 
