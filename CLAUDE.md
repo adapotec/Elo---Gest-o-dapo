@@ -53,6 +53,19 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-09-10 — `[DASHBOARD] & [GALERIA DRIVE DINÂMICA & MOVIMENTAÇÕES EM TEMPO REAL]` 🟢 IMPLEMENTADO
+
+**Dinamização da Tela Inicial (/dashboard): Links Recentes de Comunicação e Feed em Tempo Real**
+- **Galeria & Google Drive Dinamizada**:
+  - Removidos links estáticos para a raiz do Drive.
+  - Conexão em tempo real com as tabelas `galeria_midia_acoes` (pastas de fotos das oficinas) e `conteudos_comunicacao` (peças de produção no Drive/Canva e postagens publicadas nas redes sociais).
+  - Card exibe os 4 links mais recentes com ícone de destino, projeto vinculado, data formatada, botão de cópia de URL em 1 clique e botão de abrir em nova aba.
+  - **Modal Flutuante de Acervo Digital**: Permite pesquisar por texto, filtrar por tipo (Google Drive, Canva/Produção, Redes Sociais) e acessar rapidamente qualquer link ou a aba de Galeria em `/dashboard/comunicacao?tab=galeria`.
+- **Últimas Movimentações no Sistema (Tempo Real)**:
+  - Substituída a busca estática restrita a tabelas antigas por um agregador multi-tabela completo cobrindo: `conteudos_comunicacao`, `reunioes_institucional`, `galeria_midia_acoes`, `requisicoes_material`, `recessos_voluntarios`, `acoes_projeto`, `voluntarios`, `beneficiarios` e `doacoes`.
+  - Ordenação decrescente por data/timestamp com cálculo de tempo relativo humanizado (*"Agora mesmo"*, *"Hoje às 16:18"*, *"Ontem às 20:02"*, *"Há 2 dias"*).
+  - **Modal Flutuante de Histórico Completo**: Visualizador completo de auditoria cronológica com busca e filtro por setores do sistema.
+
 ### 2026-09-10 — `[COMUNICAÇÃO] & [MICRO-KPIS DINÂMICOS & CARDS INTERATIVOS]` 🟢 IMPLEMENTADO
 
 **Dinamização dos Indicadores de Topo com Filtros Ativos (Mês, Projeto, Formato, Categoria e Busca)**
