@@ -157,7 +157,7 @@ export default function CalendarioPage() {
           status: 'ativo',
           projeto_id: a.projeto_id,
           projeto_nome: proj ? proj.nome : 'Projeto Social',
-          projeto_cor: proj?.cor_identificacao || '#10B981',
+          projeto_cor: '#EC4899',
           projeto_icone: proj?.icone || 'FolderKanban',
           link_modulo: a.projeto_id ? `/dashboard/projetos/${a.projeto_id}` : '/dashboard/projetos',
         });
@@ -182,7 +182,7 @@ export default function CalendarioPage() {
           link_externo: isUrl ? r.local_reuniao : null,
           projeto_id: r.projeto_id || null,
           projeto_nome: proj ? proj.nome : 'Institucional Geral',
-          projeto_cor: '#F2632D',
+          projeto_cor: '#2563EB',
           projeto_icone: 'Calendar',
           link_modulo: '/dashboard/institucional',
         });
@@ -205,7 +205,7 @@ export default function CalendarioPage() {
           link_externo: c.link_publicacao || c.link_producao || null,
           projeto_id: c.projeto_id,
           projeto_nome: proj ? proj.nome : 'Comunicação Geral',
-          projeto_cor: '#0284C7',
+          projeto_cor: '#8B5CF6',
           projeto_icone: 'Share2',
           link_modulo: '/dashboard/comunicacao',
         });
@@ -313,22 +313,22 @@ export default function CalendarioPage() {
     switch (origem) {
       case 'acao':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <Sparkles className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20">
+            <Sparkles className="w-3 h-3 text-pink-500" />
             AÇÃO DE PROJETO
           </span>
         );
       case 'reuniao':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#F2632D]/10 text-[#F2632D] border border-[#F2632D]/20">
-            <CalendarIcon className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+            <CalendarIcon className="w-3 h-3 text-blue-500" />
             REUNIÃO & GOVERNANÇA
           </span>
         );
       case 'comunicacao':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
-            <Share2 className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+            <Share2 className="w-3 h-3 text-purple-500" />
             COMUNICAÇÃO & POSTS
           </span>
         );
@@ -376,7 +376,7 @@ export default function CalendarioPage() {
             <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
               Resumo do Mês:
             </span>
-            <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+            <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20">
               {kpiTotalMes} eventos totais
             </span>
           </div>
@@ -387,12 +387,12 @@ export default function CalendarioPage() {
               onClick={() => setFilterOrigem(filterOrigem === 'acao' ? 'todas' : 'acao')}
               className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
                 filterOrigem === 'acao'
-                  ? 'bg-emerald-500/15 font-bold text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500'
+                  ? 'bg-pink-500/15 font-bold text-pink-700 dark:text-pink-300 ring-1 ring-pink-500'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
               title="Filtrar ações de projetos"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-pink-500 shrink-0" />
               <span>Ações: <strong>{kpiAcoesMes}</strong></span>
             </button>
 
@@ -401,12 +401,12 @@ export default function CalendarioPage() {
               onClick={() => setFilterOrigem(filterOrigem === 'reuniao' ? 'todas' : 'reuniao')}
               className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
                 filterOrigem === 'reuniao'
-                  ? 'bg-[#F2632D]/15 font-bold text-[#F2632D] ring-1 ring-[#F2632D]'
+                  ? 'bg-blue-500/15 font-bold text-blue-700 dark:text-blue-300 ring-1 ring-blue-500'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
               title="Filtrar reuniões e atas"
             >
-              <span className="w-2 h-2 rounded-full bg-[#F2632D] shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
               <span>Reuniões: <strong>{kpiReunioesMes}</strong></span>
             </button>
 
@@ -415,12 +415,12 @@ export default function CalendarioPage() {
               onClick={() => setFilterOrigem(filterOrigem === 'comunicacao' ? 'todas' : 'comunicacao')}
               className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
                 filterOrigem === 'comunicacao'
-                  ? 'bg-sky-500/15 font-bold text-sky-700 dark:text-sky-300 ring-1 ring-sky-500'
+                  ? 'bg-purple-500/15 font-bold text-purple-700 dark:text-purple-300 ring-1 ring-purple-500'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
               title="Filtrar posts da comunicação"
             >
-              <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
               <span>Comunicação: <strong>{kpiComunicacaoMes}</strong></span>
             </button>
 
@@ -602,13 +602,13 @@ export default function CalendarioPage() {
                               {hasEvents && (
                                 <div className="flex items-center gap-1">
                                   {day.events.some((e) => e.origem === 'acao') && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Ação de Projeto" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-pink-500" title="Ação de Projeto" />
                                   )}
                                   {day.events.some((e) => e.origem === 'reuniao') && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#F2632D]" title="Reunião" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" title="Reunião" />
                                   )}
                                   {day.events.some((e) => e.origem === 'comunicacao') && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500" title="Comunicação" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" title="Comunicação" />
                                   )}
                                   <span className="text-[9px] font-bold text-[var(--text-muted)] ml-0.5">
                                     {day.events.length}
@@ -624,10 +624,10 @@ export default function CalendarioPage() {
                                 const isReuniao = evt.origem === 'reuniao';
 
                                 const borderStyle = isReuniao
-                                  ? 'border-l-[#F2632D] bg-[#F2632D]/10 text-[#F2632D]'
+                                  ? 'border-l-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-300'
                                   : isAcao
-                                  ? 'border-l-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                                  : 'border-l-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300';
+                                  ? 'border-l-pink-500 bg-pink-500/10 text-pink-700 dark:text-pink-300'
+                                  : 'border-l-purple-500 bg-purple-500/10 text-purple-700 dark:text-purple-300';
 
                                 return (
                                   <button
@@ -711,7 +711,7 @@ export default function CalendarioPage() {
                         <div
                           className="p-1.5 rounded-xl text-white font-bold text-center shrink-0 min-w-[44px] shadow-2xs transition-transform group-hover:scale-105"
                           style={{
-                            backgroundColor: isReuniao ? '#F2632D' : isCom ? '#0284C7' : evt.projeto_cor || '#10B981',
+                            backgroundColor: isReuniao ? '#2563EB' : isCom ? '#8B5CF6' : '#EC4899',
                           }}
                         >
                           <p className="text-[9px] uppercase leading-none opacity-90">
@@ -775,10 +775,10 @@ export default function CalendarioPage() {
               style={{
                 backgroundColor:
                   selectedEvento.origem === 'reuniao'
-                    ? '#F2632D'
+                    ? '#2563EB'
                     : selectedEvento.origem === 'comunicacao'
-                    ? '#0284C7'
-                    : selectedEvento.projeto_cor || '#10B981',
+                    ? '#8B5CF6'
+                    : '#EC4899',
               }}
             />
 
@@ -790,10 +790,10 @@ export default function CalendarioPage() {
                   style={{
                     backgroundColor:
                       selectedEvento.origem === 'reuniao'
-                        ? '#F2632D'
+                        ? '#2563EB'
                         : selectedEvento.origem === 'comunicacao'
-                        ? '#0284C7'
-                        : selectedEvento.projeto_cor || '#10B981',
+                        ? '#8B5CF6'
+                        : '#EC4899',
                   }}
                 >
                   {selectedEvento.origem === 'reuniao' ? (
