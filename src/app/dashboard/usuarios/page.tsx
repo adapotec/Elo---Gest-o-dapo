@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Topbar } from '@/components/layout/Topbar';
 
 export interface Profile {
   id: string;
@@ -100,10 +101,16 @@ export default function UsuariosPage() {
   });
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto select-none">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[var(--bg-elevated)] border border-[var(--color-primary)] text-[var(--text-primary)] px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
+    <div className="flex-1 flex flex-col min-w-0">
+      <Topbar
+        title="Gestão de Usuários"
+        subtitle="Papéis de acesso (roles) e permissões da equipe interna do Instituto Ádapo"
+      />
+
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full flex-1 overflow-y-auto select-none">
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 bg-[var(--bg-elevated)] border border-[var(--color-primary)] text-[var(--text-primary)] px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
           <CheckCircle2 className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
           <span className="text-sm font-medium">{toastMessage}</span>
         </div>
@@ -327,6 +334,7 @@ export default function UsuariosPage() {
           </div>
         </Modal>
       )}
+      </div>
     </div>
   );
 }

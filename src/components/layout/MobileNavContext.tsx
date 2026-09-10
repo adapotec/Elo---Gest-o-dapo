@@ -26,16 +26,27 @@ export function MobileNavProvider({ children }: { children: React.ReactNode }) {
     setIsMobileOpen(false);
   }, [pathname]);
 
-  // Trava a rolagem do body quando a gaveta móvel estiver aberta
+  // Trava a rolagem do body quando a gaveta móvel estiver aberta e escuta tecla Escape
   useEffect(() => {
     if (isMobileOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setIsMobileOpen(false);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        document.body.style.touchAction = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
     } else {
       document.body.style.overflow = '';
+      document.body.style.touchAction = '';
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isMobileOpen]);
 
   const openMobileNav = () => setIsMobileOpen(true);

@@ -31,6 +31,7 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { useTheme, ThemePalette } from '@/components/layout/ThemeProvider';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Topbar } from '@/components/layout/Topbar';
 
 const PALETTE_OPTIONS: { id: ThemePalette; name: string; hex: string; desc: string }[] = [
   { id: 'laranja', name: 'Laranja Institucional', hex: '#F2632D', desc: 'Identidade oficial do Instituto Ádapo' },
@@ -258,21 +259,30 @@ export default function PerfilPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]" />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Topbar title="Meu Perfil" subtitle="Carregando seus dados cadastrais..." />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)]" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto select-none">
-      {/* Cabeçalho Principal da Página */}
-      <PageHeader
-        title={nomeCompleto || 'Meu Perfil'}
-        description={`E-mail de acesso institucional: ${email}`}
-        icon={<User className="w-6 h-6" />}
-        badge={<Badge variant="purple">{roleLabelMap[role] || role}</Badge>}
+    <div className="flex-1 flex flex-col min-w-0">
+      <Topbar
+        title="Meu Perfil"
+        subtitle="Dados cadastrais, segurança da conta e personalização do sistema"
       />
+
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full flex-1 overflow-y-auto select-none">
+        {/* Cabeçalho Principal da Página */}
+        <PageHeader
+          title={nomeCompleto || 'Meu Perfil'}
+          description={`E-mail de acesso institucional: ${email}`}
+          icon={<User className="w-6 h-6" />}
+          badge={<Badge variant="purple">{roleLabelMap[role] || role}</Badge>}
+        />
 
       {/* Toast Notification */}
       {toast && (
@@ -632,6 +642,7 @@ export default function PerfilPage() {
           </Card>
         </div>
       </div>
+    </div>
     </div>
   );
 }

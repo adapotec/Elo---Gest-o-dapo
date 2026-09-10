@@ -46,6 +46,9 @@ interface MenuItem {
 
 const navigationItems: MenuItem[] = [
   { name: 'Painel Inicial', href: '/dashboard', icon: LayoutDashboard, color: '#F9C859' },
+  { name: 'Projetos Sociais', href: '/dashboard/projetos', icon: FolderKanban, color: '#F7955F' },
+  { name: 'Calendário Geral', href: '/dashboard/calendario', icon: Calendar, color: '#E85D04' },
+  { name: 'Pedagogia', href: '/dashboard/pedagogia', icon: GraduationCap, color: '#93368F' },
   { name: 'Beneficiários', href: '/dashboard/beneficiarios', icon: Users, color: '#93368F' },
   {
     name: 'Voluntários',
@@ -58,9 +61,6 @@ const navigationItems: MenuItem[] = [
       { name: 'Gestão de Pessoas', href: '/dashboard/voluntarios/gestao', icon: ShieldCheck, color: '#1C9C82' },
     ],
   },
-  { name: 'Projetos Sociais', href: '/dashboard/projetos', icon: FolderKanban, color: '#F7955F' },
-  { name: 'Pedagogia', href: '/dashboard/pedagogia', icon: GraduationCap, color: '#93368F' },
-  { name: 'Comunicação', href: '/dashboard/comunicacao', icon: Megaphone, color: '#EF4444' },
   {
     name: 'Recursos',
     icon: Layers,
@@ -71,7 +71,7 @@ const navigationItems: MenuItem[] = [
       { name: 'Controle de Estoque', href: '/dashboard/estoque', icon: Package, color: '#8B4A2E' },
     ],
   },
-  { name: 'Calendário Geral', href: '/dashboard/calendario', icon: Calendar, color: '#E85D04' },
+  { name: 'Comunicação', href: '/dashboard/comunicacao', icon: Megaphone, color: '#EF4444' },
   { name: 'Indicadores Sociais', href: '/dashboard/indicadores', icon: BarChart3, color: '#3B82F6' },
   { name: 'Reuniões & Governança', href: '/dashboard/institucional', icon: Landmark, color: '#6D28D9' },
 ];
@@ -128,7 +128,7 @@ export function Sidebar() {
                 type="button"
                 onClick={() => toggleGroup(item.name)}
                 title={!expandedMode ? item.name : undefined}
-                className={`w-full flex items-center rounded-xl text-[13px] font-medium transition-all group relative cursor-pointer ${
+                className={`w-full flex items-center rounded-xl text-[13px] font-medium transition-all group relative cursor-pointer min-h-[44px] ${
                   !expandedMode
                     ? 'justify-center h-11 w-11 mx-auto'
                     : 'justify-between px-3 py-2.5'
@@ -176,7 +176,7 @@ export function Sidebar() {
                         key={child.href}
                         href={child.href}
                         onClick={() => isMobile && closeMobileNav()}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
+                        className={`flex items-center gap-2.5 px-3 py-2.5 min-h-[40px] rounded-lg text-xs font-medium transition-all active:scale-[0.99] ${
                           isChildActive
                             ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-semibold shadow-2xs'
                             : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
@@ -205,7 +205,7 @@ export function Sidebar() {
             href={item.href!}
             onClick={() => isMobile && closeMobileNav()}
             title={!expandedMode ? item.name : undefined}
-            className={`flex items-center rounded-xl text-[13px] font-medium transition-all group relative cursor-pointer ${
+            className={`flex items-center rounded-xl text-[13px] font-medium transition-all group relative cursor-pointer min-h-[44px] ${
               !expandedMode
                 ? 'justify-center h-11 w-11 mx-auto'
                 : 'gap-3 px-3 py-2.5'
@@ -377,10 +377,10 @@ export function Sidebar() {
             aria-hidden="true"
           />
 
-          {/* Gaveta lateral deslizante */}
-          <div className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-[var(--bg-sidebar)] border-r border-[var(--border-default)] shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-200">
+          {/* Gaveta lateral deslizante com altura dinâmica 100dvh e touch suave */}
+          <div className="fixed inset-y-0 left-0 h-[100dvh] w-72 max-w-[85vw] bg-[var(--bg-sidebar)] border-r border-[var(--border-default)] shadow-2xl flex flex-col z-50 animate-in slide-in-from-left duration-200 touch-pan-y select-none">
             {/* Topo da gaveta com botão de fechar */}
-            <div className="p-4 border-b border-[var(--border-default)] flex items-center justify-between bg-[var(--bg-sidebar)]">
+            <div className="p-4 border-b border-[var(--border-default)] flex items-center justify-between bg-[var(--bg-sidebar)] shrink-0">
               <Link
                 href="/dashboard"
                 onClick={closeMobileNav}
@@ -400,7 +400,7 @@ export function Sidebar() {
               <button
                 type="button"
                 onClick={closeMobileNav}
-                className="p-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
                 aria-label="Fechar menu de navegação"
               >
                 <X className="w-5 h-5" />
@@ -408,12 +408,12 @@ export function Sidebar() {
             </div>
 
             {/* Links da gaveta roláveis */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar overscroll-contain">
               {renderNavLinks(true, true)}
             </div>
 
             {/* Rodapé da gaveta móvel */}
-            <div className="p-3 border-t border-[var(--border-default)] text-center text-[11px] text-[var(--text-muted)] font-medium">
+            <div className="p-3 border-t border-[var(--border-default)] text-center text-[11px] text-[var(--text-muted)] font-medium shrink-0">
               &copy; {new Date().getFullYear()} Instituto Ádapo
             </div>
           </div>

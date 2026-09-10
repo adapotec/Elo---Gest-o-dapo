@@ -160,33 +160,35 @@ export default function IndicadoresSociaisPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
+    <div className="flex-1 flex flex-col min-w-0">
       <Topbar
         title="Indicadores Sociais & Business Intelligence"
         subtitle="Dashboard consolidado de métricas de impacto, arrecadação, voluntariado e gestão de insumos"
         action={
-          <div className="flex gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <Button
               size="sm"
               variant="secondary"
               icon={<RefreshCw className="w-4 h-4" />}
               onClick={loadDashboardBIData}
+              title="Atualizar Dados"
             >
-              Atualizar Dados
+              <span className="hidden sm:inline">Atualizar Dados</span>
             </Button>
             <Button
               size="sm"
               variant="primary"
               icon={<Printer className="w-4 h-4" />}
               onClick={() => window.print()}
+              title="Imprimir Relatório"
             >
-              Imprimir Relatório
+              <span className="hidden sm:inline">Imprimir Relatório</span>
             </Button>
           </div>
         }
       />
 
-      <main className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full flex-1 overflow-y-auto">
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="p-4 flex items-center gap-4 border-l-4 border-l-[#93368F]">
@@ -244,7 +246,7 @@ export default function IndicadoresSociaisPage() {
             voluntariosPorArea={voluntariosAreas}
           />
         )}
-      </main>
+      </div>
     </div>
   );
 }

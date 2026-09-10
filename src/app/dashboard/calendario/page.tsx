@@ -490,90 +490,100 @@ export default function CalendarioPage() {
         </Card>
 
         {/* GRADE MENSAL DO CALENDÁRIO */}
-        <Card className="p-3 sm:p-4 overflow-hidden shadow-xs">
-          {/* Cabeçalho dos Dias da Semana */}
-          <div className="grid grid-cols-7 gap-px bg-[var(--border-default)] border border-[var(--border-default)] rounded-t-xl overflow-hidden">
-            {DIAS_SEMANA.map((dia) => (
-              <div
-                key={dia}
-                className="py-2 text-center text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] bg-[var(--bg-secondary)]"
-              >
-                {dia}
-              </div>
-            ))}
+        <Card className="p-3 sm:p-4 shadow-xs">
+          {/* Dica para dispositivos móveis */}
+          <div className="md:hidden flex items-center justify-between pb-2 text-[11px] text-[var(--text-muted)] font-medium">
+            <span>Deslize horizontalmente para ver todos os dias da semana</span>
+            <span className="text-xs">👉</span>
           </div>
 
-          {/* Células do Calendário */}
-          <div className="grid grid-cols-7 gap-px bg-[var(--border-default)] border-x border-b border-[var(--border-default)] rounded-b-xl overflow-hidden">
-            {calendarDays.map((day, idx) => {
-              const isToday = isCurrentMonth && day.date === today.getDate();
-              const hasEvents = day.events.length > 0;
+          <div className="overflow-x-auto custom-scrollbar -mx-1 sm:mx-0 pb-1">
+            <div className="min-w-[640px] sm:min-w-0">
+              {/* Cabeçalho dos Dias da Semana */}
+              <div className="grid grid-cols-7 gap-px bg-[var(--border-default)] border border-[var(--border-default)] rounded-t-xl overflow-hidden">
+                {DIAS_SEMANA.map((dia) => (
+                  <div
+                    key={dia}
+                    className="py-2 text-center text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] bg-[var(--bg-secondary)]"
+                  >
+                    {dia}
+                  </div>
+                ))}
+              </div>
 
-              return (
-                <div
-                  key={idx}
-                  className={`min-h-[115px] p-1.5 bg-[var(--bg-elevated)] transition-colors flex flex-col justify-between ${
-                    day.date ? 'hover:bg-[var(--bg-secondary)]/60' : 'bg-[var(--bg-secondary)]/25'
-                  } ${isToday ? 'ring-2 ring-inset ring-[#F2632D]' : ''}`}
-                >
-                  {day.date && (
-                    <>
-                      {/* Topo da Célula (Número do Dia e Badge de Quantidade) */}
-                      <div className="flex items-center justify-between mb-1">
-                        <span
-                          className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${
-                            isToday
-                              ? 'bg-[#F2632D] text-white shadow-xs'
-                              : 'text-[var(--text-primary)]'
-                          }`}
-                        >
-                          {day.date}
-                        </span>
+              {/* Células do Calendário */}
+              <div className="grid grid-cols-7 gap-px bg-[var(--border-default)] border-x border-b border-[var(--border-default)] rounded-b-xl overflow-hidden">
+                {calendarDays.map((day, idx) => {
+                  const isToday = isCurrentMonth && day.date === today.getDate();
+                  const hasEvents = day.events.length > 0;
 
-                        {hasEvents && (
-                          <span className="text-[10px] font-bold text-[var(--text-muted)] bg-[var(--bg-secondary)] px-1.5 py-0.2 rounded-full">
-                            {day.events.length}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Eventos do Dia (Max 3 visíveis com cores temáticas) */}
-                      <div className="space-y-1 flex-1">
-                        {day.events.slice(0, 3).map((evt) => {
-                          const isAcao = evt.origem === 'acao';
-                          const isReuniao = evt.origem === 'reuniao';
-
-                          const borderStyle = isReuniao
-                            ? 'border-l-[#F2632D] bg-[#F2632D]/10 text-[#F2632D]'
-                            : isAcao
-                            ? 'border-l-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                            : 'border-l-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300';
-
-                          return (
-                            <button
-                              key={evt.id}
-                              onClick={() => setSelectedEvento(evt)}
-                              className={`w-full text-left px-1.5 py-1 rounded-md text-[10px] font-semibold truncate border-l-2 transition-transform hover:scale-[1.02] cursor-pointer block ${borderStyle}`}
-                              title={`${evt.titulo} (${evt.subtipo})`}
+                  return (
+                    <div
+                      key={idx}
+                      className={`min-h-[115px] p-1.5 bg-[var(--bg-elevated)] transition-colors flex flex-col justify-between ${
+                        day.date ? 'hover:bg-[var(--bg-secondary)]/60' : 'bg-[var(--bg-secondary)]/25'
+                      } ${isToday ? 'ring-2 ring-inset ring-[#F2632D]' : ''}`}
+                    >
+                      {day.date && (
+                        <>
+                          {/* Topo da Célula (Número do Dia e Badge de Quantidade) */}
+                          <div className="flex items-center justify-between mb-1">
+                            <span
+                              className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${
+                                isToday
+                                  ? 'bg-[#F2632D] text-white shadow-xs'
+                                  : 'text-[var(--text-primary)]'
+                              }`}
                             >
-                              <span className="truncate block">
-                                {new Date(evt.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • {evt.titulo}
-                              </span>
-                            </button>
-                          );
-                        })}
+                              {day.date}
+                            </span>
 
-                        {day.events.length > 3 && (
-                          <p className="text-[10px] text-[var(--text-muted)] text-center font-bold pt-0.5">
-                            +{day.events.length - 3} outros
-                          </p>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            })}
+                            {hasEvents && (
+                              <span className="text-[10px] font-bold text-[var(--text-muted)] bg-[var(--bg-secondary)] px-1.5 py-0.2 rounded-full">
+                                {day.events.length}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Eventos do Dia (Max 3 visíveis com cores temáticas) */}
+                          <div className="space-y-1 flex-1">
+                            {day.events.slice(0, 3).map((evt) => {
+                              const isAcao = evt.origem === 'acao';
+                              const isReuniao = evt.origem === 'reuniao';
+
+                              const borderStyle = isReuniao
+                                ? 'border-l-[#F2632D] bg-[#F2632D]/10 text-[#F2632D]'
+                                : isAcao
+                                ? 'border-l-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                : 'border-l-sky-500 bg-sky-500/10 text-sky-700 dark:text-sky-300';
+
+                              return (
+                                <button
+                                  key={evt.id}
+                                  onClick={() => setSelectedEvento(evt)}
+                                  className={`w-full text-left px-1.5 py-1 rounded-md text-[10px] font-semibold truncate border-l-2 transition-transform hover:scale-[1.02] cursor-pointer block ${borderStyle}`}
+                                  title={`${evt.titulo} (${evt.subtipo})`}
+                                >
+                                  <span className="truncate block">
+                                    {new Date(evt.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • {evt.titulo}
+                                  </span>
+                                </button>
+                              );
+                            })}
+
+                            {day.events.length > 3 && (
+                              <p className="text-[10px] text-[var(--text-muted)] text-center font-bold pt-0.5">
+                                +{day.events.length - 3} outros
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </Card>
 
