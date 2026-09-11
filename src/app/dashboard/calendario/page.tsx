@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { parseReuniaoFromDB } from '@/lib/services/reuniaoMetadata';
 import { Topbar } from '@/components/layout/Topbar';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -166,22 +167,23 @@ export default function CalendarioPage() {
       // 2. Mapear Reuniões Institucionais
       (respReunioes.data || []).forEach((r: any) => {
         if (!r.data_hora) return;
-        const proj = r.projeto_id ? projetosMap.get(r.projeto_id) : null;
-        const tipoFormatado = r.tipo ? r.tipo.replace('_', ' ') : 'ordinária';
-        const isUrl = r.local_reuniao && (r.local_reuniao.startsWith('http://') || r.local_reuniao.startsWith('https://'));
+        const parsed = parseReuniaoFromDB(r, projetosMap);
+        const tipoFormatado = parsed.tipo ? parsed.tipo.replace('_', ' ') : 'ordinária';
+        const linkFinal = parsed.link_virtual || (parsed.local_reuniao && (parsed.local_reuniao.startsWith('http://') || parsed.local_reuniao.startsWith('https://')) ? parsed.local_reuniao : null);
+
         listaUnificada.push({
-          id: `reuniao-${r.id}`,
+          id: `reuniao-${parsed.id}`,
           origem: 'reuniao',
-          titulo: r.titulo || 'Reunião Institucional',
-          data_hora: r.data_hora,
-          horario_fim: r.horario_fim || null,
-          descricao: r.pauta || r.ata || null,
+          titulo: parsed.titulo || 'Reunião Institucional',
+          data_hora: parsed.data_hora,
+          horario_fim: parsed.horario_fim || null,
+          descricao: parsed.pauta || parsed.ata || null,
           subtipo: `Reunião ${tipoFormatado}`,
-          status: r.status || 'agendada',
-          local_ou_link: r.local_reuniao || 'Sede do Instituto Ádapo',
-          link_externo: isUrl ? r.local_reuniao : null,
-          projeto_id: r.projeto_id || null,
-          projeto_nome: proj ? proj.nome : 'Institucional Geral',
+          status: parsed.status || 'agendada',
+          local_ou_link: parsed.local_reuniao || 'Sede do Instituto Ádapo',
+          link_externo: linkFinal,
+          projeto_id: parsed.projeto_id || null,
+          projeto_nome: parsed.projeto?.nome || 'Institucional Geral',
           projeto_cor: '#2563EB',
           projeto_icone: 'Calendar',
           link_modulo: '/dashboard/institucional',

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from './ThemeToggle';
 import { useMobileNav } from './MobileNavContext';
+import { NotificationDropdown } from './NotificationDropdown';
 import {
   Search,
   Bell,
@@ -181,15 +182,8 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
         {/* Ação Customizada da Página (se enviada) */}
         {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
 
-        {/* Notificações */}
-        <button
-          className="p-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors relative shrink-0 cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
-          aria-label="Notificações do sistema"
-          title="Notificações"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="w-2 h-2 rounded-full bg-[var(--color-primary)] absolute top-2 right-2" />
-        </button>
+        {/* Notificações Interativas com Badges e Convocatórias */}
+        <NotificationDropdown />
 
         {/* ── MENU 1: CONFIGURAÇÕES DO SISTEMA (DROPDOWN) ── */}
         <div className="relative" ref={settingsMenuRef}>

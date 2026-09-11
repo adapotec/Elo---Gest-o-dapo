@@ -13,6 +13,9 @@ import { ReuniaoPresencaTab } from '@/components/dashboard/institucional/Reuniao
 import { ReuniaoAtaTab } from '@/components/dashboard/institucional/ReuniaoAtaTab';
 import { ReuniaoPrintTemplate } from '@/components/dashboard/institucional/ReuniaoPrintTemplate';
 import { Reuniao, ProjetoResumo } from '@/types/reuniao';
+import { parseReuniaoFromDB, prepareReuniaoForDB } from '@/lib/services/reuniaoMetadata';
+import { dispararNotificacoesConvocacaoReuniao } from '@/lib/services/notificacoesService';
+import { VoluntarioItem } from '@/components/dashboard/institucional/ModalNovaReuniao';
 import {
   Landmark,
   Plus,
@@ -37,6 +40,7 @@ export default function InstitucionalPage() {
   const [loading, setLoading] = useState(true);
   const [reunioes, setReunioes] = useState<Reuniao[]>([]);
   const [projetos, setProjetos] = useState<ProjetoResumo[]>([]);
+  const [voluntarios, setVoluntarios] = useState<VoluntarioItem[]>([]);
   const [selectedReuniao, setSelectedReuniao] = useState<Reuniao | null>(null);
   const [activeTab, setActiveTab] = useState<'pauta' | 'presenca' | 'ata'>('pauta');
 
@@ -61,46 +65,56 @@ export default function InstitucionalPage() {
       setLoading(true);
       const supabase = createClient();
 
-      // 1. Carregar Projetos Sociais
-      const { data: projData } = await supabase
-        .from('projetos_sociais')
-        .select('id, nome, cor_identificacao, icone')
-        .order('nome');
+      // 1. Carregar Projetos, Voluntários e Reuniões em paralelo
+      const [respProj, respVol, respReunioes] = await Promise.all([
+        supabase
+          .from('projetos_sociais')
+          .select('id, nome, cor_identificacao, icone')
+          .order('nome'),
+        supabase
+          .from('voluntarios')
+          .select('id, nome_completo, email, telefone, avatar_url, area_atuacao')
+          .order('nome_completo'),
+        supabase
+          .from('reunioes_institucional')
+          .select('*')
+          .order('data_hora', { ascending: false }),
+      ]);
 
-      const projetosLista: ProjetoResumo[] = projData || [];
+      const projetosLista: ProjetoResumo[] = respProj.data || [];
+      const voluntariosLista: VoluntarioItem[] = respVol.data || [];
       setProjetos(projetosLista);
+      setVoluntarios(voluntariosLista);
 
-      // 2. Carregar Reuniões Institucionais
-      const { data: reunioesData, error } = await supabase
-        .from('reunioes_institucional')
-        .select('*')
-        .order('data_hora', { ascending: false });
+      const projetosMap = new Map<string, any>();
+      projetosLista.forEach((p) => projetosMap.set(p.id, p));
 
-      if (error) {
-        console.error('Erro ao buscar reunioes_institucional:', error.message || error);
+      if (respReunioes.error) {
+        console.error('Erro ao buscar reunioes_institucional:', respReunioes.error.message || respReunioes.error);
         setReunioes([]);
       } else {
-        const formatadas: Reuniao[] = (reunioesData || []).map((r: any) => {
-          const proj = projetosLista.find((p) => p.id === r.projeto_id);
-          return {
-            ...r,
-            projeto: proj,
-            participantes: Array.isArray(r.participantes) ? r.participantes : [],
-            presentes: Array.isArray(r.presentes) ? r.presentes : [],
-            ausentes: Array.isArray(r.ausentes) ? r.ausentes : [],
-            pautas_topicos: Array.isArray(r.pautas_topicos) ? r.pautas_topicos : [],
-            encaminhamentos: Array.isArray(r.encaminhamentos) ? r.encaminhamentos : [],
-          };
-        });
+        const formatadas: Reuniao[] = (respReunioes.data || []).map((r: any) =>
+          parseReuniaoFromDB(r, projetosMap)
+        );
 
         setReunioes(formatadas);
 
-        // Manter ou atualizar a reunião selecionada
+        // Se houver parâmetro na URL (?reuniaoId=...), priorizar essa reunião
+        let initialSelected = formatadas[0] || null;
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const paramId = urlParams.get('reuniaoId');
+          if (paramId) {
+            const achada = formatadas.find((f) => f.id === paramId);
+            if (achada) initialSelected = achada;
+          }
+        }
+
         if (formatadas.length > 0) {
           setSelectedReuniao((prev) => {
-            if (!prev) return formatadas[0];
+            if (!prev) return initialSelected;
             const updated = formatadas.find((r) => r.id === prev.id);
-            return updated || formatadas[0];
+            return updated || initialSelected;
           });
         }
       }
@@ -112,56 +126,56 @@ export default function InstitucionalPage() {
     }
   }
 
-  // Salvar Reunião (Criação ou Edição)
+  // Salvar Reunião (Criação ou Edição com Preparação Segura para o Banco)
   async function handleSaveReuniao(data: Partial<Reuniao>) {
     const supabase = createClient();
+    const dbPayload = prepareReuniaoForDB(data);
 
     if (editingReuniao?.id) {
       // Atualizar existente
       const { error } = await supabase
         .from('reunioes_institucional')
-        .update({
-          ...data,
-          updated_at: new Date().toISOString(),
-        })
+        .update(dbPayload)
         .eq('id', editingReuniao.id);
 
       if (error) {
         console.error('Erro ao atualizar reunião:', error);
         throw error;
       }
+
+      // Disparar notificações para participantes convocados
+      dispararNotificacoesConvocacaoReuniao({
+        reuniaoId: editingReuniao.id,
+        titulo: data.titulo || 'Reunião Institucional',
+        dataHora: data.data_hora || new Date().toISOString(),
+        localOuLink: data.local_reuniao || data.link_virtual,
+        participantes: data.participantes || [],
+        isEdicao: true,
+      });
     } else {
       // Inserir nova
-      const { error } = await supabase.from('reunioes_institucional').insert([
-        {
-          ...data,
-          status: 'agendada',
-          updated_at: new Date().toISOString(),
-        },
-      ]);
+      const { data: inserted, error } = await supabase
+        .from('reunioes_institucional')
+        .insert([dbPayload])
+        .select('id')
+        .single();
 
       if (error) {
         console.error('Erro ao inserir reunião:', error);
-        // Fallback resiliente caso alguma coluna nova ainda não tenha sido criada no Supabase
-        if (error.message?.includes('column') || error.code === '42703') {
-          console.warn('Executando fallback com campos essenciais para retrocompatibilidade...');
-          const { error: fallbackError } = await supabase.from('reunioes_institucional').insert([
-            {
-              titulo: data.titulo,
-              data_hora: data.data_hora,
-              tipo: data.tipo,
-              local_reuniao: data.local_reuniao,
-              pauta: data.pauta,
-              participantes: data.participantes,
-              status: 'agendada',
-              updated_at: new Date().toISOString(),
-            },
-          ]);
-          if (fallbackError) throw fallbackError;
-        } else {
-          throw error;
-        }
+        throw error;
       }
+
+      const targetId = inserted?.id || `reuniao-${Date.now()}`;
+
+      // Disparar notificações para participantes convocados
+      dispararNotificacoesConvocacaoReuniao({
+        reuniaoId: targetId,
+        titulo: data.titulo || 'Reunião Institucional',
+        dataHora: data.data_hora || new Date().toISOString(),
+        localOuLink: data.local_reuniao || data.link_virtual,
+        participantes: data.participantes || [],
+        isEdicao: false,
+      });
     }
 
     await loadInitialData();
@@ -172,20 +186,23 @@ export default function InstitucionalPage() {
     if (!selectedReuniao?.id) return;
     const supabase = createClient();
 
+    const merged: Reuniao = { ...selectedReuniao, ...updates };
+    const dbPayload = prepareReuniaoForDB(merged);
+
     const { error } = await supabase
       .from('reunioes_institucional')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
+      .update(dbPayload)
       .eq('id', selectedReuniao.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao atualizar reunião:', error);
+      throw error;
+    }
 
     // Atualizar estado local imediatamente
-    setSelectedReuniao((prev) => (prev ? { ...prev, ...updates } : null));
+    setSelectedReuniao(merged);
     setReunioes((prev) =>
-      prev.map((r) => (r.id === selectedReuniao.id ? { ...r, ...updates } : r))
+      prev.map((r) => (r.id === selectedReuniao.id ? merged : r))
     );
   }
 
@@ -673,6 +690,7 @@ export default function InstitucionalPage() {
         onSave={handleSaveReuniao}
         initialData={editingReuniao}
         projetos={projetos}
+        voluntarios={voluntarios}
       />
 
       {/* MODAL DE IMPRESSÃO / PDF TIMBRADO (PAPEL TIMBRADO INSTITUTO ÁDAPO) */}

@@ -136,6 +136,23 @@ Nada mais havendo a tratar, a sessão foi concluída, da qual se lavrou a presen
     setEncaminhamentos(encaminhamentos.filter((e) => e.id !== id));
   };
 
+  const handleOpenPrintComSalvamento = async () => {
+    try {
+      setSaving(true);
+      await onUpdateReuniao({
+        ata: ataText,
+        secretario: secretario.trim() || undefined,
+        presidente: presidente.trim() || undefined,
+        encaminhamentos,
+      });
+    } catch (e) {
+      console.warn('Aviso no salvamento prévio ao PDF:', e);
+    } finally {
+      setSaving(false);
+      onOpenAtaPrint();
+    }
+  };
+
   const handleSalvarAta = async () => {
     try {
       setSaving(true);
@@ -146,10 +163,10 @@ Nada mais havendo a tratar, a sessão foi concluída, da qual se lavrou a presen
         encaminhamentos,
         status: 'concluida',
       });
-      alert('Ata salva e reunião marcada como CONCLUÍDA com sucesso!');
+      alert('Ata salva e reunião marcada como CONCLUÍDA com sucesso! Você já pode gerar o PDF timbrado.');
     } catch (err) {
       console.error('Erro ao salvar ata:', err);
-      alert('Erro ao salvar ata da reunião.');
+      alert('Erro ao salvar ata da reunião. Verifique os campos e tente novamente.');
     } finally {
       setSaving(false);
     }
@@ -182,7 +199,8 @@ Nada mais havendo a tratar, a sessão foi concluída, da qual se lavrou a presen
           <Button
             size="sm"
             variant="secondary"
-            onClick={onOpenAtaPrint}
+            onClick={handleOpenPrintComSalvamento}
+            disabled={saving}
             icon={<Printer className="w-3.5 h-3.5 text-[var(--color-primary)]" />}
           >
             Ata Timbrada (PDF)
