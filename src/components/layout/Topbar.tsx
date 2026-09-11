@@ -49,9 +49,9 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
 
   // Cache em memória para transições instantâneas entre páginas (0ms)
   useEffect(() => {
-    // 1. Tenta recuperar do sessionStorage imediatamente
+    // 1. Tenta recuperar do sessionStorage ou localStorage imediatamente
     try {
-      const cached = sessionStorage.getItem('elo_user_profile_cache');
+      const cached = sessionStorage.getItem('elo_user_profile_cache') || localStorage.getItem('elo_user_profile_cache');
       if (cached) {
         setUserProfile(JSON.parse(cached));
       }
@@ -92,6 +92,7 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
           setUserProfile(resolvedProfile);
           try {
             sessionStorage.setItem('elo_user_profile_cache', JSON.stringify(resolvedProfile));
+            localStorage.setItem('elo_user_profile_cache', JSON.stringify(resolvedProfile));
           } catch (e) {}
         }
       } catch (err) {
@@ -183,7 +184,7 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
         {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
 
         {/* Notificações Interativas com Badges e Convocatórias */}
-        <NotificationDropdown />
+        <NotificationDropdown currentUser={userProfile} />
 
         {/* ── MENU 1: CONFIGURAÇÕES DO SISTEMA (DROPDOWN) ── */}
         <div className="relative" ref={settingsMenuRef}>

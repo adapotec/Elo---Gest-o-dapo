@@ -15,30 +15,54 @@ import {
 } from 'lucide-react';
 import {
   Notificacao,
-  getNotificacoes,
+  getNotificacoesForUser,
   marcarComoLida,
   marcarTodasComoLidas,
-  limparTodasNotificacoes,
+  limparNotificacoesDoUsuario,
   onNotificacoesChange,
 } from '@/lib/services/notificacoesService';
 
-export function NotificationDropdown() {
+interface NotificationDropdownProps {
+  currentUser?: {
+    name?: string;
+    email?: string;
+  } | null;
+}
+
+function getActiveUser(currentUser?: { name?: string; email?: string } | null): { name: string; email: string } {
+  if (currentUser?.name || currentUser?.email) {
+    return { name: currentUser.name || '', email: currentUser.email || '' };
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = sessionStorage.getItem('elo_user_profile_cache') || localStorage.getItem('elo_user_profile_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return { name: parsed.name || '', email: parsed.email || '' };
+      }
+    } catch (e) {}
+  }
+  return { name: '', email: '' };
+}
+
+export function NotificationDropdown({ currentUser }: NotificationDropdownProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Carregar iniciais
-    setNotificacoes(getNotificacoes());
+    const user = getActiveUser(currentUser);
+    setNotificacoes(getNotificacoesForUser(user.name, user.email));
 
     // Escutar atualizações
-    const unsubscribe = onNotificacoesChange((lista) => {
-      setNotificacoes(lista);
+    const unsubscribe = onNotificacoesChange(() => {
+      const u = getActiveUser(currentUser);
+      setNotificacoes(getNotificacoesForUser(u.name, u.email));
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser?.name, currentUser?.email]);
 
   // Fechar ao clicar fora
   useEffect(() => {
@@ -61,6 +85,18 @@ export function NotificationDropdown() {
     if (notif.link) {
       router.push(notif.link);
     }
+  };
+
+  const handleMarkAllRead = () => {
+    const u = getActiveUser(currentUser);
+    marcarTodasComoLidas(u.name, u.email);
+    setNotificacoes(getNotificacoesForUser(u.name, u.email));
+  };
+
+  const handleClearHistory = () => {
+    const u = getActiveUser(currentUser);
+    limparNotificacoesDoUsuario(u.name, u.email);
+    setNotificacoes([]);
   };
 
   return (
@@ -92,7 +128,7 @@ export function NotificationDropdown() {
           <div className="p-3.5 border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 flex items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
-                Notificações
+                Minhas Notificações
               </span>
               {unreadCount > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F2632D]/15 text-[#F2632D]">
@@ -105,8 +141,8 @@ export function NotificationDropdown() {
               {unreadCount > 0 && (
                 <button
                   type="button"
-                  onClick={() => marcarTodasComoLidas()}
-                  className="p-1 rounded-lg text-[11px] font-medium text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--bg-secondary)] transition-colors flex items-center gap-1"
+                  onClick={handleMarkAllRead}
+                  className="p-1 rounded-lg text-[11px] font-medium text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--bg-secondary)] transition-colors flex items-center gap-1 cursor-pointer"
                   title="Marcar todas como lidas"
                 >
                   <CheckCheck className="w-3.5 h-3.5" />
@@ -117,9 +153,9 @@ export function NotificationDropdown() {
               {notificacoes.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => limparTodasNotificacoes()}
-                  className="p-1 rounded-lg text-[11px] font-medium text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-1"
-                  title="Limpar histórico"
+                  onClick={handleClearHistory}
+                  className="p-1 rounded-lg text-[11px] font-medium text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Limpar meu histórico"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -135,10 +171,10 @@ export function NotificationDropdown() {
                   <Bell className="w-5 h-5 opacity-40" />
                 </div>
                 <p className="text-xs font-medium text-[var(--text-primary)]">
-                  Nenhuma notificação por enquanto
+                  Nenhuma notificação para você
                 </p>
                 <p className="text-[11px] text-[var(--text-muted)]">
-                  Convocações para reuniões institucionais e avisos do sistema aparecerão aqui.
+                  Você será notificado(a) aqui quando for convocado(a) para reuniões ou mencionado(a) em atividades.
                 </p>
               </div>
             ) : (

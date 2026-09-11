@@ -185,6 +185,7 @@ export default function InstitucionalPage() {
         localOuLink: data.local_reuniao || data.link_virtual,
         participantes: data.participantes || [],
         isEdicao: true,
+        voluntarios: voluntarios.map((v) => ({ nome_completo: v.nome_completo, email: v.email })),
       });
     } else {
       const tempId = `reuniao-${Date.now()}`;
@@ -202,6 +203,7 @@ export default function InstitucionalPage() {
         localOuLink: data.local_reuniao || data.link_virtual,
         participantes: data.participantes || [],
         isEdicao: false,
+        voluntarios: voluntarios.map((v) => ({ nome_completo: v.nome_completo, email: v.email })),
       });
 
       // 3. Inserir no Supabase e sincronizar ID canônico
