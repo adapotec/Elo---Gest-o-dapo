@@ -135,7 +135,6 @@ export function ComunicacaoCalendario({
   const [formTitulo, setFormTitulo] = useState('');
   const [formDataPub, setFormDataPub] = useState('');
   const [formTipo, setFormTipo] = useState<ConteudoItem['tipo_conteudo']>('reels');
-  const [formDescricao, setFormDescricao] = useState('');
   const [formObservacoes, setFormObservacoes] = useState('');
   const [formRoteiroLegenda, setFormRoteiroLegenda] = useState('');
   const [formProjetoId, setFormProjetoId] = useState('');
@@ -174,7 +173,6 @@ export function ComunicacaoCalendario({
     setFormTipo('reels');
     setFormObservacoes('');
     setFormRoteiroLegenda('');
-    setFormDescricao('');
     setFormProjetoId('');
     setFormCampanhaId('');
     setFormStatus('nao_iniciado');
@@ -191,9 +189,17 @@ export function ComunicacaoCalendario({
     setFormTitulo(item.titulo);
     setFormDataPub(item.data_publicacao ? item.data_publicacao.slice(0, 16) : '');
     setFormTipo(item.tipo_conteudo);
-    setFormObservacoes(item.observacoes || (item.roteiro_legenda ? item.descricao || '' : item.descricao || ''));
+    const legInicial = (item.roteiro_legenda || '').trim();
+    let obsInicial = (item.observacoes || '').trim();
+    // Se observações estiver vazia mas houver descrição no banco diferente da legenda, aproveita a descrição
+    if (!obsInicial && item.descricao) {
+      const descLimpa = item.descricao.trim();
+      if (descLimpa !== legInicial) {
+        obsInicial = descLimpa;
+      }
+    }
+    setFormObservacoes(obsInicial);
     setFormRoteiroLegenda(item.roteiro_legenda || '');
-    setFormDescricao(item.descricao || '');
     setFormProjetoId(item.projeto_id || '');
     setFormCampanhaId(item.campanha_id || '');
     setFormStatus(item.status);
@@ -261,8 +267,8 @@ export function ComunicacaoCalendario({
         data_publicacao: formDataPub,
         tipo_conteudo: formTipo,
         observacoes: formObservacoes.trim() || null,
+        descricao: formObservacoes.trim() || null,
         roteiro_legenda: formRoteiroLegenda.trim() || null,
-        descricao: formObservacoes.trim() || formRoteiroLegenda.trim() || null,
         projeto_id: formProjetoId || null,
         campanha_id: formCampanhaId || null,
         status: formStatus,
@@ -545,7 +551,14 @@ export function ComunicacaoCalendario({
       header: 'Título & Formato',
       width: '260px',
       render: (item) => {
-        const descricaoExibicao = item.observacoes || item.descricao;
+        const legTexto = (item.roteiro_legenda || '').trim();
+        let descricaoExibicao = (item.observacoes || '').trim();
+        if (!descricaoExibicao && item.descricao) {
+          const descTexto = item.descricao.trim();
+          if (descTexto !== legTexto) {
+            descricaoExibicao = descTexto;
+          }
+        }
         return (
           <div className="space-y-1.5 min-w-0 pr-2">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -1340,14 +1353,21 @@ export function ComunicacaoCalendario({
                       </div>
 
                       {/* Linha 4: Descrição do Post / Observações */}
-                      {(post.observacoes || post.descricao) && (
-                        <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
-                          <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
-                            Descrição / Observações:
-                          </p>
-                          <p className="whitespace-pre-line">{post.observacoes || post.descricao}</p>
-                        </div>
-                      )}
+                      {(() => {
+                        const obs = (post.observacoes || '').trim();
+                        const desc = (post.descricao || '').trim();
+                        const leg = (post.roteiro_legenda || '').trim();
+                        const textoExibir = obs || (desc !== leg ? desc : '');
+                        if (!textoExibir) return null;
+                        return (
+                          <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] leading-relaxed">
+                            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                              Descrição / Observações:
+                            </p>
+                            <p className="whitespace-pre-line">{textoExibir}</p>
+                          </div>
+                        );
+                      })()}
 
                       {/* Roteiro / Legenda Completa */}
                       {post.roteiro_legenda && (
@@ -1564,17 +1584,24 @@ export function ComunicacaoCalendario({
             </div>
 
             {/* Descrição do Post ou Observações */}
-            {(selectedConteudoDetalhes.observacoes || selectedConteudoDetalhes.descricao) && (
-              <div className="p-3.5 rounded-2xl bg-[var(--bg-secondary)]/40 border border-[var(--border-default)] space-y-1">
-                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-[var(--color-primary)]" />
-                  <span>Descrição do Post / Observações</span>
-                </p>
-                <p className="text-xs text-[var(--text-primary)] leading-relaxed whitespace-pre-line">
-                  {selectedConteudoDetalhes.observacoes || selectedConteudoDetalhes.descricao}
-                </p>
-              </div>
-            )}
+            {(() => {
+              const obs = (selectedConteudoDetalhes.observacoes || '').trim();
+              const desc = (selectedConteudoDetalhes.descricao || '').trim();
+              const leg = (selectedConteudoDetalhes.roteiro_legenda || '').trim();
+              const textoExibir = obs || (desc !== leg ? desc : '');
+              if (!textoExibir) return null;
+              return (
+                <div className="p-3.5 rounded-2xl bg-[var(--bg-secondary)]/40 border border-[var(--border-default)] space-y-1">
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                    <span>Descrição do Post / Observações</span>
+                  </p>
+                  <p className="text-xs text-[var(--text-primary)] leading-relaxed whitespace-pre-line">
+                    {textoExibir}
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* Roteiro / Legenda Completa da Publicação */}
             {selectedConteudoDetalhes.roteiro_legenda && (
@@ -2130,11 +2157,18 @@ export function ComunicacaoCalendario({
                           </td>
                           <td className="border border-slate-300 p-1.5">
                             <p className="font-bold text-slate-900">{c.titulo}</p>
-                            {c.descricao && (
-                              <p className="text-[9px] text-slate-600 line-clamp-2 italic">
-                                &quot;{c.descricao}&quot;
-                              </p>
-                            )}
+                            {(() => {
+                              const obs = (c.observacoes || '').trim();
+                              const desc = (c.descricao || '').trim();
+                              const leg = (c.roteiro_legenda || '').trim();
+                              const textoPdf = obs || (desc !== leg ? desc : '');
+                              if (!textoPdf) return null;
+                              return (
+                                <p className="text-[9px] text-slate-600 line-clamp-2 italic">
+                                  &quot;{textoPdf}&quot;
+                                </p>
+                              );
+                            })()}
                           </td>
                           <td className="border border-slate-300 p-1.5">
                             {c.projetos_sociais?.nome || 'Institucional'}

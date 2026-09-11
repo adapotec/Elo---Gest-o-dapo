@@ -132,7 +132,7 @@ export default function CalendarioPage() {
           .order('data_hora', { ascending: true }),
         supabase
           .from('conteudos_comunicacao')
-          .select('id, titulo, data_publicacao, tipo_conteudo, status, categoria, projeto_id, descricao, link_producao, link_publicacao')
+          .select('id, titulo, data_publicacao, tipo_conteudo, status, categoria, projeto_id, descricao, observacoes, roteiro_legenda, link_producao, link_publicacao')
           .order('data_publicacao', { ascending: true }),
       ]);
 
@@ -195,12 +195,17 @@ export default function CalendarioPage() {
         if (!c.data_publicacao) return;
         const proj = c.projeto_id ? projetosMap.get(c.projeto_id) : null;
         const tipoConteudo = (c.tipo_conteudo || 'post').toUpperCase();
+        const obs = (c.observacoes || '').trim();
+        const desc = (c.descricao || '').trim();
+        const leg = (c.roteiro_legenda || '').trim();
+        const descLimpa = obs || (desc !== leg ? desc : null);
+
         listaUnificada.push({
           id: `comunicacao-${c.id}`,
           origem: 'comunicacao',
           titulo: c.titulo || 'Publicação de Comunicação',
           data_hora: c.data_publicacao,
-          descricao: c.descricao,
+          descricao: descLimpa,
           subtipo: `Post • ${tipoConteudo}`,
           status: c.status || 'planejado',
           local_ou_link: c.link_publicacao || c.link_producao || 'Redes Sociais',

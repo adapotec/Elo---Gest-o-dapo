@@ -192,13 +192,16 @@ function ComunicacaoContent() {
   // Salvar Conteúdo / Material com Atualização Otimista Instantânea (0ms)
   const handleSaveConteudo = async (conteudo: Partial<ConteudoItem>) => {
     try {
+      const textoDescricao = (conteudo.observacoes || conteudo.descricao || '').trim() || null;
+      const textoLegenda = (conteudo.roteiro_legenda || '').trim() || null;
+
       const payload: Record<string, any> = {
         titulo: conteudo.titulo,
         data_publicacao: conteudo.data_publicacao ? new Date(conteudo.data_publicacao).toISOString() : new Date().toISOString(),
         tipo_conteudo: conteudo.tipo_conteudo || 'reels',
-        descricao: conteudo.descricao || conteudo.observacoes || null,
-        observacoes: conteudo.observacoes || null,
-        roteiro_legenda: conteudo.roteiro_legenda || null,
+        descricao: textoDescricao,
+        observacoes: textoDescricao,
+        roteiro_legenda: textoLegenda,
         projeto_id: conteudo.projeto_id || null,
         campanha_id: conteudo.campanha_id || null,
         status: conteudo.status || 'nao_iniciado',
