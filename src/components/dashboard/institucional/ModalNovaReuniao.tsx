@@ -468,8 +468,10 @@ export function ModalNovaReuniao({
         participantes,
       };
 
-      await onSave(payload);
+      // Fechamento instantâneo do modal para não travar a experiência do usuário
       onClose();
+
+      await onSave(payload);
     } catch (err: any) {
       console.error('Erro ao salvar reunião:', err);
       alert('Erro ao salvar reunião. Verifique os dados e tente novamente.');

@@ -222,14 +222,17 @@ export function ComunicacaoCalendario({
     }
 
     setQuickPublishing(true);
+    const itemToUpdate = quickPublishItem;
+    const urlToUpdate = quickPublishUrl.trim() || null;
+    setQuickPublishItem(null);
+    setQuickPublishUrl('');
+
     try {
       await onSaveConteudo({
-        id: quickPublishItem.id,
+        id: itemToUpdate.id,
         status: 'publicado',
-        link_publicacao: quickPublishUrl.trim() || null,
+        link_publicacao: urlToUpdate,
       });
-      setQuickPublishItem(null);
-      setQuickPublishUrl('');
     } catch (err: any) {
       alert('Erro ao marcar publicação: ' + err.message);
     } finally {
@@ -273,16 +276,16 @@ export function ComunicacaoCalendario({
         payload.id = editingConteudo.id;
       }
 
-      await onSaveConteudo(payload);
+      // Fechamento instantâneo do modal para o usuário não ficar preso esperando
       setShowModal(false);
-
-      // Se estiver com modal de detalhes aberto, fecha para recarregar
       if (selectedDiaDetalhes) {
         setSelectedDiaDetalhes(null);
       }
       if (selectedConteudoDetalhes) {
         setSelectedConteudoDetalhes(null);
       }
+
+      await onSaveConteudo(payload);
     } catch (err: any) {
       alert('Erro ao salvar conteúdo: ' + err.message);
     } finally {

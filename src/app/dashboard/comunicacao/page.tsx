@@ -141,7 +141,55 @@ function ComunicacaoContent() {
     router.replace(`/dashboard/comunicacao?tab=${key}`, { scroll: false });
   };
 
-  // Salvar Conteúdo (Calendário)
+  // Sincronização leve em segundo plano apenas de conteúdos
+  const loadConteudosOnly = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('conteudos_comunicacao')
+        .select('*, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo, avatar_url)')
+        .order('data_publicacao', { ascending: true });
+      if (!error && data) {
+        setConteudos(data as ConteudoItem[]);
+        localStorage.setItem('elo_comunicacao_conteudos', JSON.stringify(data));
+      }
+    } catch (e) {
+      console.warn('Sincronização de conteúdos:', e);
+    }
+  };
+
+  // Sincronização leve em segundo plano apenas de campanhas
+  const loadCampanhasOnly = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('campanhas_comunicacao')
+        .select('*, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setCampanhas(data as CampanhaItem[]);
+        localStorage.setItem('elo_comunicacao_campanhas', JSON.stringify(data));
+      }
+    } catch (e) {
+      console.warn('Sincronização de campanhas:', e);
+    }
+  };
+
+  // Sincronização leve em segundo plano apenas da galeria
+  const loadGaleriaOnly = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('galeria_midia_acoes')
+        .select('*, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
+        .order('data_evento', { ascending: false });
+      if (!error && data) {
+        setGaleria(data as GaleriaItem[]);
+        localStorage.setItem('elo_comunicacao_galeria', JSON.stringify(data));
+      }
+    } catch (e) {
+      console.warn('Sincronização de galeria:', e);
+    }
+  };
+
+  // Salvar Conteúdo / Material com Atualização Otimista Instantânea (0ms)
   const handleSaveConteudo = async (conteudo: Partial<ConteudoItem>) => {
     try {
       const payload: Record<string, any> = {
@@ -162,19 +210,62 @@ function ComunicacaoContent() {
         updated_at: new Date().toISOString(),
       };
 
+      const proj = projetos.find((p) => p.id === conteudo.projeto_id);
+      const camp = campanhas.find((c) => c.id === conteudo.campanha_id);
+      const vol = voluntarios.find((v) => v.id === conteudo.responsavel_id);
+
       if (conteudo.id && !conteudo.id.startsWith('local-')) {
+        // 1. Atualização Otimista Imediata na tabela (0ms de espera)
+        setConteudos((prev) =>
+          prev.map((c) =>
+            c.id === conteudo.id
+              ? ({
+                  ...c,
+                  ...payload,
+                  projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
+                  campanhas_comunicacao: camp ? { titulo: camp.titulo } : null,
+                  voluntarios: vol ? { nome_completo: vol.nome_completo, avatar_url: vol.avatar_url } : null,
+                } as ConteudoItem)
+              : c
+          )
+        );
+
+        // 2. Gravar no Supabase em segundo plano
         const { error } = await supabase
           .from('conteudos_comunicacao')
           .update(payload)
           .eq('id', conteudo.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const tempId = `temp-${Date.now()}`;
+        const novoItem: ConteudoItem = {
+          id: tempId,
+          ...payload,
+          projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
+          campanhas_comunicacao: camp ? { titulo: camp.titulo } : null,
+          voluntarios: vol ? { nome_completo: vol.nome_completo, avatar_url: vol.avatar_url } : null,
+        } as ConteudoItem;
+
+        // 1. Atualização Otimista Imediata (0ms)
+        setConteudos((prev) => [novoItem, ...prev]);
+
+        // 2. Inserir no Supabase e atualizar ID
+        const { data: inserted, error } = await supabase
           .from('conteudos_comunicacao')
-          .insert([payload]);
+          .insert([payload])
+          .select('id')
+          .single();
         if (error) throw error;
+
+        if (inserted?.id) {
+          setConteudos((prev) =>
+            prev.map((c) => (c.id === tempId ? { ...c, id: inserted.id } : c))
+          );
+        }
       }
-      await loadAllData();
+
+      // Sincronização leve em segundo plano sem bloquear a UI
+      loadConteudosOnly();
     } catch (err: any) {
       console.warn('Fallback local ao salvar conteúdo:', err);
       const newId = conteudo.id || `local-${Date.now()}`;
@@ -189,13 +280,13 @@ function ComunicacaoContent() {
 
   const handleDeleteConteudo = async (id: string) => {
     if (!confirm('Deseja realmente excluir este conteúdo do calendário editorial?')) return;
+    setConteudos((prev) => prev.filter((c) => c.id !== id));
     try {
       await supabase.from('conteudos_comunicacao').delete().eq('id', id);
     } catch (e) {}
-    setConteudos((prev) => prev.filter((c) => c.id !== id));
   };
 
-  // Salvar Campanha
+  // Salvar Campanha com Atualização Otimista Imediata
   const handleSaveCampanha = async (campanha: Partial<CampanhaItem>) => {
     try {
       const payload: Record<string, any> = {
@@ -217,19 +308,56 @@ function ComunicacaoContent() {
         updated_at: new Date().toISOString(),
       };
 
-      if (campanha.id && !campanha.id.startsWith('local-')) {
+      const proj = projetos.find((p) => p.id === campanha.projeto_id);
+      const vol = voluntarios.find((v) => v.id === campanha.responsavel_id);
+
+      if (campanha.id && !campanha.id.startsWith('local-') && !campanha.id.startsWith('temp-')) {
+        // Atualização Otimista
+        setCampanhas((prev) =>
+          prev.map((c) =>
+            c.id === campanha.id
+              ? ({
+                  ...c,
+                  ...payload,
+                  projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
+                  voluntarios: vol ? { nome_completo: vol.nome_completo } : null,
+                } as CampanhaItem)
+              : c
+          )
+        );
+
         const { error } = await supabase
           .from('campanhas_comunicacao')
           .update(payload)
           .eq('id', campanha.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const tempId = `temp-camp-${Date.now()}`;
+        const novaCampanha: CampanhaItem = {
+          id: tempId,
+          ...payload,
+          projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
+          voluntarios: vol ? { nome_completo: vol.nome_completo } : null,
+        } as CampanhaItem;
+
+        // Atualização Otimista
+        setCampanhas((prev) => [novaCampanha, ...prev]);
+
+        const { data: inserted, error } = await supabase
           .from('campanhas_comunicacao')
-          .insert([payload]);
+          .insert([payload])
+          .select('id')
+          .single();
         if (error) throw error;
+
+        if (inserted?.id) {
+          setCampanhas((prev) =>
+            prev.map((c) => (c.id === tempId ? { ...c, id: inserted.id } : c))
+          );
+        }
       }
-      await loadAllData();
+
+      loadCampanhasOnly();
     } catch (err: any) {
       console.warn('Fallback local ao salvar campanha:', err);
       const newId = campanha.id || `local-camp-${Date.now()}`;
@@ -244,13 +372,13 @@ function ComunicacaoContent() {
 
   const handleDeleteCampanha = async (id: string) => {
     if (!confirm('Deseja realmente excluir esta campanha estratégica?')) return;
+    setCampanhas((prev) => prev.filter((c) => c.id !== id));
     try {
       await supabase.from('campanhas_comunicacao').delete().eq('id', id);
     } catch (e) {}
-    setCampanhas((prev) => prev.filter((c) => c.id !== id));
   };
 
-  // Salvar Galeria
+  // Salvar Galeria com Atualização Otimista Imediata
   const handleSaveGaleria = async (item: Partial<GaleriaItem>) => {
     try {
       const payload: Record<string, any> = {
@@ -264,19 +392,54 @@ function ComunicacaoContent() {
         tags: item.tags || [],
       };
 
-      if (item.id && !item.id.startsWith('local-')) {
+      const proj = projetos.find((p) => p.id === item.projeto_id);
+      const vol = voluntarios.find((v) => v.id === item.fotografo_voluntario_id);
+
+      if (item.id && !item.id.startsWith('local-') && !item.id.startsWith('temp-')) {
+        setGaleria((prev) =>
+          prev.map((g) =>
+            g.id === item.id
+              ? ({
+                  ...g,
+                  ...payload,
+                  projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
+                  voluntarios: vol ? { nome_completo: vol.nome_completo } : null,
+                } as GaleriaItem)
+              : g
+          )
+        );
+
         const { error } = await supabase
           .from('galeria_midia_acoes')
           .update(payload)
           .eq('id', item.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const tempId = `temp-gal-${Date.now()}`;
+        const novoItem: GaleriaItem = {
+          id: tempId,
+          ...payload,
+          projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
+          voluntarios: vol ? { nome_completo: vol.nome_completo } : null,
+        } as GaleriaItem;
+
+        setGaleria((prev) => [novoItem, ...prev]);
+
+        const { data: inserted, error } = await supabase
           .from('galeria_midia_acoes')
-          .insert([payload]);
+          .insert([payload])
+          .select('id')
+          .single();
         if (error) throw error;
+
+        if (inserted?.id) {
+          setGaleria((prev) =>
+            prev.map((g) => (g.id === tempId ? { ...g, id: inserted.id } : g))
+          );
+        }
       }
-      await loadAllData();
+
+      loadGaleriaOnly();
     } catch (err: any) {
       console.warn('Fallback local ao salvar galeria:', err);
       const newId = item.id || `local-gal-${Date.now()}`;

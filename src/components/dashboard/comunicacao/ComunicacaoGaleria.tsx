@@ -113,7 +113,7 @@ export function ComunicacaoGaleria({
         .map((t) => t.trim())
         .filter(Boolean);
 
-      await onSaveGaleria({
+      const payload: Partial<GaleriaItem> = {
         id: editingId || undefined,
         titulo: formTitulo.trim(),
         projeto_id: formProjetoId || null,
@@ -122,9 +122,12 @@ export function ComunicacaoGaleria({
         fotografo_voluntario_id: formFotografoId || null,
         descricao: formDescricao.trim() || null,
         tags: tagsArray,
-      });
+      };
 
+      // Fechamento instantâneo do modal
       setShowModal(false);
+
+      await onSaveGaleria(payload);
     } catch (err: any) {
       alert('Erro ao salvar pasta da galeria: ' + err.message);
     } finally {

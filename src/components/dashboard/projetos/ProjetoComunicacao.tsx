@@ -115,12 +115,31 @@ export function ProjetoComunicacao({
   async function handleSavePeca() {
     if (!formPeca.titulo_peca) return alert('Preencha o título da peça.');
     try {
-      setSaving(true);
-      const supabase = createClient();
-
       const dbTipo = formPeca.tipo_midia === 'video_reels' ? 'reels' : formPeca.tipo_midia === 'story' ? 'stories' : 'estatico';
       const dbStatus = formPeca.status === 'publicado' ? 'publicado' : formPeca.status === 'em_producao' ? 'producao' : 'nao_iniciado';
 
+      const novaPeca: PecaComunicacao = {
+        id: `local-${Date.now()}`,
+        ...formPeca,
+      };
+
+      // 1. Atualização Otimista Imediata e Fechamento Instantâneo do Modal (0ms)
+      setPecas((prev) => [novaPeca, ...prev]);
+      setShowPecaModal(false);
+      setFormPeca({
+        projeto_id: projetoId,
+        titulo_peca: '',
+        tipo_midia: 'post_instagram',
+        canal_divulgacao: 'Instagram',
+        status: 'pendente',
+        link_midia: '',
+        prazo_entrega: new Date().toISOString().split('T')[0],
+        responsavel_comunicacao: '',
+        observacoes: '',
+      });
+
+      // 2. Gravação em segundo plano no Supabase
+      const supabase = createClient();
       const { error } = await supabase.from('conteudos_comunicacao').insert([
         {
           projeto_id: projetoId,
@@ -136,25 +155,10 @@ export function ProjetoComunicacao({
       ]);
 
       if (error) throw error;
-
-      setShowPecaModal(false);
-      setFormPeca({
-        projeto_id: projetoId,
-        titulo_peca: '',
-        tipo_midia: 'post_instagram',
-        canal_divulgacao: 'Instagram',
-        status: 'pendente',
-        link_midia: '',
-        prazo_entrega: new Date().toISOString().split('T')[0],
-        responsavel_comunicacao: '',
-        observacoes: '',
-      });
       loadPecas();
     } catch (err) {
       console.error('Erro ao salvar peça:', err);
       alert('Erro ao salvar peça de comunicação.');
-    } finally {
-      setSaving(false);
     }
   }
 

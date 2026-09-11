@@ -126,13 +126,47 @@ export default function InstitucionalPage() {
     }
   }
 
-  // Salvar Reunião (Criação ou Edição com Preparação Segura para o Banco)
+  // Sincronização leve em segundo plano apenas das reuniões (sem recarregar projetos e voluntários)
+  async function loadReunioesOnly() {
+    try {
+      const supabase = createClient();
+      const { data: reunioesData, error } = await supabase
+        .from('reunioes_institucional')
+        .select('*')
+        .order('data_hora', { ascending: false });
+
+      if (!error && reunioesData) {
+        const projetosMap = new Map<string, any>();
+        projetos.forEach((p) => projetosMap.set(p.id, p));
+
+        const formatadas: Reuniao[] = reunioesData.map((r: any) => parseReuniaoFromDB(r, projetosMap));
+        setReunioes(formatadas);
+
+        setSelectedReuniao((prev) => {
+          if (!prev) return formatadas[0] || null;
+          const updated = formatadas.find((r: Reuniao) => r.id === prev.id);
+          return updated || prev;
+        });
+      }
+    } catch (err) {
+      console.warn('Sincronização leve de reuniões:', err);
+    }
+  }
+
+  // Salvar Reunião com Atualização Otimista Imediata (Resposta instantânea ao usuário)
   async function handleSaveReuniao(data: Partial<Reuniao>) {
     const supabase = createClient();
     const dbPayload = prepareReuniaoForDB(data);
+    const projetosMap = new Map<string, any>();
+    projetos.forEach((p) => projetosMap.set(p.id, p));
 
     if (editingReuniao?.id) {
-      // Atualizar existente
+      // 1. Atualização Otimista Imediata (0ms)
+      const merged: Reuniao = { ...editingReuniao, ...data };
+      setSelectedReuniao(merged);
+      setReunioes((prev) => prev.map((r) => (r.id === editingReuniao.id ? merged : r)));
+
+      // 2. Atualizar no Supabase
       const { error } = await supabase
         .from('reunioes_institucional')
         .update(dbPayload)
@@ -143,7 +177,7 @@ export default function InstitucionalPage() {
         throw error;
       }
 
-      // Disparar notificações para participantes convocados
+      // 3. Disparar notificações para participantes convocados
       dispararNotificacoesConvocacaoReuniao({
         reuniaoId: editingReuniao.id,
         titulo: data.titulo || 'Reunião Institucional',
@@ -153,7 +187,24 @@ export default function InstitucionalPage() {
         isEdicao: true,
       });
     } else {
-      // Inserir nova
+      const tempId = `reuniao-${Date.now()}`;
+      const novaReuniao = parseReuniaoFromDB({ ...dbPayload, id: tempId }, projetosMap);
+
+      // 1. Atualizar estado local imediatamente (0ms)
+      setSelectedReuniao(novaReuniao);
+      setReunioes((prev) => [novaReuniao, ...prev]);
+
+      // 2. Disparar notificações para participantes convocados
+      dispararNotificacoesConvocacaoReuniao({
+        reuniaoId: tempId,
+        titulo: data.titulo || 'Reunião Institucional',
+        dataHora: data.data_hora || new Date().toISOString(),
+        localOuLink: data.local_reuniao || data.link_virtual,
+        participantes: data.participantes || [],
+        isEdicao: false,
+      });
+
+      // 3. Inserir no Supabase e sincronizar ID canônico
       const { data: inserted, error } = await supabase
         .from('reunioes_institucional')
         .insert([dbPayload])
@@ -165,20 +216,17 @@ export default function InstitucionalPage() {
         throw error;
       }
 
-      const targetId = inserted?.id || `reuniao-${Date.now()}`;
-
-      // Disparar notificações para participantes convocados
-      dispararNotificacoesConvocacaoReuniao({
-        reuniaoId: targetId,
-        titulo: data.titulo || 'Reunião Institucional',
-        dataHora: data.data_hora || new Date().toISOString(),
-        localOuLink: data.local_reuniao || data.link_virtual,
-        participantes: data.participantes || [],
-        isEdicao: false,
-      });
+      if (inserted?.id) {
+        const canonicalReuniao = parseReuniaoFromDB({ ...dbPayload, id: inserted.id }, projetosMap);
+        setSelectedReuniao((prev) => (prev?.id === tempId ? canonicalReuniao : prev));
+        setReunioes((prev) =>
+          prev.map((r) => (r.id === tempId ? canonicalReuniao : r))
+        );
+      }
     }
 
-    await loadInitialData();
+    // Sincronização em segundo plano sem travar a interface
+    loadReunioesOnly();
   }
 
   // Atualizações pontuais vindas das abas (presença, notas, ata, encaminhamentos)
@@ -187,6 +235,13 @@ export default function InstitucionalPage() {
     const supabase = createClient();
 
     const merged: Reuniao = { ...selectedReuniao, ...updates };
+
+    // 1. Atualizar estado local imediatamente (0ms de espera)
+    setSelectedReuniao(merged);
+    setReunioes((prev) =>
+      prev.map((r) => (r.id === selectedReuniao.id ? merged : r))
+    );
+
     const dbPayload = prepareReuniaoForDB(merged);
 
     const { error } = await supabase
@@ -198,12 +253,6 @@ export default function InstitucionalPage() {
       console.error('Erro ao atualizar reunião:', error);
       throw error;
     }
-
-    // Atualizar estado local imediatamente
-    setSelectedReuniao(merged);
-    setReunioes((prev) =>
-      prev.map((r) => (r.id === selectedReuniao.id ? merged : r))
-    );
   }
 
   async function handleDeleteReuniao(id: string) {

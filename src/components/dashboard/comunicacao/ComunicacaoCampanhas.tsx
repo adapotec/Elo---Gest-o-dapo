@@ -307,7 +307,7 @@ export function ComunicacaoCampanhas({
 
     setSaving(true);
     try {
-      await onSaveCampanha({
+      const payload: Partial<CampanhaItem> = {
         id: editingId || undefined,
         titulo: formTitulo.trim(),
         projeto_id: formProjetoId || null,
@@ -344,9 +344,12 @@ export function ComunicacaoCampanhas({
           engajamento_esperado: formIndEngajamento.trim(),
           conversoes_doacoes: formIndConversoes.trim(),
         },
-      });
+      };
 
+      // Fechamento instantâneo do modal
       setShowModal(false);
+
+      await onSaveCampanha(payload);
     } catch (err: any) {
       alert('Erro ao salvar campanha: ' + err.message);
     } finally {
