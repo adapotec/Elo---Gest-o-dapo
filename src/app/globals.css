@@ -316,7 +316,8 @@
 aside,
 [role="dialog"],
 [class*="bg-[var(--bg-elevated)]"],
-[class*="bg-[var(--bg-secondary)]"] {
+[class*="bg-[var(--bg-secondary)]"],
+[class*="bg-[var(--color-primary-soft)]"] {
   --text-primary: #2B2118;
   --text-secondary: #6B6055;
   --text-muted: #9C9187;
@@ -330,7 +331,8 @@ aside,
 [data-theme="dark"] aside,
 [data-theme="dark"] [role="dialog"],
 [data-theme="dark"] [class*="bg-[var(--bg-elevated)]"],
-[data-theme="dark"] [class*="bg-[var(--bg-secondary)]"] {
+[data-theme="dark"] [class*="bg-[var(--bg-secondary)]"],
+[data-theme="dark"] [class*="bg-[var(--color-primary-soft)]"] {
   --text-primary: #F3EDE4;
   --text-secondary: #B8AC9C;
   --text-muted: #7D7466;

@@ -68,31 +68,61 @@ export function ReuniaoPrintTemplate({ reuniao, modo }: ReuniaoPrintTemplateProp
           </p>
         </section>
 
-        {/* Rol de Pautas */}
+        {/* Rol de Pautas com Hierarquia Nobre e Nítida */}
         <section className="space-y-3">
-          <h4 className="font-bold text-xs uppercase text-slate-700 border-b border-slate-200 pb-1 tracking-wider">
-            Ordem do Dia (Pautas a Deliberar)
-          </h4>
+          <div className="flex items-center justify-between border-b border-slate-300 pb-1">
+            <h4 className="font-bold text-xs uppercase text-slate-800 tracking-wider">
+              Ordem do Dia (Pautas a Deliberar)
+            </h4>
+            {Array.isArray(reuniao.pautas_topicos) && reuniao.pautas_topicos.length > 0 && (
+              <span className="text-[11px] font-medium text-slate-500">
+                {reuniao.pautas_topicos.length} tópico(s) registrado(s)
+              </span>
+            )}
+          </div>
 
           {Array.isArray(reuniao.pautas_topicos) && reuniao.pautas_topicos.length > 0 ? (
-            <ol className="list-decimal list-inside space-y-2 text-slate-800">
+            <div className="space-y-3 pt-0.5">
               {reuniao.pautas_topicos.map((p, idx) => (
-                <li key={p.id || idx} className="pl-1">
-                  <strong>{p.titulo}</strong>
-                  {p.tempo_estimado_min && (
-                    <span className="text-slate-500 text-xs font-normal"> ({p.tempo_estimado_min} minutos)</span>
-                  )}
-                  {p.responsavel && (
-                    <span className="text-slate-600 text-xs font-normal"> — Relator: {p.responsavel}</span>
-                  )}
+                <div key={p.id || idx} className="text-slate-800">
+                  {/* Cabeçalho do Tópico: Número + Título Nobre + Badges */}
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-bold text-slate-900 text-sm">
+                        {idx + 1}.
+                      </span>
+                      <span className="font-bold text-slate-900 text-sm">
+                        {p.titulo}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 text-xs">
+                      {p.tempo_estimado_min && (
+                        <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-slate-600 font-medium text-[11px]">
+                          {p.tempo_estimado_min} min
+                        </span>
+                      )}
+                      {p.responsavel && (
+                        <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-slate-700 font-semibold text-[11px]">
+                          Relator: {p.responsavel}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Descrição Detalhada em Bloco Indentado Distinto */}
                   {p.descricao && (
-                    <p className="text-xs text-slate-600 pl-5 mt-0.5">{p.descricao}</p>
+                    <div className="mt-1.5 ml-5 pl-3.5 border-l-2 border-slate-300 bg-slate-50/70 py-1.5 pr-2.5 text-xs text-slate-700 leading-relaxed whitespace-pre-line rounded-r">
+                      {p.descricao}
+                    </div>
                   )}
-                </li>
+                </div>
               ))}
-            </ol>
+            </div>
           ) : (
-            <p className="whitespace-pre-line text-slate-800">{reuniao.pauta || 'Pauta a ser apresentada na abertura da sessão.'}</p>
+            <p className="whitespace-pre-line text-slate-800 text-xs pl-2 italic">
+              {reuniao.pauta || 'Pauta a ser apresentada na abertura da sessão.'}
+            </p>
           )}
         </section>
 

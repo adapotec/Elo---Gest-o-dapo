@@ -31,6 +31,9 @@ import {
   Edit2,
   Check,
   HelpCircle,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 
 export interface VoluntarioItem {
@@ -126,10 +129,22 @@ export function ModalNovaReuniao({
   // ── ESTADOS DE PAUTAS ──
   const [pautasTopicos, setPautasTopicos] = useState<TopicoPauta[]>([]);
   const [novoTopicoTitulo, setNovoTopicoTitulo] = useState('');
+  const [novoTopicoDesc, setNovoTopicoDesc] = useState('');
   const [novoTopicoTempo, setNovoTopicoTempo] = useState<number>(15);
   const [novoTopicoResp, setNovoTopicoResp] = useState('');
   const [modoLotePautas, setModoLotePautas] = useState(false);
   const [textoLotePautas, setTextoLotePautas] = useState('');
+
+  // Edição inline de pauta já cadastrada
+  const [editingTopicoId, setEditingTopicoId] = useState<string | null>(null);
+  const [editTopicoTitulo, setEditTopicoTitulo] = useState('');
+  const [editTopicoDesc, setEditTopicoDesc] = useState('');
+  const [editTopicoTempo, setEditTopicoTempo] = useState<number>(15);
+  const [editTopicoResp, setEditTopicoResp] = useState('');
+
+  // Reordenação e Drag and Drop de pautas
+  const [draggedTopicoIndex, setDraggedTopicoIndex] = useState<number | null>(null);
+  const [dragOverTopicoIndex, setDragOverTopicoIndex] = useState<number | null>(null);
 
   // ── ESTADOS DE PARTICIPANTES ──
   const [participantes, setParticipantes] = useState<string[]>([]);
@@ -327,24 +342,98 @@ export function ModalNovaReuniao({
     if (!novoTopicoTitulo.trim()) return;
     const tempo = Number(novoTopicoTempo) > 0 ? Number(novoTopicoTempo) : 15;
     const novo: TopicoPauta = {
-      id: crypto.randomUUID ? crypto.randomUUID() : `topico-${Date.now()}`,
+      id: crypto.randomUUID ? crypto.randomUUID() : `topico-${Date.now()}-${Math.random()}`,
       titulo: novoTopicoTitulo.trim(),
+      descricao: novoTopicoDesc.trim() || undefined,
       tempo_estimado_min: tempo,
       responsavel: novoTopicoResp.trim() || undefined,
     };
     setPautasTopicos((prev) => [...prev, novo]);
     setNovoTopicoTitulo('');
+    setNovoTopicoDesc('');
     setNovoTopicoResp('');
     setNovoTopicoTempo(15);
   };
 
-  const handleAddTopicoPredefinido = (tituloPreset: string, tempoPadrao: number) => {
-    const novo: TopicoPauta = {
-      id: crypto.randomUUID ? crypto.randomUUID() : `topico-${Date.now()}-${Math.random()}`,
-      titulo: tituloPreset,
-      tempo_estimado_min: tempoPadrao,
-    };
-    setPautasTopicos((prev) => [...prev, novo]);
+  const handleStartEditTopico = (topico: TopicoPauta) => {
+    setEditingTopicoId(topico.id);
+    setEditTopicoTitulo(topico.titulo);
+    setEditTopicoDesc(topico.descricao || '');
+    setEditTopicoTempo(topico.tempo_estimado_min || 15);
+    setEditTopicoResp(topico.responsavel || '');
+  };
+
+  const handleSaveEditTopico = () => {
+    if (!editingTopicoId) return;
+    if (!editTopicoTitulo.trim()) {
+      alert('O assunto da pauta não pode ser vazio.');
+      return;
+    }
+    setPautasTopicos((prev) =>
+      prev.map((t) =>
+        t.id === editingTopicoId
+          ? {
+              ...t,
+              titulo: editTopicoTitulo.trim(),
+              descricao: editTopicoDesc.trim() || undefined,
+              tempo_estimado_min: Math.max(5, Number(editTopicoTempo) || 15),
+              responsavel: editTopicoResp.trim() || undefined,
+            }
+          : t
+      )
+    );
+    setEditingTopicoId(null);
+  };
+
+  const handleCancelEditTopico = () => {
+    setEditingTopicoId(null);
+  };
+
+  const handleMoveTopico = (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= pautasTopicos.length) return;
+    setPautasTopicos((prev) => {
+      const copy = [...prev];
+      const [moved] = copy.splice(index, 1);
+      copy.splice(targetIndex, 0, moved);
+      return copy;
+    });
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedTopicoIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverTopicoIndex !== index) {
+      setDragOverTopicoIndex(index);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedTopicoIndex === null || draggedTopicoIndex === targetIndex) {
+      setDraggedTopicoIndex(null);
+      setDragOverTopicoIndex(null);
+      return;
+    }
+    setPautasTopicos((prev) => {
+      const copy = [...prev];
+      const [moved] = copy.splice(draggedTopicoIndex, 1);
+      copy.splice(targetIndex, 0, moved);
+      return copy;
+    });
+    setDraggedTopicoIndex(null);
+    setDragOverTopicoIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTopicoIndex(null);
+    setDragOverTopicoIndex(null);
   };
 
   const handleImportarLotePautas = () => {
@@ -447,7 +536,9 @@ export function ModalNovaReuniao({
           (t, idx) =>
             `${idx + 1}. ${t.titulo}${
               t.tempo_estimado_min ? ` (${t.tempo_estimado_min} min)` : ''
-            }${t.responsavel ? ` - Relator: ${t.responsavel}` : ''}`
+            }${t.responsavel ? ` - Relator: ${t.responsavel}` : ''}${
+              t.descricao ? `\n   ${t.descricao}` : ''
+            }`
         )
         .join('\n');
 
@@ -708,44 +799,9 @@ export function ModalNovaReuniao({
               </button>
             </div>
 
-            {/* Modelos Comuns (Presets em 1 clique) */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] text-[var(--text-muted)] font-medium mr-1">
-                Adicionar rápido:
-              </span>
-              <button
-                type="button"
-                onClick={() => handleAddTopicoPredefinido('Informes Gerais e Comunicações', 10)}
-                className="px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] hover:border-[var(--color-primary)] text-[var(--text-secondary)] transition-colors cursor-pointer"
-              >
-                + Informes Gerais (10m)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAddTopicoPredefinido('Apresentação da Pauta Central', 30)}
-                className="px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] hover:border-[var(--color-primary)] text-[var(--text-secondary)] transition-colors cursor-pointer"
-              >
-                + Pauta Central (30m)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAddTopicoPredefinido('Deliberações e Decisões', 15)}
-                className="px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] hover:border-[var(--color-primary)] text-[var(--text-secondary)] transition-colors cursor-pointer"
-              >
-                + Deliberações (15m)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAddTopicoPredefinido('Encaminhamentos e Prazos', 10)}
-                className="px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] hover:border-[var(--color-primary)] text-[var(--text-secondary)] transition-colors cursor-pointer"
-              >
-                + Encaminhamentos (10m)
-              </button>
-            </div>
-
             {/* Modo Lote: Caixa de Texto Corrido */}
             {modoLotePautas ? (
-              <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-2">
+              <div className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-2">
                 <label className="text-xs font-semibold text-[var(--text-secondary)]">
                   Cole ou digite as pautas (uma por linha):
                 </label>
@@ -754,7 +810,7 @@ export function ModalNovaReuniao({
                   value={textoLotePautas}
                   onChange={(e) => setTextoLotePautas(e.target.value)}
                   placeholder="1. Aprovação do cronograma de eventos (20 min)&#10;2. Prestação de contas do trimestre (30 min)&#10;3. Alinhamento dos voluntários da ação (15 min)"
-                  className="w-full p-2.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-mono"
+                  className="w-full p-2.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D] font-mono resize-y"
                 />
                 <div className="flex justify-end gap-2">
                   <Button
@@ -776,12 +832,12 @@ export function ModalNovaReuniao({
                 </div>
               </div>
             ) : (
-              /* Modo Guiado: Input Direto e Simples */
-              <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-2.5">
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+              /* Modo Guiado: Inclusão com Título e Descrição Expansível */
+              <div className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-3 shadow-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                   <div className="sm:col-span-6 flex flex-col gap-1">
-                    <label className="text-[11px] text-[var(--text-muted)] font-medium">
-                      Assunto da Pauta *
+                    <label className="text-[11px] text-[var(--text-muted)] font-semibold">
+                      Título do Assunto da Pauta *
                     </label>
                     <input
                       type="text"
@@ -789,17 +845,17 @@ export function ModalNovaReuniao({
                       value={novoTopicoTitulo}
                       onChange={(e) => setNovoTopicoTitulo(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
                           handleAddTopico();
                         }
                       }}
-                      className="w-full px-3 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D]"
                     />
                   </div>
 
                   <div className="sm:col-span-3 flex flex-col gap-1">
-                    <label className="text-[11px] text-[var(--text-muted)] font-medium">
+                    <label className="text-[11px] text-[var(--text-muted)] font-semibold">
                       Tempo Estimado
                     </label>
                     <div className="flex items-center gap-1">
@@ -809,34 +865,50 @@ export function ModalNovaReuniao({
                         step={5}
                         value={novoTopicoTempo}
                         onChange={(e) => setNovoTopicoTempo(Math.max(5, Number(e.target.value)))}
-                        className="w-full px-2.5 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                        className="w-full px-2.5 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D]"
                       />
-                      <span className="text-xs text-[var(--text-muted)] shrink-0">min</span>
+                      <span className="text-xs text-[var(--text-muted)] shrink-0 font-medium">min</span>
                     </div>
                   </div>
 
                   <div className="sm:col-span-3 flex flex-col gap-1">
-                    <label className="text-[11px] text-[var(--text-muted)] font-medium">
+                    <label className="text-[11px] text-[var(--text-muted)] font-semibold">
                       Relator (Opcional)
                     </label>
                     <input
                       type="text"
-                      placeholder="Nome do relator..."
+                      placeholder="Ex: Coordenação..."
                       value={novoTopicoResp}
                       onChange={(e) => setNovoTopicoResp(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
                           handleAddTopico();
                         }
                       }}
-                      className="w-full px-3 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      className="w-full px-3 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D]"
                     />
                   </div>
                 </div>
 
+                {/* Descrição Detalhada da Pauta (Expansível) */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] text-[var(--text-muted)] font-semibold flex items-center justify-between">
+                    <span>Descrição / Detalhamento da Pauta (Expansível)</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-normal">Opcional</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Descreva o contexto, dados prévios ou tópicos a deliberar para esta pauta..."
+                    value={novoTopicoDesc}
+                    onChange={(e) => setNovoTopicoDesc(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D] resize-y min-h-[54px] transition-all"
+                  />
+                </div>
+
                 <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
                   <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-[var(--text-muted)] mr-1">Duração rápida:</span>
                     {[10, 15, 20, 30, 45].map((mins) => (
                       <button
                         key={mins}
@@ -844,7 +916,7 @@ export function ModalNovaReuniao({
                         onClick={() => setNovoTopicoTempo(mins)}
                         className={`px-2 py-0.5 text-[10px] font-medium rounded border transition-colors cursor-pointer ${
                           novoTopicoTempo === mins
-                            ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                            ? 'bg-[#F2632D] text-white border-[#F2632D]'
                             : 'bg-[var(--bg-secondary)] border-[var(--border-default)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                         }`}
                       >
@@ -856,7 +928,7 @@ export function ModalNovaReuniao({
                   <Button
                     type="button"
                     size="sm"
-                    variant="secondary"
+                    variant="primary"
                     onClick={handleAddTopico}
                     icon={<Plus className="w-3.5 h-3.5" />}
                   >
@@ -866,68 +938,208 @@ export function ModalNovaReuniao({
               </div>
             )}
 
-            {/* Lista dos tópicos cadastrados com ajustes inline */}
-            <div className="space-y-1.5">
-              {pautasTopicos.map((topico, idx) => (
-                <div
-                  key={topico.id}
-                  className="flex items-center justify-between gap-3 p-2.5 sm:p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] transition-all"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <span className="w-5 h-5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center font-bold text-[11px] shrink-0">
-                      {idx + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-xs truncate">
-                        {topico.titulo}
-                      </p>
-                      {topico.responsavel && (
-                        <p className="text-[10px] text-purple-600 dark:text-purple-400 font-medium truncate">
-                          Relator: {topico.responsavel}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+            {/* Lista dos tópicos cadastrados com Edição Inline + Drag and Drop */}
+            <div className="space-y-2">
+              {pautasTopicos.map((topico, idx) => {
+                const isEditingThis = editingTopicoId === topico.id;
+                const isDragging = draggedTopicoIndex === idx;
+                const isDragOver = dragOverTopicoIndex === idx && draggedTopicoIndex !== idx;
 
-                  {/* Controle de Tempo do Tópico (+5m, -5m) e Exclusão */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <div className="flex items-center bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-default)] px-1 py-0.5">
-                      <button
-                        type="button"
-                        onClick={() => handleAjustarTempoTopico(topico.id, -5)}
-                        className="px-1 text-[11px] font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
-                        title="Diminuir 5 minutos"
-                      >
-                        -
-                      </button>
-                      <span className="px-1.5 text-[11px] font-semibold text-[var(--text-primary)] min-w-[36px] text-center">
-                        {topico.tempo_estimado_min || 15}m
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleAjustarTempoTopico(topico.id, 5)}
-                        className="px-1 text-[11px] font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
-                        title="Aumentar 5 minutos"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTopico(topico.id)}
-                      className="p-1.5 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
-                      title="Remover pauta"
+                if (isEditingThis) {
+                  return (
+                    <div
+                      key={topico.id}
+                      className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border-2 border-[#F2632D]/60 space-y-2.5 shadow-sm"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#F2632D] flex items-center gap-1.5">
+                          <Edit2 className="w-3.5 h-3.5" />
+                          Editando Pauta #{idx + 1}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleCancelEditTopico}
+                            className="h-7 px-2.5 text-xs"
+                          >
+                            Cancelar
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="primary"
+                            onClick={handleSaveEditTopico}
+                            icon={<Check className="w-3 h-3" />}
+                            className="h-7 px-2.5 text-xs"
+                          >
+                            Salvar
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                        <div className="sm:col-span-6 flex flex-col gap-1">
+                          <label className="text-[10px] text-[var(--text-muted)] font-semibold">
+                            Título do Assunto *
+                          </label>
+                          <input
+                            type="text"
+                            value={editTopicoTitulo}
+                            onChange={(e) => setEditTopicoTitulo(e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D]"
+                          />
+                        </div>
+                        <div className="sm:col-span-3 flex flex-col gap-1">
+                          <label className="text-[10px] text-[var(--text-muted)] font-semibold">
+                            Tempo Estimado
+                          </label>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={5}
+                              step={5}
+                              value={editTopicoTempo}
+                              onChange={(e) => setEditTopicoTempo(Math.max(5, Number(e.target.value)))}
+                              className="w-full px-2 py-1.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D]"
+                            />
+                            <span className="text-[11px] text-[var(--text-muted)]">min</span>
+                          </div>
+                        </div>
+                        <div className="sm:col-span-3 flex flex-col gap-1">
+                          <label className="text-[10px] text-[var(--text-muted)] font-semibold">
+                            Relator (Opcional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Nome do relator..."
+                            value={editTopicoResp}
+                            onChange={(e) => setEditTopicoResp(e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] text-[var(--text-muted)] font-semibold">
+                          Descrição Detalhada da Pauta (Expansível)
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={editTopicoDesc}
+                          onChange={(e) => setEditTopicoDesc(e.target.value)}
+                          placeholder="Descrição ou tópicos a deliberar..."
+                          className="w-full px-2.5 py-1.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D] resize-y min-h-[50px]"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={topico.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={(e) => handleDragOver(e, idx)}
+                    onDrop={(e) => handleDrop(e, idx)}
+                    onDragEnd={handleDragEnd}
+                    className={`flex items-start justify-between gap-3 p-3 rounded-xl border transition-all ${
+                      isDragging ? 'opacity-30 scale-[0.99] border-dashed border-[#F2632D]' : 'opacity-100'
+                    } ${
+                      isDragOver ? 'border-[#F2632D] bg-[#F2632D]/5 shadow-sm' : 'bg-[var(--bg-elevated)] border-[var(--border-default)] hover:border-[#F2632D]/30'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                      {/* Handle para Drag & Drop */}
+                      <div
+                        className="cursor-grab active:cursor-grabbing text-[var(--text-muted)] hover:text-[#F2632D] p-0.5 mt-0.5 shrink-0"
+                        title="Arraste para reordenar esta pauta"
+                      >
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+
+                      <span className="w-5 h-5 rounded-full bg-[var(--color-primary-soft)] text-[#F2632D] flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-xs text-[var(--text-primary)] leading-snug">
+                          {topico.titulo}
+                        </p>
+                        {topico.descricao && (
+                          <p className="text-[11px] text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed bg-[var(--bg-secondary)]/50 p-1.5 rounded-lg border border-[var(--border-default)]/60">
+                            {topico.descricao}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          {topico.tempo_estimado_min && (
+                            <span className="text-[10px] font-medium text-[var(--text-muted)] flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-[#F2632D]" />
+                              {topico.tempo_estimado_min} min
+                            </span>
+                          )}
+                          {topico.responsavel && (
+                            <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
+                              Relator: {topico.responsavel}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botões de Ação: Reordenação Up/Down, Ajuste de Tempo, Editar, Excluir */}
+                    <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                      {/* Subir / Descer */}
+                      <div className="flex items-center border border-[var(--border-default)] rounded-lg overflow-hidden bg-[var(--bg-secondary)]">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => handleMoveTopico(idx, 'up')}
+                          className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                          title="Mover para cima"
+                        >
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === pautasTopicos.length - 1}
+                          onClick={() => handleMoveTopico(idx, 'down')}
+                          className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-20 disabled:cursor-not-allowed transition-colors border-l border-[var(--border-default)]"
+                          title="Mover para baixo"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Editar Pauta */}
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditTopico(topico)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-[#F2632D] hover:bg-[#F2632D]/10 rounded-lg transition-colors cursor-pointer"
+                        title="Editar pauta"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Remover Pauta */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTopico(topico.id)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                        title="Remover pauta"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {pautasTopicos.length === 0 && (
                 <div className="p-4 text-center text-xs text-[var(--text-muted)] border border-dashed border-[var(--border-default)] rounded-xl">
-                  Nenhuma pauta adicionada ainda. Use os botões rápidos acima ou digite o assunto.
+                  Nenhuma pauta adicionada ainda. Digite o assunto e descrição acima para incluir.
                 </div>
               )}
             </div>

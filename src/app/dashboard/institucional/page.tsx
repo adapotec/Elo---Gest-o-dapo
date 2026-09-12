@@ -317,7 +317,11 @@ export default function InstitucionalPage() {
       case 'em_andamento':
         return <Badge variant="warning">EM ANDAMENTO</Badge>;
       case 'agendada':
-        return <Badge variant="purple">AGENDADA</Badge>;
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
+            AGENDADA
+          </span>
+        );
       case 'cancelada':
       default:
         return <Badge variant="danger">CANCELADA</Badge>;
@@ -509,49 +513,55 @@ export default function InstitucionalPage() {
                       onClick={() => {
                         setSelectedReuniao(r);
                       }}
-                      className={`w-full text-left p-3.5 rounded-2xl border transition-all text-xs ${
+                      className={`w-full text-left p-4 rounded-2xl border transition-all text-xs card-contrast relative overflow-hidden group cursor-pointer ${
                         isSelected
-                          ? 'bg-[var(--color-primary-soft)] border-[var(--color-primary)] ring-1 ring-[var(--color-primary)] shadow-xs'
-                          : 'bg-[var(--bg-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-elevated)]'
+                          ? 'bg-[var(--bg-elevated)] border-[#F2632D] shadow-md ring-2 ring-[#F2632D]/30 border-l-[6px] border-l-[#F2632D]'
+                          : 'bg-[var(--bg-elevated)]/90 border-[var(--border-default)] hover:border-[#F2632D]/40 hover:bg-[var(--bg-elevated)] shadow-xs'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start justify-between gap-2.5">
                         <div className="min-w-0 flex-1">
                           {/* Tag de Projeto ou Geral */}
-                          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                          <div className="flex items-center gap-1.5 mb-2 flex-wrap">
                             {r.projeto ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                                <FolderKanban className="w-3 h-3" />
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold text-[10px] bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                                <FolderKanban className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                                 {r.projeto.nome}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium text-[10px] bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-default)]">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold text-[10px] bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)]">
                                 Geral
                               </span>
                             )}
                             {getTipoBadge(r.tipo)}
                           </div>
 
-                          <p className="font-bold text-sm text-[var(--text-primary)] truncate leading-snug">
+                          <p
+                            className={`text-sm truncate leading-snug ${
+                              isSelected
+                                ? 'font-extrabold text-[var(--text-primary)]'
+                                : 'font-bold text-[var(--text-primary)] group-hover:text-[#F2632D] transition-colors'
+                            }`}
+                          >
                             {r.titulo}
                           </p>
 
                           {/* Data e Horário */}
-                          <div className="flex items-center gap-2 mt-1.5 text-[11px] text-[var(--text-muted)] flex-wrap">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-[var(--color-primary)]" />
+                          <div className="flex items-center gap-2 mt-2 text-[11px] text-[var(--text-secondary)] flex-wrap">
+                            <span className="flex items-center gap-1 font-semibold text-[var(--text-primary)]">
+                              <Calendar className="w-3.5 h-3.5 text-[#F2632D]" />
                               {dataDate.toLocaleDateString('pt-BR')}
                             </span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                            <span className="opacity-40">•</span>
+                            <span className="flex items-center gap-1 font-medium">
+                              <Clock className="w-3.5 h-3.5 text-[var(--text-muted)]" />
                               {dataDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                             {r.participantes && r.participantes.length > 0 && (
                               <>
-                                <span>•</span>
-                                <span className="flex items-center gap-1">
-                                  <Users className="w-3 h-3" />
+                                <span className="opacity-40">•</span>
+                                <span className="flex items-center gap-1 font-medium text-[var(--text-muted)]">
+                                  <Users className="w-3.5 h-3.5" />
                                   {r.participantes.length}
                                 </span>
                               </>
@@ -559,11 +569,13 @@ export default function InstitucionalPage() {
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-end gap-2 shrink-0">
+                        <div className="flex flex-col items-end gap-2.5 shrink-0 pt-0.5">
                           {getStatusBadge(r.status)}
                           <ChevronRight
-                            className={`w-4 h-4 transition-transform ${
-                              isSelected ? 'text-[var(--color-primary)] translate-x-0.5' : 'text-[var(--text-muted)] opacity-50'
+                            className={`w-4 h-4 transition-all ${
+                              isSelected
+                                ? 'text-[#F2632D] translate-x-1 font-bold'
+                                : 'text-[var(--text-muted)] opacity-50 group-hover:translate-x-0.5 group-hover:opacity-80'
                             }`}
                           />
                         </div>

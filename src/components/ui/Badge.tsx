@@ -24,7 +24,7 @@ export function Badge({
   const variants = {
     primary: 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] border-[var(--color-primary)]/20',
     success: 'bg-[var(--color-success-soft)] text-[var(--color-success)] border-[var(--color-success)]/20',
-    warning: 'bg-[var(--color-warning-soft)] text-[var(--text-primary)] border-[var(--color-warning)]/40',
+    warning: 'bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-500/30 font-semibold',
     danger: 'bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)]/20',
     purple: 'bg-[var(--color-primary-soft)] text-[var(--color-accent-purple)] border-[var(--color-accent-purple)]/20',
     neutral: 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-default)]',

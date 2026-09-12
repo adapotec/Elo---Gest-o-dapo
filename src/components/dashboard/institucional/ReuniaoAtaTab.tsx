@@ -286,30 +286,36 @@ Nada mais havendo a tratar, a sessão foi concluída, da qual se lavrou a presen
           {encaminhamentos.map((item, idx) => (
             <div
               key={item.id || idx}
-              className={`flex items-center justify-between gap-3 p-3 rounded-xl border text-xs transition-colors ${
+              className={`flex items-start justify-between gap-3 p-3.5 rounded-2xl border text-xs transition-colors shadow-xs ${
                 item.status === 'concluido'
                   ? 'bg-emerald-500/5 border-emerald-500/20 text-[var(--text-muted)] line-through'
-                  : 'bg-[var(--bg-secondary)] border-[var(--border-default)] text-[var(--text-primary)]'
+                  : 'bg-[var(--bg-elevated)] border-[var(--border-default)] text-[var(--text-primary)]'
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
                 <button
                   type="button"
                   onClick={() => handleToggleStatusEncaminhamento(item.id)}
-                  className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
+                  className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 mt-0.5 ${
                     item.status === 'concluido'
                       ? 'bg-emerald-500 border-emerald-500 text-white'
                       : 'border-[var(--border-default)] hover:border-emerald-500'
                   }`}
+                  title={item.status === 'concluido' ? 'Marcar como pendente' : 'Marcar como concluído'}
                 >
                   {item.status === 'concluido' && <CheckCircle className="w-3.5 h-3.5" />}
                 </button>
-                <div className="truncate">
-                  <p className="font-medium truncate">{item.descricao}</p>
-                  <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] mt-0.5">
-                    <span className="text-purple-500 font-semibold">Resp: {item.responsavel}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-xs leading-relaxed break-words">{item.descricao}</p>
+                  <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] mt-1.5 flex-wrap">
+                    <span className="text-purple-600 dark:text-purple-400 font-semibold bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
+                      Resp: {item.responsavel}
+                    </span>
                     {item.prazo && (
-                      <span>• Prazo: {new Date(item.prazo).toLocaleDateString('pt-BR')}</span>
+                      <span className="flex items-center gap-1 font-medium">
+                        <Calendar className="w-3 h-3 text-[#F2632D]" />
+                        Prazo: {new Date(item.prazo).toLocaleDateString('pt-BR')}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -318,7 +324,8 @@ Nada mais havendo a tratar, a sessão foi concluída, da qual se lavrou a presen
               <button
                 type="button"
                 onClick={() => handleRemoveEncaminhamento(item.id)}
-                className="text-[var(--text-muted)] hover:text-red-500 p-1 shrink-0"
+                className="text-[var(--text-muted)] hover:text-red-500 p-1 shrink-0 transition-colors"
+                title="Remover encaminhamento"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -332,42 +339,58 @@ Nada mais havendo a tratar, a sessão foi concluída, da qual se lavrou a presen
           )}
         </div>
 
-        {/* Adicionar novo encaminhamento */}
-        <div className="p-3 rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-            <div className="sm:col-span-6">
+        {/* Adicionar novo encaminhamento com campo expansível */}
+        <div className="p-3.5 rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--bg-elevated)] space-y-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-[var(--text-muted)] font-semibold flex items-center justify-between">
+              <span>Descrição da Ação / Tarefa (Expansível) *</span>
+              <span className="text-[10px] text-[var(--text-muted)] font-normal">Plano de ação pactuado</span>
+            </label>
+            <textarea
+              rows={2}
+              placeholder="O que precisa ser feito? Descreva detalhadamente o encaminhamento, metas ou entregáveis..."
+              value={novaAcaoDesc}
+              onChange={(e) => setNovaAcaoDesc(e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D] resize-y min-h-[50px] transition-all"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+            <div className="sm:col-span-6 flex flex-col gap-1">
+              <label className="text-[11px] text-[var(--text-muted)] font-semibold">
+                Responsável pela Execução
+              </label>
               <input
                 type="text"
-                placeholder="O que precisa ser feito? (Ex: Enviar relatório do mês...)"
-                value={novaAcaoDesc}
-                onChange={(e) => setNovaAcaoDesc(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
-              />
-            </div>
-            <div className="sm:col-span-3">
-              <input
-                type="text"
-                placeholder="Responsável..."
+                placeholder="Ex: Coordenação / Fulano..."
                 value={novaAcaoResp}
                 onChange={(e) => setNovaAcaoResp(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                className="w-full px-3 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D]"
               />
             </div>
-            <div className="sm:col-span-3 flex gap-2">
+
+            <div className="sm:col-span-4 flex flex-col gap-1">
+              <label className="text-[11px] text-[var(--text-muted)] font-semibold">
+                Prazo Limite
+              </label>
               <input
                 type="date"
                 value={novaAcaoPrazo}
                 onChange={(e) => setNovaAcaoPrazo(e.target.value)}
-                className="w-full px-2 py-1.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                className="w-full px-2.5 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D]"
               />
+            </div>
+
+            <div className="sm:col-span-2">
               <Button
                 type="button"
                 size="sm"
-                variant="secondary"
+                variant="primary"
                 onClick={handleAddEncaminhamento}
                 icon={<Plus className="w-3.5 h-3.5" />}
+                className="w-full h-[38px] text-xs font-semibold"
               >
-                Add
+                Adicionar
               </Button>
             </div>
           </div>
