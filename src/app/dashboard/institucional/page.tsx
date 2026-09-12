@@ -854,6 +854,11 @@ export default function InstitucionalPage() {
             ? `${selectedReuniao.titulo} | ${new Date(selectedReuniao.data_hora).toLocaleDateString('pt-BR')}`
             : ''
         }
+        nomeArquivo={
+          selectedReuniao
+            ? `${printModo === 'convocacao' ? 'Convocação' : 'Ata'} - ${selectedReuniao.titulo} - ${new Date(selectedReuniao.data_hora).toLocaleDateString('pt-BR').replace(/\//g, '-')}`
+            : undefined
+        }
       >
         {selectedReuniao && <ReuniaoPrintTemplate reuniao={selectedReuniao} modo={printModo} />}
       </PapelTimbradoModal>

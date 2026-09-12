@@ -10,7 +10,15 @@ interface PapelTimbradoModalProps {
   onClose: () => void;
   tituloDocumento: string;
   subtituloDocumento?: string;
+  nomeArquivo?: string;
   children: React.ReactNode;
+}
+
+function sanitizeFileName(name: string): string {
+  return name
+    .replace(/[/\\?%*:|"<>]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export function PapelTimbradoModal({
@@ -18,6 +26,7 @@ export function PapelTimbradoModal({
   onClose,
   tituloDocumento,
   subtituloDocumento,
+  nomeArquivo,
   children,
 }: PapelTimbradoModalProps) {
   const [mounted, setMounted] = useState(false);
@@ -26,9 +35,39 @@ export function PapelTimbradoModal({
     setMounted(true);
   }, []);
 
+  // Define o nome desejado do arquivo para salvar como PDF via window.print()
+  const targetTitle = nomeArquivo
+    ? sanitizeFileName(nomeArquivo)
+    : sanitizeFileName(
+        subtituloDocumento
+          ? `${tituloDocumento} - ${subtituloDocumento}`
+          : tituloDocumento
+      );
+
+  // Sincroniza o document.title enquanto o modal estiver aberto para que o diálogo de PDF sugira o nome correto
+  useEffect(() => {
+    if (!isOpen || !mounted) return;
+    const previousTitle = document.title;
+    document.title = targetTitle;
+
+    const handleAfterPrint = () => {
+      if (!isOpen) {
+        document.title = previousTitle;
+      }
+    };
+
+    window.addEventListener('afterprint', handleAfterPrint);
+
+    return () => {
+      window.removeEventListener('afterprint', handleAfterPrint);
+      document.title = previousTitle;
+    };
+  }, [isOpen, mounted, targetTitle]);
+
   if (!isOpen || !mounted) return null;
 
   const handlePrint = () => {
+    document.title = targetTitle;
     window.print();
   };
 
@@ -36,8 +75,24 @@ export function PapelTimbradoModal({
     <div className="timbrado-print-modal-wrapper fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
       <style>{`
         @media print {
+          /* 0. Reseta fundo global para branco puro e elimina qualquer cor de tema */
+          :root, html, body {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 100% !important;
+            --bg-primary: #ffffff !important;
+            --bg-secondary: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
           /* 1. Esconde tudo fora do portal timbrado */
-          body > * {
+          body > *:not(.timbrado-print-portal) {
             display: none !important;
           }
 
@@ -47,14 +102,16 @@ export function PapelTimbradoModal({
             width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            background: white !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
 
           .timbrado-print-modal-wrapper {
             display: block !important;
             position: static !important;
             width: 100% !important;
-            background: white !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
             padding: 0 !important;
             margin: 0 !important;
             overflow: visible !important;
@@ -71,7 +128,8 @@ export function PapelTimbradoModal({
             border-radius: 0 !important;
             box-shadow: none !important;
             overflow: visible !important;
-            background: white !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
 
           .timbrado-header-controls {
@@ -84,7 +142,8 @@ export function PapelTimbradoModal({
             padding: 0 !important;
             margin: 0 !important;
             overflow: visible !important;
-            background: white !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
             color: #0f172a !important;
           }
 
@@ -97,7 +156,8 @@ export function PapelTimbradoModal({
             right: 0 !important;
             width: 100% !important;
             height: 95px !important;
-            background: white !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
             z-index: 9999 !important;
             text-align: center !important;
           }
@@ -108,6 +168,8 @@ export function PapelTimbradoModal({
             width: 100% !important;
             border-collapse: collapse !important;
             border: none !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
           }
 
           .timbrado-table-header-space {
@@ -118,6 +180,7 @@ export function PapelTimbradoModal({
             height: 105px !important;
             padding: 0 !important;
             border: none !important;
+            background: transparent !important;
           }
 
           .timbrado-table-footer-space {
@@ -128,6 +191,7 @@ export function PapelTimbradoModal({
             height: 20px !important;
             padding: 0 !important;
             border: none !important;
+            background: transparent !important;
           }
 
           .timbrado-sheet {
@@ -136,7 +200,9 @@ export function PapelTimbradoModal({
             max-width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            background: white !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            min-height: auto !important;
           }
 
           .timbrado-sheet * {

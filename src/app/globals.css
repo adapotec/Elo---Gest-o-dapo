@@ -451,3 +451,18 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
+
+/* ==========================================================================
+   REGRAS GLOBAIS DE IMPRESSÃO (PREVENÇÃO DE VAZAMENTO DE COR DE TEMA)
+   ========================================================================== */
+@media print {
+  :root, html, body {
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    color: #0F172A !important;
+    --bg-primary: #FFFFFF !important;
+    --bg-secondary: #FFFFFF !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
