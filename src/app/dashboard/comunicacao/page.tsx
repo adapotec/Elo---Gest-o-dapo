@@ -38,14 +38,13 @@ interface TabItem {
   key: TabKey;
   label: string;
   icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  color: string;
 }
 
 const TABS: TabItem[] = [
-  { key: 'calendario', label: 'Calendário Editorial', icon: CalendarIcon, color: '#F2632D' },
-  { key: 'campanhas', label: 'Campanhas Estratégicas', icon: Megaphone, color: '#93368F' },
-  { key: 'indicadores', label: 'Indicadores & Redes', icon: TrendingUp, color: '#3B82F6' },
-  { key: 'galeria', label: 'Galeria & Drive', icon: FolderOpen, color: '#1C9C82' },
+  { key: 'calendario', label: 'Calendário Editorial', icon: CalendarIcon },
+  { key: 'campanhas', label: 'Campanhas Estratégicas', icon: Megaphone },
+  { key: 'indicadores', label: 'Indicadores & Redes', icon: TrendingUp },
+  { key: 'galeria', label: 'Galeria & Drive', icon: FolderOpen },
 ];
 
 function ComunicacaoContent() {
@@ -506,18 +505,18 @@ function ComunicacaoContent() {
                 key={tab.key}
                 type="button"
                 onClick={() => handleTabChange(tab.key)}
-                className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer ${
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer ${
                   isActive
-                    ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-xs border border-[var(--border-default)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/50'
+                    ? 'bg-[var(--color-primary)] text-white shadow-sm shadow-[var(--color-primary)]/25'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
                 }`}
               >
                 <div
-                  className="w-5 h-5 rounded-lg flex items-center justify-center transition-colors"
-                  style={{
-                    backgroundColor: isActive ? `${tab.color}20` : 'transparent',
-                    color: isActive ? tab.color : 'currentColor',
-                  }}
+                  className={`w-5 h-5 rounded-lg flex items-center justify-center transition-colors ${
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : 'text-[var(--text-muted)]'
+                  }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </div>

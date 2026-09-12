@@ -740,7 +740,7 @@ export function ComunicacaoCalendario({
           onClick={() => setStatusFilter('todos')}
           className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 ${
             statusFilter === 'todos'
-              ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/20 shadow-xs ring-2 ring-[var(--color-primary)]/25'
+              ? 'border-2 border-[var(--color-primary)] bg-[var(--bg-elevated)] shadow-xs ring-2 ring-[var(--color-primary)]/20'
               : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]/50'
           }`}
           title="Clique para exibir todos os status"
@@ -858,7 +858,7 @@ export function ComunicacaoCalendario({
               onClick={() => setViewMode('tabela')}
               className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'tabela'
-                  ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs border border-[var(--border-default)]'
+                  ? 'bg-[var(--color-primary)] text-white shadow-xs'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -870,7 +870,7 @@ export function ComunicacaoCalendario({
               onClick={() => setViewMode('calendario')}
               className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'calendario'
-                  ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs border border-[var(--border-default)]'
+                  ? 'bg-[var(--color-primary)] text-white shadow-xs'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
