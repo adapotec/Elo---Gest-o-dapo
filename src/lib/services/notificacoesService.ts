@@ -199,6 +199,51 @@ export function dispararNotificacoesConvocacaoReuniao(params: {
 }
 
 /**
+ * Dispara notificação específica para o voluntário designado como Secretário da Reunião
+ */
+export function dispararNotificacaoSecretarioDesignado(params: {
+  reuniaoId: string;
+  titulo: string;
+  dataHora: string;
+  secretarioNome: string;
+  voluntarios?: { nome_completo: string; email?: string }[];
+}) {
+  const { reuniaoId, titulo, dataHora, secretarioNome, voluntarios = [] } = params;
+  if (!secretarioNome || !secretarioNome.trim()) return;
+
+  const dataObj = new Date(dataHora);
+  const dataFormatada = dataObj.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+  const horaFormatada = dataObj.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const volMatch = voluntarios.find(
+    (v) => cleanString(v.nome_completo) === cleanString(secretarioNome)
+  );
+
+  const listaAtual = getNotificacoes();
+  const notificacao: Notificacao = {
+    id: `notif-sec-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+    titulo: `Designação como Secretário(a): ${titulo}`,
+    mensagem: `${secretarioNome}, você foi designado(a) como Secretário(a) da reunião "${titulo}" agendada para ${dataFormatada} às ${horaFormatada}h. Você será responsável pela condução de presenças e lavratura da ata.`,
+    tipo: 'reuniao',
+    link: `/dashboard/institucional?reuniaoId=${reuniaoId}&tab=ata`,
+    lida: false,
+    destinatario_nome: secretarioNome,
+    destinatario_email: volMatch?.email || undefined,
+    reuniao_id: reuniaoId,
+    created_at: new Date().toISOString(),
+  };
+
+  salvarETransmitir([notificacao, ...listaAtual]);
+}
+
+/**
  * Marca uma notificação individual como lida
  */
 export function marcarComoLida(id: string) {

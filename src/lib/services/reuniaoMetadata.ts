@@ -1,4 +1,4 @@
-import { Reuniao, TopicoPauta, EncaminhamentoReuniao, ModalidadeReuniao } from '@/types/reuniao';
+import { Reuniao, TopicoPauta, EncaminhamentoReuniao, ModalidadeReuniao, RessalvaAta } from '@/types/reuniao';
 
 export interface ReuniaoEmbeddedMetadata {
   horario_fim?: string;
@@ -12,7 +12,11 @@ export interface ReuniaoEmbeddedMetadata {
   presentes?: string[];
   ausentes?: string[];
   secretario?: string;
+  secretario_id?: string;
   presidente?: string;
+  created_by?: string | null;
+  created_by_name?: string;
+  ressalvas?: RessalvaAta[];
 }
 
 const META_TAG_START = '<!--ELO_REUNIAO_META:';
@@ -32,6 +36,7 @@ export function prepareReuniaoForDB(reuniao: Partial<Reuniao>, existingMeta?: Re
   ata: string | null;
   participantes: string[];
   status: string;
+  created_by?: string | null;
   updated_at: string;
 } {
   const meta: ReuniaoEmbeddedMetadata = {
@@ -47,7 +52,11 @@ export function prepareReuniaoForDB(reuniao: Partial<Reuniao>, existingMeta?: Re
     presentes: reuniao.presentes,
     ausentes: reuniao.ausentes,
     secretario: reuniao.secretario,
+    secretario_id: reuniao.secretario_id,
     presidente: reuniao.presidente,
+    created_by: reuniao.created_by !== undefined ? reuniao.created_by : existingMeta?.created_by,
+    created_by_name: reuniao.created_by_name || existingMeta?.created_by_name,
+    ressalvas: reuniao.ressalvas || existingMeta?.ressalvas,
   };
 
   // Remover chaves undefined para compactar o JSON
@@ -160,10 +169,14 @@ export function parseReuniaoFromDB(raw: any, projetosMap?: Map<string, any>): Re
       ? raw.ausentes
       : [],
     secretario: meta.secretario || raw.secretario || undefined,
+    secretario_id: meta.secretario_id || raw.secretario_id || undefined,
     presidente: meta.presidente || raw.presidente || undefined,
     status: raw.status || 'agendada',
     projeto_id: projId,
     projeto: proj,
+    created_by: raw.created_by || meta.created_by || null,
+    created_by_name: meta.created_by_name || undefined,
+    ressalvas: Array.isArray(meta.ressalvas) ? meta.ressalvas : [],
     created_at: raw.created_at,
     updated_at: raw.updated_at,
   };

@@ -233,6 +233,26 @@ export function ReuniaoPrintTemplate({ reuniao, modo }: ReuniaoPrintTemplateProp
         </section>
       )}
 
+      {/* Seção de Ressalvas / Atas Retificadoras (se houver) */}
+      {Array.isArray(reuniao.ressalvas) && reuniao.ressalvas.length > 0 && (
+        <section className="space-y-3 pt-2">
+          <h4 className="font-bold text-xs uppercase text-amber-800 border-b border-amber-600/30 pb-1 tracking-wider">
+            Aditamentos e Ressalvas Retificadoras
+          </h4>
+          <div className="space-y-2">
+            {reuniao.ressalvas.map((ressalva, idx) => (
+              <div key={ressalva.id || idx} className="p-2.5 rounded border border-amber-200 bg-amber-50/50 text-slate-800 text-xs">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-amber-900 mb-1">
+                  <span>Ressalva #{idx + 1} — Responsável: {ressalva.autor_nome || ressalva.autor}</span>
+                  <span>{new Date(ressalva.data_hora).toLocaleString('pt-BR')}</span>
+                </div>
+                <p className="whitespace-pre-line text-justify leading-relaxed">{ressalva.texto}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Assinaturas Formais */}
       <div className="pt-16 grid grid-cols-2 gap-12 text-xs text-center">
         <div className="border-t border-slate-400 pt-2">

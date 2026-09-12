@@ -43,6 +43,7 @@ export default function InstitucionalPage() {
   const [reunioes, setReunioes] = useState<Reuniao[]>([]);
   const [projetos, setProjetos] = useState<ProjetoResumo[]>([]);
   const [voluntarios, setVoluntarios] = useState<VoluntarioItem[]>([]);
+  const [currentUser, setCurrentUser] = useState<{ id?: string; name: string; email?: string } | null>(null);
   const [selectedReuniao, setSelectedReuniao] = useState<Reuniao | null>(null);
   const [activeTab, setActiveTab] = useState<'pauta' | 'presenca' | 'ata'>('pauta');
 
@@ -66,6 +67,23 @@ export default function InstitucionalPage() {
     try {
       setLoading(true);
       const supabase = createClient();
+
+      // Carregar perfil do usuário logado
+      try {
+        const cached = sessionStorage.getItem('elo_user_profile_cache') || localStorage.getItem('elo_user_profile_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setCurrentUser({ name: parsed.name, email: parsed.email });
+        }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUser((prev) => ({
+            id: user.id,
+            name: prev?.name || user.user_metadata?.nome_completo || user.email?.split('@')[0] || 'Administrador',
+            email: user.email || prev?.email,
+          }));
+        }
+      } catch (e) {}
 
       // 1. Carregar Projetos, Voluntários e Reuniões em paralelo
       const [respProj, respVol, respReunioes] = await Promise.all([
@@ -697,7 +715,31 @@ export default function InstitucionalPage() {
                 Voltar para todas as reuniões
               </button>
 
-              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setPrintModo('convocacao');
+                    setPrintModalOpen(true);
+                  }}
+                  icon={<Printer className="w-3.5 h-3.5 text-[#F2632D]" />}
+                  title="Gerar PDF oficial de Convocação"
+                >
+                  Convocação PDF
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setPrintModo('ata');
+                    setPrintModalOpen(true);
+                  }}
+                  icon={<FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+                  title="Gerar PDF oficial da Ata Timbrada"
+                >
+                  Ata Timbrada
+                </Button>
                 <Button
                   size="sm"
                   variant="secondary"
@@ -814,6 +856,7 @@ export default function InstitucionalPage() {
                 {activeTab === 'ata' && (
                   <ReuniaoAtaTab
                     reuniao={selectedReuniao}
+                    currentUser={currentUser}
                     onUpdateReuniao={handleUpdateSelected}
                     onOpenAtaPrint={() => {
                       setPrintModo('ata');
@@ -838,6 +881,7 @@ export default function InstitucionalPage() {
         initialData={editingReuniao}
         projetos={projetos}
         voluntarios={voluntarios}
+        currentUser={currentUser}
       />
 
       {/* MODAL DE IMPRESSÃO / PDF TIMBRADO (PAPEL TIMBRADO INSTITUTO ÁDAPO) */}

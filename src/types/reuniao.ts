@@ -36,6 +36,14 @@ export interface ProjetoResumo {
   icone?: string;
 }
 
+export interface RessalvaAta {
+  id: string;
+  data_hora: string;
+  autor: string;
+  autor_nome?: string;
+  texto: string;
+}
+
 export interface Reuniao {
   id?: string;
   titulo: string;
@@ -55,10 +63,14 @@ export interface Reuniao {
   presentes: string[];
   ausentes: string[];
   secretario?: string;
+  secretario_id?: string;
   presidente?: string;
   status: StatusReuniao;
   projeto_id?: string | null;
   projeto?: ProjetoResumo;
+  created_by?: string | null;
+  created_by_name?: string;
+  ressalvas?: RessalvaAta[];
   created_at?: string;
   updated_at?: string;
 }
