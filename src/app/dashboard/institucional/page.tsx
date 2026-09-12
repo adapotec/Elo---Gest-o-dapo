@@ -34,6 +34,8 @@ import {
   ListFilter,
   Play,
   ClipboardList,
+  ArrowLeft,
+  ArrowRight,
 } from 'lucide-react';
 
 export default function InstitucionalPage() {
@@ -100,7 +102,7 @@ export default function InstitucionalPage() {
         setReunioes(formatadas);
 
         // Se houver parâmetro na URL (?reuniaoId=...), priorizar essa reunião
-        let initialSelected = formatadas[0] || null;
+        let initialSelected: Reuniao | null = null;
         if (typeof window !== 'undefined') {
           const urlParams = new URLSearchParams(window.location.search);
           const paramId = urlParams.get('reuniaoId');
@@ -110,11 +112,13 @@ export default function InstitucionalPage() {
           }
         }
 
-        if (formatadas.length > 0) {
+        if (initialSelected) {
+          setSelectedReuniao(initialSelected);
+        } else {
           setSelectedReuniao((prev) => {
-            if (!prev) return initialSelected;
+            if (!prev) return null;
             const updated = formatadas.find((r) => r.id === prev.id);
-            return updated || initialSelected;
+            return updated || null;
           });
         }
       }
@@ -143,9 +147,9 @@ export default function InstitucionalPage() {
         setReunioes(formatadas);
 
         setSelectedReuniao((prev) => {
-          if (!prev) return formatadas[0] || null;
+          if (!prev) return null;
           const updated = formatadas.find((r: Reuniao) => r.id === prev.id);
-          return updated || prev;
+          return updated || null;
         });
       }
     } catch (err) {
@@ -370,159 +374,213 @@ export default function InstitucionalPage() {
 
       {/* Container Centralizado Arejado (Design System padrão Elo) */}
       <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto">
-        {/* Micro-KPIs Compactos */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Card className="p-3.5 flex items-center gap-3 border-l-4 border-l-[#F2632D] shadow-xs">
-            <div className="p-2.5 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-              <ClipboardList className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Total de Reuniões</p>
-              <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiTotal}</p>
-            </div>
-          </Card>
+        {!selectedReuniao ? (
+          /* =========================================================================
+             ESTADO 1: HUB DE REUNIÕES (VISÃO GERAL MINIMALISTA & INSTITUCIONAL)
+             ========================================================================= */
+          <div className="space-y-6">
+            {/* Micro-KPIs Minimalistas em Estilo Executivo */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center gap-3.5 shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-[#F2632D] flex items-center justify-center shrink-0">
+                  <ClipboardList className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Total de Reuniões</p>
+                  <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiTotal}</p>
+                </div>
+              </div>
 
-          <Card className="p-3.5 flex items-center gap-3 border-l-4 border-l-purple-500 shadow-xs">
-            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500">
-              <Calendar className="w-5 h-5" />
+              <div className="p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center gap-3.5 shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Agendadas / Próximas</p>
+                  <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiAgendadas}</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center gap-3.5 shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Atas Lavradas</p>
+                  <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiConcluidas}</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center gap-3.5 shadow-xs">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                  <FolderKanban className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">De Projetos Sociais</p>
+                  <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiProjetos}</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Agendadas / Próximas</p>
-              <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiAgendadas}</p>
+
+            {/* Barra de Filtros em Chips + Busca Rápida */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-[var(--bg-elevated)] p-3.5 rounded-2xl border border-[var(--border-default)] shadow-xs">
+              {/* Chips Rápidos de Status */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('todos')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all shrink-0 cursor-pointer ${
+                    filterStatus === 'todos'
+                      ? 'bg-[#F2632D] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  Todas ({kpiTotal})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('agendada')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all shrink-0 cursor-pointer ${
+                    filterStatus === 'agendada'
+                      ? 'bg-[#F2632D] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  Agendadas ({kpiAgendadas})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('em_andamento')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all shrink-0 cursor-pointer ${
+                    filterStatus === 'em_andamento'
+                      ? 'bg-[#F2632D] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  Em Andamento
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('concluida')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all shrink-0 cursor-pointer ${
+                    filterStatus === 'concluida'
+                      ? 'bg-[#F2632D] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  Atas Concluídas ({kpiConcluidas})
+                </button>
+              </div>
+
+              {/* Busca e Dropdowns de Filtro */}
+              <div className="flex items-center gap-2 flex-1 md:justify-end flex-wrap sm:flex-nowrap">
+                <div className="relative flex-1 md:max-w-xs">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+                  <input
+                    type="text"
+                    placeholder="Buscar reunião ou pauta..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[#F2632D] transition-all"
+                  />
+                </div>
+
+                <select
+                  value={filterProjeto}
+                  onChange={(e) => setFilterProjeto(e.target.value)}
+                  className="px-2.5 py-1.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] shrink-0 focus:outline-none focus:border-[#F2632D]"
+                >
+                  <option value="todos">Vínculo: Todos</option>
+                  <option value="geral">Geral / Diretoria</option>
+                  {projetos.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterTipo}
+                  onChange={(e) => setFilterTipo(e.target.value)}
+                  className="px-2.5 py-1.5 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] shrink-0 focus:outline-none focus:border-[#F2632D]"
+                >
+                  <option value="todos">Tipo: Todos</option>
+                  <option value="ordinaria">Ordinária</option>
+                  <option value="extraordinaria">Extraordinária</option>
+                  <option value="alinhamento_projeto">Alinhamento</option>
+                  <option value="diretoria">Diretoria</option>
+                  <option value="assembleia">Assembleia</option>
+                  <option value="conselho">Conselho</option>
+                  <option value="planejamento">Planejamento</option>
+                </select>
+              </div>
             </div>
-          </Card>
 
-          <Card className="p-3.5 flex items-center gap-3 border-l-4 border-l-emerald-500 shadow-xs">
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500">
-              <CheckCircle className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Atas Lavradas</p>
-              <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiConcluidas}</p>
-            </div>
-          </Card>
-
-          <Card className="p-3.5 flex items-center gap-3 border-l-4 border-l-blue-500 shadow-xs">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500">
-              <FolderKanban className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">De Projetos Sociais</p>
-              <p className="text-xl font-bold text-[var(--text-primary)] leading-tight">{kpiProjetos}</p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Barra de Ferramentas / Filtros em Linha Única */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-            <input
-              type="text"
-              placeholder="Buscar reunião por título, pauta, projeto ou conteúdo da ata..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-all"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-            {/* Filtro Status */}
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-2.5 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] shrink-0 focus:outline-none focus:border-[var(--color-primary)]"
-            >
-              <option value="todos">Status: Todos</option>
-              <option value="agendada">Agendadas</option>
-              <option value="em_andamento">Em Andamento</option>
-              <option value="concluida">Concluídas</option>
-              <option value="cancelada">Canceladas</option>
-            </select>
-
-            {/* Filtro Projeto */}
-            <select
-              value={filterProjeto}
-              onChange={(e) => setFilterProjeto(e.target.value)}
-              className="px-2.5 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] shrink-0 focus:outline-none focus:border-[var(--color-primary)]"
-            >
-              <option value="todos">Vínculo: Todos</option>
-              <option value="geral">Geral / Diretoria</option>
-              {projetos.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nome}
-                </option>
-              ))}
-            </select>
-
-            {/* Filtro Tipo */}
-            <select
-              value={filterTipo}
-              onChange={(e) => setFilterTipo(e.target.value)}
-              className="px-2.5 py-2 text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl text-[var(--text-primary)] shrink-0 focus:outline-none focus:border-[var(--color-primary)]"
-            >
-              <option value="todos">Tipo: Todos</option>
-              <option value="ordinaria">Ordinária</option>
-              <option value="extraordinaria">Extraordinária</option>
-              <option value="alinhamento_projeto">Alinhamento</option>
-              <option value="diretoria">Diretoria</option>
-              <option value="assembleia">Assembleia</option>
-              <option value="conselho">Conselho</option>
-              <option value="planejamento">Planejamento</option>
-            </select>
-          </div>
-        </div>
-
-        {/* LAYOUT MASTER-DETAIL */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* COLUNA ESQUERDA: LISTA DE REUNIÕES (lg:col-span-5) */}
-          <div className="lg:col-span-5 space-y-3">
+            {/* Cabeçalho da Lista / Grid */}
             <div className="flex items-center justify-between px-1">
               <h3 className="font-bold text-xs uppercase tracking-wider text-[var(--text-secondary)]">
-                Lista de Reuniões ({filteredReunioes.length})
+                Reuniões Cadastradas ({filteredReunioes.length})
               </h3>
-              {loading && <span className="text-xs text-[var(--text-muted)] animate-pulse">Atualizando...</span>}
+              {loading && <span className="text-xs text-[var(--text-muted)] animate-pulse">Atualizando dados...</span>}
             </div>
 
+            {/* GRID DE CARDS DAS REUNIÕES */}
             {filteredReunioes.length === 0 ? (
-              <Card className="p-8 text-center space-y-3">
-                <Calendar className="w-10 h-10 mx-auto text-[var(--text-muted)] opacity-40" />
-                <p className="text-xs text-[var(--text-muted)]">Nenhuma reunião encontrada com os filtros selecionados.</p>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    setSearch('');
-                    setFilterStatus('todos');
-                    setFilterProjeto('todos');
-                    setFilterTipo('todos');
-                  }}
-                >
-                  Limpar Filtros
-                </Button>
+              <Card className="p-12 text-center space-y-4 max-w-lg mx-auto">
+                <Calendar className="w-12 h-12 mx-auto text-[var(--text-muted)] opacity-40" />
+                <div className="space-y-1">
+                  <h4 className="font-bold text-sm text-[var(--text-primary)]">Nenhuma reunião encontrada</h4>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Não há agendamentos com os filtros selecionados no momento.
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setSearch('');
+                      setFilterStatus('todos');
+                      setFilterProjeto('todos');
+                      setFilterTipo('todos');
+                    }}
+                  >
+                    Limpar Filtros
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    icon={<Plus className="w-4 h-4" />}
+                    onClick={() => {
+                      setEditingReuniao(null);
+                      setShowModalReuniao(true);
+                    }}
+                  >
+                    Nova Reunião
+                  </Button>
+                </div>
               </Card>
             ) : (
-              <div className="space-y-2.5 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredReunioes.map((r) => {
-                  const isSelected = selectedReuniao?.id === r.id;
                   const dataDate = new Date(r.data_hora);
+                  const duracao = r.duracao_estimada_min || 60;
+                  const numPautas = r.pautas_topicos?.length || 0;
+                  const numParticipantes = r.participantes?.length || 0;
 
                   return (
-                    <button
+                    <div
                       key={r.id}
+                      className="p-5 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] hover:border-[#F2632D]/40 transition-all flex flex-col justify-between space-y-4 shadow-xs group hover:shadow-md cursor-pointer"
                       onClick={() => {
                         setSelectedReuniao(r);
+                        setActiveTab('pauta');
                       }}
-                      className={`w-full text-left p-4 rounded-2xl border transition-all text-xs card-contrast relative overflow-hidden group cursor-pointer ${
-                        isSelected
-                          ? 'bg-[var(--bg-elevated)] border-[#F2632D] shadow-md ring-2 ring-[#F2632D]/30 border-l-[6px] border-l-[#F2632D]'
-                          : 'bg-[var(--bg-elevated)]/90 border-[var(--border-default)] hover:border-[#F2632D]/40 hover:bg-[var(--bg-elevated)] shadow-xs'
-                      }`}
                     >
-                      <div className="flex items-start justify-between gap-2.5">
-                        <div className="min-w-0 flex-1">
-                          {/* Tag de Projeto ou Geral */}
-                          <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                      {/* Topo do Card: Vínculo + Tipo + Status */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             {r.projeto ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold text-[10px] bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30">
                                 <FolderKanban className="w-3 h-3 text-purple-600 dark:text-purple-400" />
@@ -536,211 +594,237 @@ export default function InstitucionalPage() {
                             {getTipoBadge(r.tipo)}
                           </div>
 
-                          <p
-                            className={`text-sm truncate leading-snug ${
-                              isSelected
-                                ? 'font-extrabold text-[var(--text-primary)]'
-                                : 'font-bold text-[var(--text-primary)] group-hover:text-[#F2632D] transition-colors'
-                            }`}
-                          >
-                            {r.titulo}
-                          </p>
-
-                          {/* Data e Horário */}
-                          <div className="flex items-center gap-2 mt-2 text-[11px] text-[var(--text-secondary)] flex-wrap">
-                            <span className="flex items-center gap-1 font-semibold text-[var(--text-primary)]">
-                              <Calendar className="w-3.5 h-3.5 text-[#F2632D]" />
-                              {dataDate.toLocaleDateString('pt-BR')}
-                            </span>
-                            <span className="opacity-40">•</span>
-                            <span className="flex items-center gap-1 font-medium">
-                              <Clock className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-                              {dataDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                            {r.participantes && r.participantes.length > 0 && (
-                              <>
-                                <span className="opacity-40">•</span>
-                                <span className="flex items-center gap-1 font-medium text-[var(--text-muted)]">
-                                  <Users className="w-3.5 h-3.5" />
-                                  {r.participantes.length}
-                                </span>
-                              </>
-                            )}
-                          </div>
+                          {getStatusBadge(r.status)}
                         </div>
 
-                        <div className="flex flex-col items-end gap-2.5 shrink-0 pt-0.5">
-                          {getStatusBadge(r.status)}
-                          <ChevronRight
-                            className={`w-4 h-4 transition-all ${
-                              isSelected
-                                ? 'text-[#F2632D] translate-x-1 font-bold'
-                                : 'text-[var(--text-muted)] opacity-50 group-hover:translate-x-0.5 group-hover:opacity-80'
-                            }`}
-                          />
+                        {/* Data e Horário em Destaque */}
+                        <div className="flex items-center gap-2 pt-1 text-xs text-[var(--text-secondary)]">
+                          <span className="flex items-center gap-1.5 font-bold text-[#F2632D]">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {dataDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                          <span className="opacity-40">•</span>
+                          <span className="flex items-center gap-1 font-medium">
+                            <Clock className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                            {dataDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+
+                        {/* Título da Reunião */}
+                        <h4 className="font-bold text-base text-[var(--text-primary)] leading-snug group-hover:text-[#F2632D] transition-colors line-clamp-2 pt-0.5">
+                          {r.titulo}
+                        </h4>
+
+                        {/* Resumo de Pautas e Participantes */}
+                        <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] pt-1 flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <ClipboardList className="w-3.5 h-3.5 text-[#F2632D]" />
+                            {numPautas > 0 ? `${numPautas} pauta(s)` : 'Pauta livre'}
+                          </span>
+                          <span className="opacity-40">•</span>
+                          <span>{duracao} min</span>
+                          {numParticipantes > 0 && (
+                            <>
+                              <span className="opacity-40">•</span>
+                              <span className="flex items-center gap-1">
+                                <Users className="w-3.5 h-3.5" />
+                                {numParticipantes} convocados
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
-                    </button>
+
+                      {/* Rodapé do Card: Ações Diretas */}
+                      <div
+                        className="flex items-center justify-between gap-2 pt-3 border-t border-[var(--border-default)]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => {
+                            setSelectedReuniao(r);
+                            setActiveTab('pauta');
+                          }}
+                          icon={<ArrowRight className="w-3.5 h-3.5" />}
+                          className="flex-1 justify-center text-xs font-semibold"
+                        >
+                          Abrir Reunião
+                        </Button>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingReuniao(r);
+                              setShowModalReuniao(true);
+                            }}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
+                            title="Editar agendamento"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReuniao(r.id!)}
+                            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer"
+                            title="Excluir reunião"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
             )}
           </div>
+        ) : (
+          /* =========================================================================
+             ESTADO 2: WORKSPACE FOCADO DA REUNIÃO (LARGURA TOTAL, SEM SOBRECARGA)
+             ========================================================================= */
+          <div className="max-w-5xl mx-auto space-y-5">
+            {/* Barra de Navegação: Botão Voltar + Ações */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedReuniao(null)}
+                className="inline-flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)] hover:text-[#F2632D] transition-colors cursor-pointer self-start"
+              >
+                <ArrowLeft className="w-4 h-4 text-[#F2632D]" />
+                Voltar para todas as reuniões
+              </button>
 
-          {/* COLUNA DIREITA: DETALHE DA REUNIÃO EM 3 ABAS (lg:col-span-7) */}
-          <div className="lg:col-span-7">
-            {!selectedReuniao ? (
-              <Card className="p-12 text-center space-y-4">
-                <Landmark className="w-12 h-12 mx-auto text-[var(--text-muted)] opacity-40" />
-                <div>
-                  <h3 className="font-bold text-base text-[var(--text-primary)]">Selecione uma Reunião</h3>
-                  <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto mt-1">
-                    Clique em qualquer reunião da lista à esquerda para consultar a pauta, registrar a presença ou lavrar a ata oficial.
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                 <Button
                   size="sm"
-                  variant="primary"
-                  icon={<Plus className="w-4 h-4" />}
+                  variant="secondary"
                   onClick={() => {
-                    setEditingReuniao(null);
+                    setEditingReuniao(selectedReuniao);
                     setShowModalReuniao(true);
                   }}
+                  icon={<Edit className="w-3.5 h-3.5 text-[var(--text-secondary)]" />}
                 >
-                  Criar Nova Reunião
+                  Editar
                 </Button>
-              </Card>
-            ) : (
-              <Card className="p-5 sm:p-6 space-y-6 border-l-4 border-l-[#F2632D] shadow-sm">
-                {/* Header do Detalhe */}
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-[var(--border-default)]">
-                  <div className="space-y-1.5 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {selectedReuniao.projeto ? (
-                        <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center gap-1">
-                          <FolderKanban className="w-3.5 h-3.5" />
-                          {selectedReuniao.projeto.nome}
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)]">
-                          Institucional Geral
-                        </span>
-                      )}
-                      {getTipoBadge(selectedReuniao.tipo)}
-                      {getStatusBadge(selectedReuniao.status)}
-                    </div>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => handleDeleteReuniao(selectedReuniao.id!)}
+                  icon={<Trash2 className="w-3.5 h-3.5" />}
+                >
+                  Excluir
+                </Button>
+              </div>
+            </div>
 
-                    <h2 className="font-bold text-lg text-[var(--text-primary)] leading-tight">
-                      {selectedReuniao.titulo}
-                    </h2>
-                  </div>
-
-                  {/* Ações da Reunião */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        setEditingReuniao(selectedReuniao);
-                        setShowModalReuniao(true);
-                      }}
-                      icon={<Edit className="w-3.5 h-3.5 text-[var(--text-secondary)]" />}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      onClick={() => handleDeleteReuniao(selectedReuniao.id!)}
-                      icon={<Trash2 className="w-3.5 h-3.5" />}
-                    >
-                      Excluir
-                    </Button>
-                  </div>
+            {/* Card Focado da Reunião */}
+            <Card className="p-6 sm:p-8 space-y-6 border-l-4 border-l-[#F2632D] shadow-sm">
+              {/* Header do Detalhe */}
+              <div className="space-y-2 pb-4 border-b border-[var(--border-default)]">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {selectedReuniao.projeto ? (
+                    <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                      <FolderKanban className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                      {selectedReuniao.projeto.nome}
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)]">
+                      Institucional Geral
+                    </span>
+                  )}
+                  {getTipoBadge(selectedReuniao.tipo)}
+                  {getStatusBadge(selectedReuniao.status)}
                 </div>
 
-                {/* Abas de Ciclo de Vida da Reunião */}
-                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-1 overflow-x-auto">
-                  <button
-                    onClick={() => setActiveTab('pauta')}
-                    className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
-                      activeTab === 'pauta'
-                        ? 'bg-[var(--color-primary)] text-white shadow-xs'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                    }`}
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    1. Pauta & Convocação
-                  </button>
+                <h2 className="font-extrabold text-xl sm:text-2xl text-[var(--text-primary)] leading-tight">
+                  {selectedReuniao.titulo}
+                </h2>
+              </div>
 
-                  <button
-                    onClick={() => setActiveTab('presenca')}
-                    className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
-                      activeTab === 'presenca'
-                        ? 'bg-[var(--color-primary)] text-white shadow-xs'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                    }`}
-                  >
-                    <Users className="w-3.5 h-3.5" />
-                    2. Condução & Presença
-                    {selectedReuniao.presentes && selectedReuniao.presentes.length > 0 && (
-                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 ml-1">
-                        {selectedReuniao.presentes.length}
-                      </span>
-                    )}
-                  </button>
+              {/* Abas de Ciclo de Vida da Reunião */}
+              <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-1 overflow-x-auto">
+                <button
+                  onClick={() => setActiveTab('pauta')}
+                  className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                    activeTab === 'pauta'
+                      ? 'bg-[#F2632D] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4" />
+                  1. Pauta & Convocação
+                </button>
 
-                  <button
-                    onClick={() => setActiveTab('ata')}
-                    className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
-                      activeTab === 'ata'
-                        ? 'bg-[var(--color-primary)] text-white shadow-xs'
-                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
-                    }`}
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    3. Ata & Encaminhamentos
-                    {selectedReuniao.ata && (
-                      <CheckCircle className="w-3 h-3 text-emerald-400 ml-1" />
-                    )}
-                  </button>
-                </div>
-
-                {/* Conteúdo da Aba Ativa */}
-                <div className="pt-2">
-                  {activeTab === 'pauta' && (
-                    <ReuniaoPautaTab
-                      reuniao={selectedReuniao}
-                      onOpenConvocacaoPrint={() => {
-                        setPrintModo('convocacao');
-                        setPrintModalOpen(true);
-                      }}
-                    />
+                <button
+                  onClick={() => setActiveTab('presenca')}
+                  className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                    activeTab === 'presenca'
+                      ? 'bg-[#F2632D] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  2. Condução & Presença
+                  {selectedReuniao.presentes && selectedReuniao.presentes.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-white/20 ml-1">
+                      {selectedReuniao.presentes.length} presentes
+                    </span>
                   )}
+                </button>
 
-                  {activeTab === 'presenca' && (
-                    <ReuniaoPresencaTab
-                      reuniao={selectedReuniao}
-                      onUpdateReuniao={handleUpdateSelected}
-                      onNavigateToAta={() => setActiveTab('ata')}
-                    />
+                <button
+                  onClick={() => setActiveTab('ata')}
+                  className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                    activeTab === 'ata'
+                      ? 'bg-[#F2632D] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  3. Ata & Encaminhamentos
+                  {selectedReuniao.ata && (
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400 ml-1" />
                   )}
+                </button>
+              </div>
 
-                  {activeTab === 'ata' && (
-                    <ReuniaoAtaTab
-                      reuniao={selectedReuniao}
-                      onUpdateReuniao={handleUpdateSelected}
-                      onOpenAtaPrint={() => {
-                        setPrintModo('ata');
-                        setPrintModalOpen(true);
-                      }}
-                    />
-                  )}
-                </div>
-              </Card>
-            )}
+              {/* Conteúdo da Aba Ativa */}
+              <div className="pt-2">
+                {activeTab === 'pauta' && (
+                  <ReuniaoPautaTab
+                    reuniao={selectedReuniao}
+                    onOpenConvocacaoPrint={() => {
+                      setPrintModo('convocacao');
+                      setPrintModalOpen(true);
+                    }}
+                  />
+                )}
+
+                {activeTab === 'presenca' && (
+                  <ReuniaoPresencaTab
+                    reuniao={selectedReuniao}
+                    onUpdateReuniao={handleUpdateSelected}
+                    onNavigateToAta={() => setActiveTab('ata')}
+                  />
+                )}
+
+                {activeTab === 'ata' && (
+                  <ReuniaoAtaTab
+                    reuniao={selectedReuniao}
+                    onUpdateReuniao={handleUpdateSelected}
+                    onOpenAtaPrint={() => {
+                      setPrintModo('ata');
+                      setPrintModalOpen(true);
+                    }}
+                  />
+                )}
+              </div>
+            </Card>
           </div>
-        </div>
+        )}
       </div>
 
       {/* MODAL NOVO/EDITAR AGENDAMENTO DE REUNIÃO */}
