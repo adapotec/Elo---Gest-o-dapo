@@ -333,7 +333,9 @@ export function ComunicacaoCalendario({
       const postMes = getMesFromDateStr(c.data_publicacao);
       const matchMes = mesFilter === 'todos' || postMes === Number(mesFilter);
 
-      const matchProj = projetoFilter === 'todos' || c.projeto_id === projetoFilter;
+      const matchProj =
+        projetoFilter === 'todos' ||
+        (projetoFilter === 'institucional' ? !c.projeto_id : c.projeto_id === projetoFilter);
       const matchStat = statusFilter === 'todos' || c.status === statusFilter;
       const matchTipo = tipoFilter === 'todos' || c.tipo_conteudo === tipoFilter;
       const matchCat = categoriaFilter === 'todos' || c.categoria === categoriaFilter;
@@ -386,13 +388,36 @@ export function ComunicacaoCalendario({
       const postMes = getMesFromDateStr(c.data_publicacao);
       const matchMes = mesFilter === 'todos' || postMes === Number(mesFilter);
 
-      const matchProj = projetoFilter === 'todos' || c.projeto_id === projetoFilter;
+      const matchProj =
+        projetoFilter === 'todos' ||
+        (projetoFilter === 'institucional' ? !c.projeto_id : c.projeto_id === projetoFilter);
       const matchTipo = tipoFilter === 'todos' || c.tipo_conteudo === tipoFilter;
       const matchCat = categoriaFilter === 'todos' || c.categoria === categoriaFilter;
 
       return matchSearch && matchMes && matchProj && matchTipo && matchCat;
     });
   }, [conteudos, searchTerm, mesFilter, projetoFilter, tipoFilter, categoriaFilter]);
+
+  // Base para os contadores por projeto (respeitando mês, formato, categoria e busca)
+  const conteudosParaPillsProjetos = useMemo(() => {
+    return conteudos.filter((c) => {
+      const matchSearch =
+        searchTerm === '' ||
+        c.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (c.descricao && c.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.observacoes && c.observacoes.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.roteiro_legenda && c.roteiro_legenda.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (c.projetos_sociais?.nome && c.projetos_sociais.nome.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      const postMes = getMesFromDateStr(c.data_publicacao);
+      const matchMes = mesFilter === 'todos' || postMes === Number(mesFilter);
+      const matchStat = statusFilter === 'todos' || c.status === statusFilter;
+      const matchTipo = tipoFilter === 'todos' || c.tipo_conteudo === tipoFilter;
+      const matchCat = categoriaFilter === 'todos' || c.categoria === categoriaFilter;
+
+      return matchSearch && matchMes && matchStat && matchTipo && matchCat;
+    });
+  }, [conteudos, searchTerm, mesFilter, statusFilter, tipoFilter, categoriaFilter]);
 
   // Micro-KPIs Dinâmicos (atualizam instantaneamente com o filtro de mês e demais filtros contextuais)
   const stats = useMemo(() => {
@@ -592,26 +617,36 @@ export function ComunicacaoCalendario({
     {
       key: 'projeto_id',
       header: 'Projeto & Campanha',
-      width: '180px',
-      render: (item) => (
-        <div className="space-y-1 text-xs">
-          <div className="flex items-center gap-1.5">
-            <span
-              className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs"
-              style={{ backgroundColor: item.projetos_sociais?.cor_identificacao || '#F2632D' }}
-            />
-            <span className="font-bold text-[var(--text-primary)] truncate">
-              {item.projetos_sociais?.nome || 'Institucional Ádapo'}
-            </span>
+      width: '210px',
+      render: (item) => {
+        const cor = item.projetos_sociais?.cor_identificacao || '#F2632D';
+        const nomeProjeto = item.projetos_sociais?.nome || 'Institucional Ádapo';
+
+        return (
+          <div className="space-y-1.5 text-xs">
+            <div
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-2xs max-w-full"
+              style={{
+                backgroundColor: `${cor}18`,
+                borderColor: `${cor}40`,
+                color: cor,
+              }}
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs ring-2 ring-white/30 dark:ring-black/30"
+                style={{ backgroundColor: cor }}
+              />
+              <span className="truncate">{nomeProjeto}</span>
+            </div>
+            {item.campanhas_comunicacao && (
+              <p className="text-[11px] text-[#93368F] font-semibold truncate flex items-center gap-1 pl-1">
+                <Megaphone className="w-3 h-3 shrink-0" />
+                <span className="truncate">{item.campanhas_comunicacao.titulo}</span>
+              </p>
+            )}
           </div>
-          {item.campanhas_comunicacao && (
-            <p className="text-[11px] text-[#93368F] font-semibold truncate flex items-center gap-1">
-              <Megaphone className="w-3 h-3 shrink-0" />
-              <span className="truncate">{item.campanhas_comunicacao.titulo}</span>
-            </p>
-          )}
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'responsavel_id',
@@ -936,6 +971,7 @@ export function ComunicacaoCalendario({
               className="px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none font-semibold cursor-pointer"
             >
               <option value="todos">Todos os Projetos</option>
+              <option value="institucional">Institucional Geral (Sem projeto)</option>
               {projetos.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nome}
@@ -1016,11 +1052,105 @@ export function ComunicacaoCalendario({
       {/* ── 3. VISUALIZAÇÃO: MODO TABELA ── */}
       {viewMode === 'tabela' && (
         <div className="space-y-3">
+          {/* Barra de Filtro Rápido por Projeto com Contadores e Cores */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+            <button
+              type="button"
+              onClick={() => setProjetoFilter('todos')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 border shrink-0 ${
+                projetoFilter === 'todos'
+                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-xs'
+                  : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-secondary)]'
+              }`}
+            >
+              <span>Todos os Projetos</span>
+              <span
+                className={`px-1.5 py-0.5 text-[10px] rounded-full font-extrabold ${
+                  projetoFilter === 'todos'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                }`}
+              >
+                {conteudosParaPillsProjetos.length}
+              </span>
+            </button>
+
+            {projetos.map((proj) => {
+              const cor = proj.cor_identificacao || '#F2632D';
+              const count = conteudosParaPillsProjetos.filter((c) => c.projeto_id === proj.id).length;
+              const isSelected = projetoFilter === proj.id;
+
+              return (
+                <button
+                  key={proj.id}
+                  type="button"
+                  onClick={() => setProjetoFilter(isSelected ? 'todos' : proj.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 border shrink-0 ${
+                    isSelected ? 'shadow-xs ring-2' : 'hover:opacity-100 opacity-90'
+                  }`}
+                  style={{
+                    backgroundColor: isSelected ? `${cor}25` : `${cor}10`,
+                    borderColor: isSelected ? cor : `${cor}35`,
+                    color: cor,
+                  }}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: cor }} />
+                  <span>{proj.nome}</span>
+                  <span
+                    className="px-1.5 py-0.5 text-[10px] rounded-full font-extrabold"
+                    style={{
+                      backgroundColor: isSelected ? `${cor}40` : `${cor}20`,
+                      color: cor,
+                    }}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+
+            {/* Institucional Geral (Sem Projeto Vinculado) */}
+            {(() => {
+              const countInst = conteudosParaPillsProjetos.filter((c) => !c.projeto_id).length;
+              if (countInst === 0) return null;
+              const isSelected = projetoFilter === 'institucional';
+              const cor = '#F2632D';
+
+              return (
+                <button
+                  type="button"
+                  onClick={() => setProjetoFilter(isSelected ? 'todos' : 'institucional')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 border shrink-0 ${
+                    isSelected ? 'shadow-xs ring-2' : 'hover:opacity-100 opacity-90'
+                  }`}
+                  style={{
+                    backgroundColor: isSelected ? `${cor}25` : `${cor}10`,
+                    borderColor: isSelected ? cor : `${cor}35`,
+                    color: cor,
+                  }}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: cor }} />
+                  <span>Institucional Geral</span>
+                  <span
+                    className="px-1.5 py-0.5 text-[10px] rounded-full font-extrabold"
+                    style={{
+                      backgroundColor: isSelected ? `${cor}40` : `${cor}20`,
+                      color: cor,
+                    }}
+                  >
+                    {countInst}
+                  </span>
+                </button>
+              );
+            })()}
+          </div>
+
           <DataTable
             columns={columns}
             data={paginatedConteudos}
             keyExtractor={(c) => c.id}
             emptyMessage="Nenhum conteúdo encontrado para os filtros selecionados."
+            rowAccentColor={(c) => c.projetos_sociais?.cor_identificacao || '#F2632D'}
           />
 
           {/* ── BARRA DE PAGINAÇÃO ── */}
