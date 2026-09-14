@@ -18,6 +18,7 @@ import {
   Heart,
   HelpCircle,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   ChevronDown,
   Clock,
@@ -151,6 +152,8 @@ export function ComunicacaoCampanhas({
   onDeleteCampanha,
 }: ComunicacaoCampanhasProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'todos' | CampanhaItem['status']>('todos');
+  const [projetoFilter, setProjetoFilter] = useState<string>('todos');
   const [selectedCampanha, setSelectedCampanha] = useState<CampanhaItem | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
@@ -199,27 +202,44 @@ export function ComunicacaoCampanhas({
 
   const [saving, setSaving] = useState(false);
 
-  // Inicializar seleção com a primeira campanha se houver e nenhuma selecionada
+  // Atualizar dados da campanha selecionada se a lista mudar
   React.useEffect(() => {
-    if (!selectedCampanha && campanhas.length > 0) {
-      setSelectedCampanha(campanhas[0]);
-    } else if (selectedCampanha) {
-      // Atualizar dados da campanha selecionada se lista mudar
+    if (selectedCampanha) {
       const updated = campanhas.find((c) => c.id === selectedCampanha.id);
-      if (updated) setSelectedCampanha(updated);
+      if (updated) {
+        setSelectedCampanha(updated);
+      } else {
+        setSelectedCampanha(null);
+      }
     }
+  }, [campanhas]);
+
+  // Micro-KPIs das Campanhas
+  const stats = useMemo(() => {
+    const total = campanhas.length;
+    const emAndamento = campanhas.filter((c) => c.status === 'em_andamento').length;
+    const planejamento = campanhas.filter((c) => c.status === 'planejamento').length;
+    const concluidas = campanhas.filter((c) => c.status === 'concluida').length;
+    return { total, emAndamento, planejamento, concluidas };
   }, [campanhas]);
 
   // Filtragem de Campanhas
   const filteredCampanhas = useMemo(() => {
     return campanhas.filter((c) => {
       const matchSearch =
+        searchTerm === '' ||
         c.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (c.resumo && c.resumo.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (c.projetos_sociais?.nome && c.projetos_sociais.nome.toLowerCase().includes(searchTerm.toLowerCase()));
-      return matchSearch;
+
+      const matchStatus = statusFilter === 'todos' || c.status === statusFilter;
+      const matchProjeto =
+        projetoFilter === 'todos' ||
+        (projetoFilter === 'institucional' ? !c.projeto_id : c.projeto_id === projetoFilter);
+
+      return matchSearch && matchStatus && matchProjeto;
     });
-  }, [campanhas, searchTerm]);
+  }, [campanhas, searchTerm, statusFilter, projetoFilter]);
 
   // Peças de Conteúdo vinculadas à campanha selecionada (Bloco 8)
   const postsDaCampanha = useMemo(() => {
@@ -377,352 +397,681 @@ export function ComunicacaoCampanhas({
 
   return (
     <div className="space-y-5">
-      {/* ── 1. TOPO DA ABA COM BARRA DE PESQUISA E AÇÃO DE CRIAR ── */}
-      <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-          <input
-            type="text"
-            placeholder="Buscar campanha por título, resumo ou projeto social..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
-          />
+      {/* ── 1. TOPO DA ABA COM MICRO-KPIS DAS CAMPANHAS (VISÍVEL NO CATÁLOGO) ── */}
+      {!selectedCampanha && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <button
+            type="button"
+            onClick={() => setStatusFilter('todos')}
+            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+              statusFilter === 'todos'
+                ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/20 shadow-xs ring-2 ring-[var(--color-primary)]/25'
+                : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]/50'
+            }`}
+          >
+            <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
+              <Megaphone className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                Total de Campanhas
+              </p>
+              <p className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
+                {stats.total}
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter(statusFilter === 'em_andamento' ? 'todos' : 'em_andamento')}
+            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+              statusFilter === 'em_andamento'
+                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-2 ring-emerald-500/25'
+                : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-emerald-500/50'
+            }`}
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                Em Andamento
+              </p>
+              <p className="text-lg sm:text-xl font-display font-extrabold text-emerald-600">
+                {stats.emAndamento}
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter(statusFilter === 'planejamento' ? 'todos' : 'planejamento')}
+            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+              statusFilter === 'planejamento'
+                ? 'border-purple-500 bg-purple-500/10 shadow-xs ring-2 ring-purple-500/25'
+                : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-purple-500/50'
+            }`}
+          >
+            <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                Em Planejamento
+              </p>
+              <p className="text-lg sm:text-xl font-display font-extrabold text-purple-600">
+                {stats.planejamento}
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter(statusFilter === 'concluida' ? 'todos' : 'concluida')}
+            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+              statusFilter === 'concluida'
+                ? 'border-blue-500 bg-blue-500/10 shadow-xs ring-2 ring-blue-500/25'
+                : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-blue-500/50'
+            }`}
+          >
+            <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                Concluídas
+              </p>
+              <p className="text-lg sm:text-xl font-display font-extrabold text-blue-600">
+                {stats.concluidas}
+              </p>
+            </div>
+          </button>
         </div>
+      )}
 
-        <Button
-          onClick={handleOpenNewModal}
-          size="sm"
-          icon={<Plus className="w-4 h-4" />}
-          className="w-full sm:w-auto justify-center"
-        >
-          Nova Campanha Estratégica
-        </Button>
-      </div>
+      {/* ── 2. BARRA DE PESQUISA, FILTROS & AÇÃO DE CRIAR (VISÍVEL NO CATÁLOGO) ── */}
+      {!selectedCampanha && (
+        <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="relative flex-1 w-full">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+              <input
+                type="text"
+                placeholder="Buscar campanha por título, resumo ou projeto social..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+              />
+            </div>
 
-      {/* ── 2. LAYOUT MASTER-DETAIL: LISTA DE CAMPANHAS + DETALHE DOS 10 BLOCOS ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Coluna Esquerda: Lista de Campanhas (4 cols) */}
-        <div className="lg:col-span-4 space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] px-1">
-            Campanhas Cadastradas ({filteredCampanhas.length})
-          </p>
+            <Button
+              onClick={handleOpenNewModal}
+              size="sm"
+              icon={<Plus className="w-4 h-4" />}
+              className="w-full sm:w-auto justify-center"
+            >
+              Nova Campanha Estratégica
+            </Button>
+          </div>
 
-          <div className="space-y-2.5 max-h-[750px] overflow-y-auto custom-scrollbar pr-1">
-            {filteredCampanhas.length === 0 ? (
-              <Card className="p-6 text-center text-xs text-[var(--text-muted)] space-y-2">
-                <Megaphone className="w-8 h-8 text-[var(--text-muted)] mx-auto opacity-50" />
-                <p>Nenhuma campanha estratégica cadastrada ainda.</p>
-                <Button size="sm" variant="secondary" onClick={handleOpenNewModal}>
-                  Criar Primeira Campanha
-                </Button>
-              </Card>
-            ) : (
-              filteredCampanhas.map((camp) => {
-                const isSelected = selectedCampanha?.id === camp.id;
+          {/* Barra de Filtro Rápido por Projeto com Contadores Integrados */}
+          <div className="pt-2.5 border-t border-[var(--border-default)] flex items-center gap-2 overflow-x-auto custom-scrollbar pb-0.5">
+            <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5 mr-1 shrink-0">
+              <FolderKanban className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+              <span>Projetos:</span>
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setProjetoFilter('todos')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border shrink-0 shadow-2xs ${
+                projetoFilter === 'todos'
+                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-xs'
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border-[var(--border-default)] hover:bg-[var(--bg-secondary)]/80 hover:border-[var(--text-muted)]'
+              }`}
+            >
+              <span>Todos os Projetos</span>
+              <span
+                className={`px-1.5 py-0.5 text-[10px] rounded-md font-extrabold ${
+                  projetoFilter === 'todos'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+                }`}
+              >
+                {campanhas.length}
+              </span>
+            </button>
+
+            {projetos.map((proj) => {
+              const cor = proj.cor_identificacao || '#F2632D';
+              const count = campanhas.filter((c) => c.projeto_id === proj.id).length;
+              const isSelected = projetoFilter === proj.id;
+
+              return (
+                <button
+                  key={proj.id}
+                  type="button"
+                  onClick={() => setProjetoFilter(isSelected ? 'todos' : proj.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border shrink-0 shadow-2xs ${
+                    isSelected
+                      ? 'text-white shadow-xs ring-2 ring-offset-1 ring-[var(--bg-elevated)]'
+                      : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border-[var(--border-default)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-secondary)]/80'
+                  }`}
+                  style={
+                    isSelected
+                      ? {
+                          backgroundColor: cor,
+                          borderColor: cor,
+                          // @ts-ignore
+                          '--tw-ring-color': cor,
+                        }
+                      : undefined
+                  }
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                    style={{ backgroundColor: isSelected ? '#ffffff' : cor }}
+                  />
+                  <span>{proj.nome}</span>
+                  <span
+                    className={`px-1.5 py-0.5 text-[10px] rounded-md font-extrabold ${
+                      isSelected
+                        ? 'bg-white/25 text-white'
+                        : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+
+            {/* Institucional Geral */}
+            {(() => {
+              const countInst = campanhas.filter((c) => !c.projeto_id).length;
+              if (countInst === 0) return null;
+              const isSelected = projetoFilter === 'institucional';
+              const cor = '#F2632D';
+
+              return (
+                <button
+                  type="button"
+                  onClick={() => setProjetoFilter(isSelected ? 'todos' : 'institucional')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border shrink-0 shadow-2xs ${
+                    isSelected
+                      ? 'text-white shadow-xs ring-2 ring-offset-1 ring-[var(--bg-elevated)]'
+                      : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border-[var(--border-default)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-secondary)]/80'
+                  }`}
+                  style={
+                    isSelected
+                      ? {
+                          backgroundColor: cor,
+                          borderColor: cor,
+                          // @ts-ignore
+                          '--tw-ring-color': cor,
+                        }
+                      : undefined
+                  }
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                    style={{ backgroundColor: isSelected ? '#ffffff' : cor }}
+                  />
+                  <span>Institucional Geral</span>
+                  <span
+                    className={`px-1.5 py-0.5 text-[10px] rounded-md font-extrabold ${
+                      isSelected
+                        ? 'bg-white/25 text-white'
+                        : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+                    }`}
+                  >
+                    {countInst}
+                  </span>
+                </button>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ── 3. VISÃO DO CATÁLOGO DE CAMPANHAS (GRID RESPONSIVO ESPAÇOSO) ── */}
+      {!selectedCampanha && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="font-display font-extrabold text-base sm:text-lg text-[var(--text-primary)] flex items-center gap-2">
+              <span>Campanhas Estratégicas Cadastradas</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+                {filteredCampanhas.length}
+              </span>
+            </h3>
+          </div>
+
+          {filteredCampanhas.length === 0 ? (
+            <Card className="p-12 text-center text-xs text-[var(--text-muted)] space-y-3">
+              <Megaphone className="w-12 h-12 text-[var(--text-muted)] mx-auto opacity-40" />
+              <h4 className="font-bold text-base text-[var(--text-primary)]">
+                Nenhuma campanha encontrada
+              </h4>
+              <p className="max-w-md mx-auto">
+                {campanhas.length === 0
+                  ? 'Você ainda não possui campanhas cadastradas. Crie uma nova campanha para estruturar sua narrativa e objetivos nos 10 Blocos Estratégicos.'
+                  : 'Nenhuma campanha corresponde aos filtros selecionados. Tente limpar os termos de busca ou filtros de status e projeto.'}
+              </p>
+              <Button size="sm" onClick={handleOpenNewModal} className="mx-auto mt-2">
+                Criar Nova Campanha
+              </Button>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredCampanhas.map((camp) => {
+                const cor = camp.projetos_sociais?.cor_identificacao || '#F2632D';
+                const postsVinculados = conteudos.filter((cnt) => cnt.campanha_id === camp.id).length;
 
                 return (
                   <div
                     key={camp.id}
                     onClick={() => setSelectedCampanha(camp)}
-                    className={`p-4 rounded-2xl transition-all cursor-pointer space-y-2.5 ${
-                      isSelected
-                        ? 'border-2 border-[var(--color-primary)] border-l-6 border-l-[var(--color-primary)] bg-[var(--bg-elevated)] shadow-md ring-2 ring-[var(--color-primary)]/20'
-                        : 'border border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40 hover:bg-[var(--bg-secondary)]/30'
-                    }`}
+                    className="p-5 sm:p-6 rounded-3xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:shadow-xl hover:border-[var(--color-primary)]/50 transition-all cursor-pointer flex flex-col justify-between space-y-4 group relative overflow-hidden"
+                    style={{
+                      borderTop: `5px solid ${cor}`,
+                    }}
                   >
-                    {/* Topo do Card: Projeto & Status / Badge Selecionada */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0 shadow-2xs"
-                          style={{ backgroundColor: camp.projetos_sociais?.cor_identificacao || '#F2632D' }}
-                        />
-                        <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] truncate">
-                          {camp.projetos_sociais?.nome || 'Institucional'}
+                    {/* Topo do Card: Projeto + Status */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-2xs max-w-[70%]"
+                          style={{
+                            backgroundColor: `${cor}15`,
+                            borderColor: `${cor}35`,
+                            color: cor,
+                          }}
+                        >
+                          <span className="w-2 h-2 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: cor }} />
+                          <span className="truncate">{camp.projetos_sociais?.nome || 'Institucional Ádapo'}</span>
+                        </div>
+                        <div className="shrink-0">
+                          {renderStatusBadge(camp.status)}
+                        </div>
+                      </div>
+
+                      {/* Título */}
+                      <h4 className="font-display font-extrabold text-base sm:text-lg text-[var(--text-primary)] leading-snug group-hover:text-[var(--color-primary)] transition-colors line-clamp-2">
+                        {camp.titulo}
+                      </h4>
+
+                      {/* Resumo */}
+                      {camp.resumo && (
+                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-3">
+                          {camp.resumo}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Metadados: Meta Principal, Responsável & Posts Vinculados */}
+                    <div className="space-y-3 pt-3 border-t border-[var(--border-default)] text-xs">
+                      {camp.objetivos?.meta_principal && (
+                        <div className="p-2.5 rounded-xl bg-[var(--bg-secondary)]/60 border border-[var(--border-default)] text-[11px] space-y-0.5">
+                          <span className="font-bold text-[var(--text-muted)] uppercase tracking-wider text-[9px] block">
+                            Meta Principal:
+                          </span>
+                          <p className="font-semibold text-[var(--text-primary)] line-clamp-1">
+                            🎯 {camp.objetivos.meta_principal}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <Users className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                          <span>{camp.voluntarios?.nome_completo?.split(' ')[0] || 'Equipe Geral'}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <Calendar className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                          <span>
+                            {camp.data_inicio
+                              ? new Date(camp.data_inicio).toLocaleDateString('pt-BR')
+                              : 'Sem data'}
+                          </span>
+                        </div>
+
+                        <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-pink-500/10 text-pink-700 dark:text-pink-300 border border-pink-500/20">
+                          {postsVinculados} {postsVinculados === 1 ? 'post' : 'posts'}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {isSelected && (
-                          <span className="px-2 py-0.5 rounded text-[9px] font-black bg-[var(--color-primary)] text-white shadow-2xs uppercase tracking-wider">
-                            SELECIONADA
-                          </span>
-                        )}
-                        {renderStatusBadge(camp.status)}
+                      {/* Botões de Ação do Card */}
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          icon={<ChevronRight className="w-4 h-4" />}
+                          className="flex-1 justify-center font-bold text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCampanha(camp);
+                          }}
+                        >
+                          Acessar 10 Blocos
+                        </Button>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenPdf(camp);
+                            }}
+                            title="Exportar PDF Timbrado"
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenEditModal(camp);
+                            }}
+                            title="Editar campanha"
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm(`Deseja realmente excluir a campanha "${camp.titulo}"?`)) {
+                                onDeleteCampanha(camp.id);
+                              }
+                            }}
+                            title="Excluir campanha"
+                            className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Título com Alto Contraste */}
-                    <h4
-                      className={`font-display font-extrabold text-sm sm:text-base leading-snug line-clamp-2 ${
-                        isSelected ? 'text-[var(--text-primary)]' : 'text-[var(--text-primary)]'
-                      }`}
-                    >
-                      {camp.titulo}
-                    </h4>
-
-                    {/* Resumo com Alto Contraste */}
-                    {camp.resumo && (
-                      <p
-                        className={`text-xs line-clamp-2 leading-relaxed ${
-                          isSelected
-                            ? 'text-[var(--text-primary)]/90 font-medium'
-                            : 'text-[var(--text-secondary)]'
-                        }`}
-                      >
-                        {camp.resumo}
-                      </p>
-                    )}
-
-                    {/* Rodapé do Card */}
-                    <div className="flex items-center justify-between pt-2 border-t border-[var(--border-default)]/70 text-[11px] text-[var(--text-muted)]">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>{camp.data_inicio ? new Date(camp.data_inicio).toLocaleDateString('pt-BR') : 'Sem data'}</span>
-                      </div>
-                      <span className="font-bold text-[var(--color-primary)] flex items-center gap-0.5">
-                        Ver 10 Blocos <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
                     </div>
                   </div>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
         </div>
+      )}
 
-        {/* Coluna Direita: Visualizador Completo dos 10 Blocos (8 cols) */}
-        <div className="lg:col-span-8">
-          {selectedCampanha ? (
-            <Card className="p-6 space-y-6">
-              {/* Cabeçalho do Plano */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-default)]">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {renderStatusBadge(selectedCampanha.status)}
-                    <span className="text-xs font-bold text-[var(--color-primary)]">
-                      {selectedCampanha.projetos_sociais?.nome || 'Projeto Institucional'}
-                    </span>
-                  </div>
-                  <h2 className="font-display font-extrabold text-xl sm:text-2xl text-[var(--text-primary)]">
-                    {selectedCampanha.titulo}
-                  </h2>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    Responsável: <strong>{selectedCampanha.voluntarios?.nome_completo || 'Equipe Geral'}</strong> | Período: {selectedCampanha.data_inicio || 'N/D'} até {selectedCampanha.data_fim || 'N/D'}
+      {/* ── 4. VISÃO DEDICADA DOS 10 BLOCOS ESTRATÉGICOS (LARGURA TOTAL / FULL WIDTH) ── */}
+      {selectedCampanha && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          {/* Barra de Navegação Superior (Voltar + Seletor de Campanhas + Ações) */}
+          <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col md:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<ChevronLeft className="w-4 h-4" />}
+                onClick={() => setSelectedCampanha(null)}
+                className="font-bold cursor-pointer"
+              >
+                Voltar às Campanhas
+              </Button>
+
+              {/* Dropdown Rápido para Alternar Entre Campanhas */}
+              <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                <span className="text-[11px] font-bold text-[var(--text-muted)] hidden sm:inline-block">
+                  Alternar:
+                </span>
+                <select
+                  value={selectedCampanha.id}
+                  onChange={(e) => {
+                    const c = campanhas.find((x) => x.id === e.target.value);
+                    if (c) setSelectedCampanha(c);
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold focus:outline-none focus:border-[var(--color-primary)] cursor-pointer max-w-[220px] sm:max-w-[320px] truncate"
+                >
+                  {campanhas.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.titulo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Ações no Topo da Campanha Aberta */}
+            <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Printer className="w-4 h-4 text-[var(--color-primary)]" />}
+                onClick={() => handleOpenPdf(selectedCampanha)}
+                title="Gerar PDF Timbrado do Plano Completo com Calendário"
+              >
+                Exportar PDF
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Edit className="w-4 h-4" />}
+                onClick={() => handleOpenEditModal(selectedCampanha)}
+              >
+                Editar
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<Trash2 className="w-4 h-4 text-rose-600" />}
+                onClick={() => {
+                  if (confirm(`Deseja realmente excluir a campanha "${selectedCampanha.titulo}"?`)) {
+                    onDeleteCampanha(selectedCampanha.id);
+                    setSelectedCampanha(null);
+                  }
+                }}
+                className="text-rose-600 hover:bg-rose-500/10"
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+
+          {/* Card dos 10 Blocos em Largura Total (Full Width) */}
+          <Card className="p-6 sm:p-7 space-y-6">
+            {/* Cabeçalho do Plano */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-default)]">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {renderStatusBadge(selectedCampanha.status)}
+                  <span className="text-xs font-bold text-[var(--color-primary)]">
+                    {selectedCampanha.projetos_sociais?.nome || 'Projeto Institucional'}
+                  </span>
+                </div>
+                <h2 className="font-display font-extrabold text-xl sm:text-2xl text-[var(--text-primary)]">
+                  {selectedCampanha.titulo}
+                </h2>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Responsável: <strong>{selectedCampanha.voluntarios?.nome_completo || 'Equipe Geral'}</strong> | Período: {selectedCampanha.data_inicio || 'N/D'} até {selectedCampanha.data_fim || 'N/D'}
+                </p>
+              </div>
+            </div>
+
+            {/* Grid dos 10 Blocos Estruturados */}
+            <div className="space-y-4 text-xs">
+              {/* 1. Resumo & Diagnóstico */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                    1. Resumo da Campanha
+                  </p>
+                  <p className="text-xs text-[var(--text-primary)] font-medium leading-relaxed">
+                    {selectedCampanha.resumo || 'Nenhum resumo informado.'}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    icon={<Printer className="w-4 h-4 text-[var(--color-primary)]" />}
-                    onClick={() => handleOpenPdf(selectedCampanha)}
-                    title="Gerar PDF Timbrado do Plano Completo com Calendário"
-                  >
-                    Exportar PDF Timbrado
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    icon={<Edit className="w-4 h-4" />}
-                    onClick={() => handleOpenEditModal(selectedCampanha)}
-                  >
-                    Editar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    icon={<Trash2 className="w-4 h-4 text-rose-600" />}
-                    onClick={() => onDeleteCampanha(selectedCampanha.id)}
-                  >
-                    Excluir
-                  </Button>
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                    2. Diagnóstico &amp; Contexto
+                  </p>
+                  <p className="text-xs text-[var(--text-primary)] font-medium leading-relaxed">
+                    {selectedCampanha.diagnostico_contexto || 'Nenhum contexto registrado.'}
+                  </p>
                 </div>
               </div>
 
-              {/* Grid dos 10 Blocos Estruturados */}
-              <div className="space-y-4 text-xs">
-                {/* 1. Resumo & Diagnóstico */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                      1. Resumo da Campanha
-                    </p>
-                    <p className="text-xs text-[var(--text-primary)] font-medium leading-relaxed">
-                      {selectedCampanha.resumo || 'Nenhum resumo informado.'}
-                    </p>
+              {/* 3. Personas e Público-Alvo */}
+              <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                  3. Personas &amp; Público-Alvo
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Perfil &amp; Idade:</span>
+                    <span className="font-bold text-[var(--text-primary)]">{selectedCampanha.personas_publico?.perfil_idade || 'Geral'}</span>
                   </div>
-
-                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                      2. Diagnóstico &amp; Contexto
-                    </p>
-                    <p className="text-xs text-[var(--text-primary)] font-medium leading-relaxed">
-                      {selectedCampanha.diagnostico_contexto || 'Nenhum contexto registrado.'}
-                    </p>
+                  <div>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Tom de Voz:</span>
+                    <span className="font-bold text-[#93368F]">{selectedCampanha.personas_publico?.tom_marca || 'Acolhedor e Educativo'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Hábitos e Valores:</span>
+                    <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.habitos_valores || 'Comunitário'}</span>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Dores e Medos:</span>
+                    <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.dores_medos || 'Falta de oportunidades'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Desejos:</span>
+                    <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.desejos || 'Desenvolvimento das crianças'}</span>
                   </div>
                 </div>
+              </div>
 
-                {/* 3. Personas e Público-Alvo */}
+              {/* 4. Objetivos & 5. Estratégia Narrativa */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
                   <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                    3. Personas &amp; Público-Alvo
+                    4. Objetivos &amp; Metas
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-                    <div>
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">Perfil &amp; Idade:</span>
-                      <span className="font-bold text-[var(--text-primary)]">{selectedCampanha.personas_publico?.perfil_idade || 'Geral'}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">Tom de Voz:</span>
-                      <span className="font-bold text-[#93368F]">{selectedCampanha.personas_publico?.tom_marca || 'Acolhedor e Educativo'}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">Hábitos e Valores:</span>
-                      <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.habitos_valores || 'Comunitário'}</span>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">Dores e Medos:</span>
-                      <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.dores_medos || 'Falta de oportunidades'}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">Desejos:</span>
-                      <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.desejos || 'Desenvolvimento das crianças'}</span>
-                    </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Meta Principal:</span>
+                    <p className="font-bold text-[var(--text-primary)] text-sm">{selectedCampanha.objetivos?.meta_principal || 'Aumentar engajamento e captação'}</p>
                   </div>
-                </div>
-
-                {/* 4. Objetivos & 5. Estratégia Narrativa */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                      4. Objetivos &amp; Metas
-                    </p>
+                  {selectedCampanha.objetivos?.metas_secundarias && (
                     <div>
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">Meta Principal:</span>
-                      <p className="font-bold text-[var(--text-primary)] text-sm">{selectedCampanha.objetivos?.meta_principal || 'Aumentar engajamento e captação'}</p>
-                    </div>
-                    {selectedCampanha.objetivos?.metas_secundarias && (
-                      <div>
-                        <span className="text-[10px] font-bold text-[var(--text-muted)] block">Metas Secundárias:</span>
-                        <p className="text-[var(--text-secondary)] font-medium">{selectedCampanha.objetivos.metas_secundarias}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                      5. Estratégia Narrativa
-                    </p>
-                    <div>
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">Transformação &amp; Protagonista:</span>
-                      <p className="text-[var(--text-primary)] font-medium">
-                        <strong>Protagonista:</strong> {selectedCampanha.estrategia_narrativa?.protagonista || 'Crianças e Famílias'}<br />
-                        <strong>Transformação:</strong> {selectedCampanha.estrategia_narrativa?.transformacao || 'Acesso à arte e educação'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">CTA Principal:</span>
-                      <p className="font-bold text-[#1C9C82]">{selectedCampanha.estrategia_narrativa?.cta_principal || 'Apoie o Instituto Ádapo'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 6. Gatilhos, 7. Canais & 10. Indicadores */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                      6. Gatilhos Persuasivos
-                    </p>
-                    <p className="text-xs text-[var(--text-primary)] font-medium">
-                      {selectedCampanha.gatilhos_persuasao || 'Prova Social, Pertencimento'}
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                      7. Canais Utilizados
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {(selectedCampanha.canais_ferramentas || ['Instagram', 'WhatsApp']).map((canal, idx) => (
-                        <span key={idx} className="px-2 py-0.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[10px] font-bold text-[var(--text-primary)]">
-                          {canal}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                      10. Indicadores Esperados
-                    </p>
-                    <p className="text-xs text-[var(--text-primary)] font-medium">
-                      <strong>Alcance:</strong> {selectedCampanha.indicadores_esperados?.alcance_esperado || '5.000 pessoas'}<br />
-                      <strong>Doações/Metas:</strong> {selectedCampanha.indicadores_esperados?.conversoes_doacoes || 'Meta aberta'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* 8. Calendário Editorial Vinculado a Esta Campanha */}
-                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                      8. Calendário Editorial Vinculado ({postsDaCampanha.length} Peças)
-                    </p>
-                  </div>
-
-                  {postsDaCampanha.length === 0 ? (
-                    <p className="text-xs text-[var(--text-muted)] italic">
-                      Nenhuma postagem vinculada a esta campanha ainda. No Calendário Editorial, atribua esta campanha ao criar um conteúdo.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                      {postsDaCampanha.map((p) => (
-                        <div
-                          key={p.id}
-                          className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center justify-between gap-2 shadow-2xs"
-                        >
-                          <div className="min-w-0 text-xs">
-                            <span className="font-bold text-[var(--text-primary)] block truncate">
-                              {p.titulo}
-                            </span>
-                            <span className="text-[10px] text-[var(--text-muted)]">
-                              {new Date(p.data_publicacao).toLocaleDateString('pt-BR')} • {p.tipo_conteudo.toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {p.link_publicacao && (
-                              <a
-                                href={p.link_publicacao}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="p-1 rounded bg-pink-500/10 text-pink-600 hover:bg-pink-500/20 transition-colors"
-                                title="Abrir postagem"
-                              >
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-                              {p.status}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">Metas Secundárias:</span>
+                      <p className="text-[var(--text-secondary)] font-medium">{selectedCampanha.objetivos.metas_secundarias}</p>
                     </div>
                   )}
                 </div>
+
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                    5. Estratégia Narrativa
+                  </p>
+                  <div>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Transformação &amp; Protagonista:</span>
+                    <p className="text-[var(--text-primary)] font-medium">
+                      <strong>Protagonista:</strong> {selectedCampanha.estrategia_narrativa?.protagonista || 'Crianças e Famílias'}<br />
+                      <strong>Transformação:</strong> {selectedCampanha.estrategia_narrativa?.transformacao || 'Acesso à arte e educação'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">CTA Principal:</span>
+                    <p className="font-bold text-[#1C9C82]">{selectedCampanha.estrategia_narrativa?.cta_principal || 'Apoie o Instituto Ádapo'}</p>
+                  </div>
+                </div>
               </div>
-            </Card>
-          ) : (
-            <Card className="p-12 text-center text-[var(--text-muted)] space-y-3">
-              <Megaphone className="w-12 h-12 mx-auto text-[var(--text-muted)] opacity-40" />
-              <p className="text-sm font-semibold">Selecione uma campanha ao lado para visualizar os 10 blocos estratégicos.</p>
-            </Card>
-          )}
+
+              {/* 6. Gatilhos, 7. Canais & 10. Indicadores */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                    6. Gatilhos Persuasivos
+                  </p>
+                  <p className="text-xs text-[var(--text-primary)] font-medium">
+                    {selectedCampanha.gatilhos_persuasao || 'Prova Social, Pertencimento'}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                    7. Canais Utilizados
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {(selectedCampanha.canais_ferramentas || ['Instagram', 'WhatsApp']).map((canal, idx) => (
+                      <span key={idx} className="px-2 py-0.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[10px] font-bold text-[var(--text-primary)]">
+                        {canal}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                    10. Indicadores Esperados
+                  </p>
+                  <p className="text-xs text-[var(--text-primary)] font-medium">
+                    <strong>Alcance:</strong> {selectedCampanha.indicadores_esperados?.alcance_esperado || '5.000 pessoas'}<br />
+                    <strong>Doações/Metas:</strong> {selectedCampanha.indicadores_esperados?.conversoes_doacoes || 'Meta aberta'}
+                  </p>
+                </div>
+              </div>
+
+              {/* 8. Calendário Editorial Vinculado a Esta Campanha */}
+              <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                    8. Calendário Editorial Vinculado ({postsDaCampanha.length} Peças)
+                  </p>
+                </div>
+
+                {postsDaCampanha.length === 0 ? (
+                  <p className="text-xs text-[var(--text-muted)] italic">
+                    Nenhuma postagem vinculada a esta campanha ainda. No Calendário Editorial, atribua esta campanha ao criar um conteúdo.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                    {postsDaCampanha.map((p) => (
+                      <div
+                        key={p.id}
+                        className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center justify-between gap-2 shadow-2xs"
+                      >
+                        <div className="min-w-0 text-xs">
+                          <span className="font-bold text-[var(--text-primary)] block truncate">
+                            {p.titulo}
+                          </span>
+                          <span className="text-[10px] text-[var(--text-muted)]">
+                            {new Date(p.data_publicacao).toLocaleDateString('pt-BR')} • {p.tipo_conteudo.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {p.link_publicacao && (
+                            <a
+                              href={p.link_publicacao}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1 rounded bg-pink-500/10 text-pink-600 hover:bg-pink-500/20 transition-colors"
+                              title="Abrir postagem"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+                            {p.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
         </div>
-      </div>
+      )}
 
       {/* ── 3. MODAL DE CRIAÇÃO / EDIÇÃO DE CAMPANHA (WIZARD 10 BLOCOS COM TEXTAREAS AUTOEXPANSÍVEIS) ── */}
       {showModal && (
