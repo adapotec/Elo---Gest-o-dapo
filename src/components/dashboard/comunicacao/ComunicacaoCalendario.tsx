@@ -966,20 +966,6 @@ export function ComunicacaoCalendario({
             </select>
 
             <select
-              value={projetoFilter}
-              onChange={(e) => setProjetoFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none font-semibold cursor-pointer"
-            >
-              <option value="todos">Todos os Projetos</option>
-              <option value="institucional">Institucional Geral (Sem projeto)</option>
-              {projetos.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nome}
-                </option>
-              ))}
-            </select>
-
-            <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none font-semibold cursor-pointer"
@@ -1047,104 +1033,129 @@ export function ComunicacaoCalendario({
             )}
           </div>
         </div>
+
+        {/* ── BARRA DE FILTRO RÁPIDO POR PROJETO (ALTO CONTRASTE INTEGRADO) ── */}
+        <div className="pt-3 border-t border-[var(--border-default)] flex items-center gap-2 overflow-x-auto custom-scrollbar pb-0.5">
+          <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5 mr-1 shrink-0">
+            <FolderKanban className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+            <span>Projetos:</span>
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setProjetoFilter('todos')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border shrink-0 shadow-2xs ${
+              projetoFilter === 'todos'
+                ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-xs'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border-[var(--border-default)] hover:bg-[var(--bg-secondary)]/80 hover:border-[var(--text-muted)]'
+            }`}
+          >
+            <span>Todos os Projetos</span>
+            <span
+              className={`px-1.5 py-0.5 text-[10px] rounded-md font-extrabold ${
+                projetoFilter === 'todos'
+                  ? 'bg-white/25 text-white'
+                  : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+              }`}
+            >
+              {conteudosParaPillsProjetos.length}
+            </span>
+          </button>
+
+          {projetos.map((proj) => {
+            const cor = proj.cor_identificacao || '#F2632D';
+            const count = conteudosParaPillsProjetos.filter((c) => c.projeto_id === proj.id).length;
+            const isSelected = projetoFilter === proj.id;
+
+            return (
+              <button
+                key={proj.id}
+                type="button"
+                onClick={() => setProjetoFilter(isSelected ? 'todos' : proj.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border shrink-0 shadow-2xs ${
+                  isSelected
+                    ? 'text-white shadow-xs ring-2 ring-offset-1 ring-[var(--bg-elevated)]'
+                    : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border-[var(--border-default)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-secondary)]/80'
+                }`}
+                style={
+                  isSelected
+                    ? {
+                        backgroundColor: cor,
+                        borderColor: cor,
+                        // @ts-ignore
+                        '--tw-ring-color': cor,
+                      }
+                    : undefined
+                }
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                  style={{ backgroundColor: isSelected ? '#ffffff' : cor }}
+                />
+                <span>{proj.nome}</span>
+                <span
+                  className={`px-1.5 py-0.5 text-[10px] rounded-md font-extrabold ${
+                    isSelected
+                      ? 'bg-white/25 text-white'
+                      : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Institucional Geral (Sem Projeto Vinculado) */}
+          {(() => {
+            const countInst = conteudosParaPillsProjetos.filter((c) => !c.projeto_id).length;
+            if (countInst === 0) return null;
+            const isSelected = projetoFilter === 'institucional';
+            const cor = '#F2632D';
+
+            return (
+              <button
+                type="button"
+                onClick={() => setProjetoFilter(isSelected ? 'todos' : 'institucional')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border shrink-0 shadow-2xs ${
+                  isSelected
+                    ? 'text-white shadow-xs ring-2 ring-offset-1 ring-[var(--bg-elevated)]'
+                    : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border-[var(--border-default)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-secondary)]/80'
+                }`}
+                style={
+                  isSelected
+                    ? {
+                        backgroundColor: cor,
+                        borderColor: cor,
+                        // @ts-ignore
+                        '--tw-ring-color': cor,
+                      }
+                    : undefined
+                }
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                  style={{ backgroundColor: isSelected ? '#ffffff' : cor }}
+                />
+                <span>Institucional Geral</span>
+                <span
+                  className={`px-1.5 py-0.5 text-[10px] rounded-md font-extrabold ${
+                    isSelected
+                      ? 'bg-white/25 text-white'
+                      : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border border-[var(--border-default)]'
+                  }`}
+                >
+                  {countInst}
+                </span>
+              </button>
+            );
+          })()}
+        </div>
       </div>
 
       {/* ── 3. VISUALIZAÇÃO: MODO TABELA ── */}
       {viewMode === 'tabela' && (
         <div className="space-y-3">
-          {/* Barra de Filtro Rápido por Projeto com Contadores e Cores */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
-            <button
-              type="button"
-              onClick={() => setProjetoFilter('todos')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 border shrink-0 ${
-                projetoFilter === 'todos'
-                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-xs'
-                  : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-secondary)]'
-              }`}
-            >
-              <span>Todos os Projetos</span>
-              <span
-                className={`px-1.5 py-0.5 text-[10px] rounded-full font-extrabold ${
-                  projetoFilter === 'todos'
-                    ? 'bg-white/25 text-white'
-                    : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
-                }`}
-              >
-                {conteudosParaPillsProjetos.length}
-              </span>
-            </button>
-
-            {projetos.map((proj) => {
-              const cor = proj.cor_identificacao || '#F2632D';
-              const count = conteudosParaPillsProjetos.filter((c) => c.projeto_id === proj.id).length;
-              const isSelected = projetoFilter === proj.id;
-
-              return (
-                <button
-                  key={proj.id}
-                  type="button"
-                  onClick={() => setProjetoFilter(isSelected ? 'todos' : proj.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 border shrink-0 ${
-                    isSelected ? 'shadow-xs ring-2' : 'hover:opacity-100 opacity-90'
-                  }`}
-                  style={{
-                    backgroundColor: isSelected ? `${cor}25` : `${cor}10`,
-                    borderColor: isSelected ? cor : `${cor}35`,
-                    color: cor,
-                  }}
-                >
-                  <span className="w-2 h-2 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: cor }} />
-                  <span>{proj.nome}</span>
-                  <span
-                    className="px-1.5 py-0.5 text-[10px] rounded-full font-extrabold"
-                    style={{
-                      backgroundColor: isSelected ? `${cor}40` : `${cor}20`,
-                      color: cor,
-                    }}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-
-            {/* Institucional Geral (Sem Projeto Vinculado) */}
-            {(() => {
-              const countInst = conteudosParaPillsProjetos.filter((c) => !c.projeto_id).length;
-              if (countInst === 0) return null;
-              const isSelected = projetoFilter === 'institucional';
-              const cor = '#F2632D';
-
-              return (
-                <button
-                  type="button"
-                  onClick={() => setProjetoFilter(isSelected ? 'todos' : 'institucional')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 border shrink-0 ${
-                    isSelected ? 'shadow-xs ring-2' : 'hover:opacity-100 opacity-90'
-                  }`}
-                  style={{
-                    backgroundColor: isSelected ? `${cor}25` : `${cor}10`,
-                    borderColor: isSelected ? cor : `${cor}35`,
-                    color: cor,
-                  }}
-                >
-                  <span className="w-2 h-2 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: cor }} />
-                  <span>Institucional Geral</span>
-                  <span
-                    className="px-1.5 py-0.5 text-[10px] rounded-full font-extrabold"
-                    style={{
-                      backgroundColor: isSelected ? `${cor}40` : `${cor}20`,
-                      color: cor,
-                    }}
-                  >
-                    {countInst}
-                  </span>
-                </button>
-              );
-            })()}
-          </div>
-
           <DataTable
             columns={columns}
             data={paginatedConteudos}
