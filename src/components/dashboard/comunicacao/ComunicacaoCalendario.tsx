@@ -83,6 +83,8 @@ interface ComunicacaoCalendarioProps {
   onRefresh: () => void;
   onSaveConteudo: (conteudo: Partial<ConteudoItem>) => Promise<void>;
   onDeleteConteudo: (id: string) => Promise<void>;
+  prefillConteudo?: Partial<ConteudoItem> | null;
+  onClearPrefill?: () => void;
 }
 
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -100,6 +102,8 @@ export function ComunicacaoCalendario({
   onRefresh,
   onSaveConteudo,
   onDeleteConteudo,
+  prefillConteudo,
+  onClearPrefill,
 }: ComunicacaoCalendarioProps) {
   const [viewMode, setViewMode] = useState<'tabela' | 'calendario'>('tabela');
   const [searchTerm, setSearchTerm] = useState('');
@@ -164,6 +168,31 @@ export function ComunicacaoCalendario({
     setCopiedLegenda(true);
     setTimeout(() => setCopiedLegenda(false), 2000);
   };
+
+  // Pre-popular formulário quando vier de uma conversão de ticket de demanda
+  useEffect(() => {
+    if (prefillConteudo) {
+      setEditingConteudo(null);
+      setFormTitulo(prefillConteudo.titulo || '');
+      setFormDataPub(
+        prefillConteudo.data_publicacao
+          ? prefillConteudo.data_publicacao.slice(0, 16)
+          : new Date().toISOString().slice(0, 16)
+      );
+      setFormTipo(prefillConteudo.tipo_conteudo || 'reels');
+      setFormObservacoes(prefillConteudo.observacoes || prefillConteudo.descricao || '');
+      setFormRoteiroLegenda(prefillConteudo.roteiro_legenda || '');
+      setFormProjetoId(prefillConteudo.projeto_id || '');
+      setFormCampanhaId(prefillConteudo.campanha_id || '');
+      setFormStatus('producao');
+      setFormResponsavelId(prefillConteudo.responsavel_id || '');
+      setFormCategoria(prefillConteudo.categoria || 'avulso');
+      setFormLinkProducao(prefillConteudo.link_producao || '');
+      setFormLinkPublicacao('');
+      setShowModal(true);
+      if (onClearPrefill) onClearPrefill();
+    }
+  }, [prefillConteudo, onClearPrefill]);
 
   // Abrir Modal para Novo Conteúdo
   const handleOpenNewModal = (datePrefill?: string) => {
@@ -773,14 +802,18 @@ export function ComunicacaoCalendario({
         <button
           type="button"
           onClick={() => setStatusFilter('todos')}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 ${
+          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 bg-[var(--bg-elevated)] ${
             statusFilter === 'todos'
-              ? 'border-2 border-[var(--color-primary)] bg-[var(--bg-elevated)] shadow-xs ring-2 ring-[var(--color-primary)]/20'
-              : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]/50'
+              ? 'border-2 border-[var(--color-primary)] shadow-md ring-2 ring-offset-1 ring-[var(--color-primary)]/25'
+              : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]/50'
           }`}
           title="Clique para exibir todos os status"
         >
-          <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+            statusFilter === 'todos'
+              ? 'bg-[var(--color-primary)] text-white shadow-xs'
+              : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'
+          }`}>
             <Layers className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -789,7 +822,9 @@ export function ComunicacaoCalendario({
                 Total de Peças
               </p>
               {statusFilter === 'todos' && (
-                <span className="w-2 h-2 rounded-full bg-[var(--color-primary)] shrink-0" />
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+                  Ativo
+                </span>
               )}
             </div>
             <p className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
@@ -801,14 +836,18 @@ export function ComunicacaoCalendario({
         <button
           type="button"
           onClick={() => setStatusFilter(statusFilter === 'publicado' ? 'todos' : 'publicado')}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 ${
+          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 bg-[var(--bg-elevated)] ${
             statusFilter === 'publicado'
-              ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-2 ring-emerald-500/25'
-              : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-emerald-500/50'
+              ? 'border-2 border-emerald-500 shadow-md ring-2 ring-offset-1 ring-emerald-500/25'
+              : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-emerald-500/50'
           }`}
           title="Clique para filtrar apenas Publicados"
         >
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+            statusFilter === 'publicado'
+              ? 'bg-emerald-500 text-white shadow-xs'
+              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+          }`}>
             <CheckCircle2 className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -817,10 +856,12 @@ export function ComunicacaoCalendario({
                 Publicados
               </p>
               {statusFilter === 'publicado' && (
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                  Ativo
+                </span>
               )}
             </div>
-            <p className="text-lg sm:text-xl font-display font-extrabold text-emerald-600">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-emerald-600 dark:text-emerald-400">
               {stats.publicados}
             </p>
           </div>
@@ -829,14 +870,18 @@ export function ComunicacaoCalendario({
         <button
           type="button"
           onClick={() => setStatusFilter(statusFilter === 'producao' ? 'todos' : 'producao')}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 ${
+          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 bg-[var(--bg-elevated)] ${
             statusFilter === 'producao'
-              ? 'border-amber-500 bg-amber-500/10 shadow-xs ring-2 ring-amber-500/25'
-              : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-amber-500/50'
+              ? 'border-2 border-amber-500 shadow-md ring-2 ring-offset-1 ring-amber-500/25'
+              : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-amber-500/50'
           }`}
           title="Clique para filtrar conteúdos Em Produção"
         >
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+            statusFilter === 'producao'
+              ? 'bg-amber-500 text-white shadow-xs'
+              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+          }`}>
             <Clock className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -845,10 +890,12 @@ export function ComunicacaoCalendario({
                 Em Produção
               </p>
               {statusFilter === 'producao' && (
-                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-amber-500/15 text-amber-800 dark:text-amber-200">
+                  Ativo
+                </span>
               )}
             </div>
-            <p className="text-lg sm:text-xl font-display font-extrabold text-amber-600">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-amber-600 dark:text-amber-400">
               {stats.emProducao}
             </p>
           </div>
@@ -857,14 +904,18 @@ export function ComunicacaoCalendario({
         <button
           type="button"
           onClick={() => setStatusFilter(statusFilter === 'em_atraso' ? 'todos' : 'em_atraso')}
-          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 ${
+          className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer select-none flex items-center gap-3 bg-[var(--bg-elevated)] ${
             statusFilter === 'em_atraso'
-              ? 'border-rose-500 bg-rose-500/10 shadow-xs ring-2 ring-rose-500/25'
-              : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-rose-500/50'
+              ? 'border-2 border-rose-500 shadow-md ring-2 ring-offset-1 ring-rose-500/25'
+              : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-rose-500/50'
           }`}
           title="Clique para filtrar conteúdos Em Atraso"
         >
-          <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+            statusFilter === 'em_atraso'
+              ? 'bg-rose-500 text-white shadow-xs'
+              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+          }`}>
             <AlertTriangle className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -873,10 +924,12 @@ export function ComunicacaoCalendario({
                 Em Atraso
               </p>
               {statusFilter === 'em_atraso' && (
-                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-rose-500/15 text-rose-800 dark:text-rose-200">
+                  Ativo
+                </span>
               )}
             </div>
-            <p className="text-lg sm:text-xl font-display font-extrabold text-rose-600">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-rose-600 dark:text-rose-400">
               {stats.atrasados}
             </p>
           </div>

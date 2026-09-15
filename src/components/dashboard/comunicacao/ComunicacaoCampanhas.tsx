@@ -403,19 +403,30 @@ export function ComunicacaoCampanhas({
           <button
             type="button"
             onClick={() => setStatusFilter('todos')}
-            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 bg-[var(--bg-elevated)] ${
               statusFilter === 'todos'
-                ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/20 shadow-xs ring-2 ring-[var(--color-primary)]/25'
-                : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]/50'
+                ? 'border-2 border-[var(--color-primary)] shadow-md ring-2 ring-offset-1 ring-[var(--color-primary)]/25'
+                : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]/50'
             }`}
           >
-            <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+              statusFilter === 'todos'
+                ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'
+            }`}>
               <Megaphone className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-                Total de Campanhas
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                  Total de Campanhas
+                </p>
+                {statusFilter === 'todos' && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+                    Ativo
+                  </span>
+                )}
+              </div>
               <p className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
                 {stats.total}
               </p>
@@ -425,20 +436,31 @@ export function ComunicacaoCampanhas({
           <button
             type="button"
             onClick={() => setStatusFilter(statusFilter === 'em_andamento' ? 'todos' : 'em_andamento')}
-            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 bg-[var(--bg-elevated)] ${
               statusFilter === 'em_andamento'
-                ? 'border-emerald-500 bg-emerald-500/10 shadow-xs ring-2 ring-emerald-500/25'
-                : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-emerald-500/50'
+                ? 'border-2 border-emerald-500 shadow-md ring-2 ring-offset-1 ring-emerald-500/25'
+                : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-emerald-500/50'
             }`}
           >
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+              statusFilter === 'em_andamento'
+                ? 'bg-emerald-500 text-white shadow-xs'
+                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            }`}>
               <CheckCircle2 className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-                Em Andamento
-              </p>
-              <p className="text-lg sm:text-xl font-display font-extrabold text-emerald-600">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                  Em Andamento
+                </p>
+                {statusFilter === 'em_andamento' && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                    Ativo
+                  </span>
+                )}
+              </div>
+              <p className="text-lg sm:text-xl font-display font-extrabold text-emerald-600 dark:text-emerald-400">
                 {stats.emAndamento}
               </p>
             </div>
@@ -447,20 +469,31 @@ export function ComunicacaoCampanhas({
           <button
             type="button"
             onClick={() => setStatusFilter(statusFilter === 'planejamento' ? 'todos' : 'planejamento')}
-            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 bg-[var(--bg-elevated)] ${
               statusFilter === 'planejamento'
-                ? 'border-purple-500 bg-purple-500/10 shadow-xs ring-2 ring-purple-500/25'
-                : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-purple-500/50'
+                ? 'border-2 border-amber-500 shadow-md ring-2 ring-offset-1 ring-amber-500/25'
+                : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-amber-500/50'
             }`}
           >
-            <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center shrink-0">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+              statusFilter === 'planejamento'
+                ? 'bg-amber-500 text-white shadow-xs'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+            }`}>
               <Clock className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-                Em Planejamento
-              </p>
-              <p className="text-lg sm:text-xl font-display font-extrabold text-purple-600">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                  Em Planejamento
+                </p>
+                {statusFilter === 'planejamento' && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-amber-500/15 text-amber-800 dark:text-amber-200">
+                    Ativo
+                  </span>
+                )}
+              </div>
+              <p className="text-lg sm:text-xl font-display font-extrabold text-amber-600 dark:text-amber-400">
                 {stats.planejamento}
               </p>
             </div>
@@ -469,20 +502,31 @@ export function ComunicacaoCampanhas({
           <button
             type="button"
             onClick={() => setStatusFilter(statusFilter === 'concluida' ? 'todos' : 'concluida')}
-            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 ${
+            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 bg-[var(--bg-elevated)] ${
               statusFilter === 'concluida'
-                ? 'border-blue-500 bg-blue-500/10 shadow-xs ring-2 ring-blue-500/25'
-                : 'border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-blue-500/50'
+                ? 'border-2 border-blue-500 shadow-md ring-2 ring-offset-1 ring-blue-500/25'
+                : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-blue-500/50'
             }`}
           >
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+              statusFilter === 'concluida'
+                ? 'bg-blue-500 text-white shadow-xs'
+                : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+            }`}>
               <Sparkles className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-                Concluídas
-              </p>
-              <p className="text-lg sm:text-xl font-display font-extrabold text-blue-600">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
+                  Concluídas
+                </p>
+                {statusFilter === 'concluida' && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-blue-500/15 text-blue-800 dark:text-blue-200">
+                    Ativo
+                  </span>
+                )}
+              </div>
+              <p className="text-lg sm:text-xl font-display font-extrabold text-blue-600 dark:text-blue-400">
                 {stats.concluidas}
               </p>
             </div>

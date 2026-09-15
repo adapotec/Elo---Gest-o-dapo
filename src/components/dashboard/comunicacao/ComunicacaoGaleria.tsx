@@ -19,6 +19,10 @@ import {
   X,
   Save,
   Link2,
+  LayoutGrid,
+  List,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
 
@@ -74,6 +78,10 @@ export function ComunicacaoGaleria({
   const [formDescricao, setFormDescricao] = useState('');
   const [formTags, setFormTags] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(9);
 
   const handleOpenNew = () => {
     setEditingId(null);
@@ -148,19 +156,30 @@ export function ComunicacaoGaleria({
     });
   }, [itens, searchTerm, projetoFilter]);
 
+  // Reset de página ao alterar filtros
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, projetoFilter, itemsPerPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItens.length / itemsPerPage));
+  const paginatedItens = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredItens.slice(start, start + itemsPerPage);
+  }, [filteredItens, currentPage, itemsPerPage]);
+
   return (
     <div className="space-y-5">
       {/* ── 1. BARRA DE CONTROLE E PESQUISA ── */}
-      <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-1 w-full">
-          <div className="relative flex-1">
+      <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-1 w-full flex-wrap sm:flex-nowrap">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="Buscar pasta por ação, projeto, data ou tag..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+              className="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
             />
           </div>
 
@@ -176,30 +195,61 @@ export function ComunicacaoGaleria({
               </option>
             ))}
           </select>
+
+          {/* Alternador de Visualização: Grade ou Lista */}
+          <div className="flex items-center bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--border-default)] shrink-0">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                viewMode === 'grid'
+                  ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-2xs'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+              title="Visualização em Grade de Cards"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline text-[11px]">Grade</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                viewMode === 'list'
+                  ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-2xs'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+              title="Visualização em Lista / Tabela"
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline text-[11px]">Lista</span>
+            </button>
+          </div>
         </div>
 
         <Button
           onClick={handleOpenNew}
           size="sm"
           icon={<Plus className="w-4 h-4" />}
-          className="w-full sm:w-auto justify-center"
+          className="w-full md:w-auto justify-center shrink-0"
         >
           Adicionar Pasta do Drive
         </Button>
       </div>
 
-      {/* ── 2. GRID DE PASTAS DO GOOGLE DRIVE ── */}
+      {/* ── 2. CONTEÚDO: GRID OU LISTA DE PASTAS DO GOOGLE DRIVE ── */}
       {filteredItens.length === 0 ? (
         <Card className="p-12 text-center text-[var(--text-muted)] space-y-3">
           <FolderOpen className="w-12 h-12 mx-auto text-[var(--text-muted)] opacity-40" />
-          <p className="text-sm font-semibold">Nenhuma pasta de fotos ou vídeos cadastrada ainda.</p>
+          <p className="text-sm font-semibold">Nenhuma pasta de fotos ou vídeos encontrada.</p>
           <Button size="sm" variant="secondary" onClick={handleOpenNew}>
             Cadastrar Primeira Pasta no Drive
           </Button>
         </Card>
-      ) : (
+      ) : viewMode === 'grid' ? (
+        /* VISUALIZAÇÃO EM GRADE */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredItens.map((item) => (
+          {paginatedItens.map((item) => (
             <Card
               key={item.id}
               className="p-5 flex flex-col justify-between hover:border-[var(--color-primary)]/50 transition-all space-y-4"
@@ -257,7 +307,7 @@ export function ComunicacaoGaleria({
                   </div>
                   {item.voluntarios?.nome_completo && (
                     <div className="flex items-center gap-1.5">
-                      <Camera className="w-3.5 h-3.5 text-purple-600" />
+                      <Camera className="w-3.5 h-3.5 text-blue-600" />
                       <span>Registrado por: {item.voluntarios.nome_completo}</span>
                     </div>
                   )}
@@ -292,6 +342,220 @@ export function ComunicacaoGaleria({
               </div>
             </Card>
           ))}
+        </div>
+      ) : (
+        /* VISUALIZAÇÃO EM LISTA / TABELA COMPACTA */
+        <div className="border border-[var(--border-default)] bg-[var(--bg-elevated)] rounded-2xl overflow-hidden shadow-[var(--shadow-card)]">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                  <th className="py-3 px-4">Projeto</th>
+                  <th className="py-3 px-4">Pasta / Álbum de Fotos</th>
+                  <th className="py-3 px-4">Data do Evento</th>
+                  <th className="py-3 px-4">Fotógrafo / Registro</th>
+                  <th className="py-3 px-4">Tags</th>
+                  <th className="py-3 px-4">Acesso Direto</th>
+                  <th className="py-3 px-4 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-default)]">
+                {paginatedItens.map((item) => {
+                  const cor = item.projetos_sociais?.cor_identificacao || '#F2632D';
+                  return (
+                    <tr
+                      key={item.id}
+                      className="hover:bg-[var(--bg-secondary)]/40 transition-colors group"
+                    >
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border shadow-2xs"
+                          style={{
+                            backgroundColor: `${cor}18`,
+                            borderColor: `${cor}40`,
+                            color: cor,
+                          }}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: cor }}
+                          />
+                          <span>{item.projetos_sociais?.nome || 'Institucional Geral'}</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 min-w-[220px]">
+                        <p className="font-bold text-[var(--text-primary)] text-xs line-clamp-1 group-hover:text-[var(--color-primary)] transition-colors">
+                          {item.titulo}
+                        </p>
+                        {item.descricao && (
+                          <p className="text-[11px] text-[var(--text-secondary)] line-clamp-1 mt-0.5">
+                            {item.descricao}
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap text-[var(--text-secondary)] font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-[var(--color-primary)] shrink-0" />
+                          <span>{new Date(item.data_evento).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap text-[var(--text-secondary)]">
+                        {item.voluntarios?.nome_completo ? (
+                          <div className="flex items-center gap-1.5">
+                            <Camera className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span>{item.voluntarios.nome_completo}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[var(--text-muted)] italic">Não informado</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {item.tags && item.tags.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[200px]">
+                            {item.tags.slice(0, 3).map((tag, idx) => (
+                              <span
+                                key={idx}
+                                className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-secondary)]"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                            {item.tags.length > 3 && (
+                              <span className="text-[9px] text-[var(--text-muted)] font-bold">
+                                +{item.tags.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[var(--text-muted)]">-</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <a
+                          href={item.link_drive}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-[var(--color-primary)] hover:bg-[var(--color-primary-soft)] border border-[var(--color-primary)]/30 transition-colors"
+                          title="Abrir no Google Drive"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Abrir Drive</span>
+                        </a>
+                      </td>
+                      <td className="py-3.5 px-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(item)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
+                            title="Editar pasta"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteGaleria(item.id)}
+                            className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            title="Excluir pasta"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── 3. BARRA DE PAGINAÇÃO COMPLETA ── */}
+      {filteredItens.length > 0 && (
+        <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="text-[var(--text-secondary)] font-medium text-center sm:text-left">
+            Mostrando <strong className="text-[var(--text-primary)]">{(currentPage - 1) * itemsPerPage + 1}</strong> a{' '}
+            <strong className="text-[var(--text-primary)]">
+              {Math.min(filteredItens.length, currentPage * itemsPerPage)}
+            </strong>{' '}
+            de <strong className="text-[var(--text-primary)]">{filteredItens.length}</strong> pastas
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            {/* Seletor de Itens por Página */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[var(--text-muted)] text-[11px] font-bold">Por página:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                className="px-2.5 py-1 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold text-xs cursor-pointer"
+              >
+                <option value={9}>9</option>
+                <option value={18}>18</option>
+                <option value={27}>27</option>
+                <option value={45}>45</option>
+              </select>
+            </div>
+
+            {/* Controles de Navegação */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]/80 transition-colors"
+                title="Página Anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-1 px-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((page) => {
+                    // Exibir apenas páginas próximas para não quebrar layout
+                    return (
+                      page === 1 ||
+                      page === totalPages ||
+                      Math.abs(page - currentPage) <= 1
+                    );
+                  })
+                  .map((page, idx, arr) => {
+                    const prevPage = arr[idx - 1];
+                    const hasGap = prevPage && page - prevPage > 1;
+
+                    return (
+                      <React.Fragment key={page}>
+                        {hasGap && (
+                          <span className="px-1 text-[var(--text-muted)] font-bold">...</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage(page)}
+                          className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center transition-all ${
+                            currentPage === page
+                              ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                              : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/80 border border-[var(--border-default)]'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--bg-secondary)]/80 transition-colors"
+                title="Próxima Página"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
