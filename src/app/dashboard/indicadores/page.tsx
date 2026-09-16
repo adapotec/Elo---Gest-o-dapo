@@ -23,27 +23,15 @@ import {
   Megaphone,
   Coins,
   Cpu,
-  Users,
-  HeartHandshake,
   ClipboardList,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Sparkles,
-  TrendingUp,
+  HeartHandshake,
   Compass,
   ArrowRight,
   Printer,
   RefreshCw,
-  ShieldCheck,
-  Award,
   Layers,
-  FileSpreadsheet,
-  Activity,
-  FileCheck2,
-  Camera,
-  CalendarCheck,
-  Share2,
+  Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 
 export type EquipeId =
@@ -54,17 +42,14 @@ export type EquipeId =
   | 'financeiro'
   | 'tecnologia';
 
+export type SubFiltro = 'todos' | 'gestao' | 'impacto' | 'orientacoes';
+
 interface EquipeConfig {
   id: EquipeId;
   nome: string;
   icone: React.ElementType;
   corPrimaria: string;
-  badgeBg: string;
-  badgeBorder: string;
-  badgeText: string;
   missao: string;
-  resumoGestao: string;
-  resumoImpacto: string;
 }
 
 const EQUIPES: EquipeConfig[] = [
@@ -73,80 +58,51 @@ const EQUIPES: EquipeConfig[] = [
     nome: 'Projetos',
     icone: FolderKanban,
     corPrimaria: '#F2632D',
-    badgeBg: 'bg-orange-500/10',
-    badgeBorder: 'border-orange-500/30',
-    badgeText: 'text-orange-600 dark:text-orange-400',
-    missao: 'Planejamento, execução em campo e mensuração de adesão das ações sociais comunitárias.',
-    resumoGestao: 'Execução do cronograma de oficinas, registros de chamada e governança de atividades de campo.',
-    resumoImpacto: 'Alcance comunitário, assiduidade de crianças e presença territorial na periferia.',
+    missao: 'Planejamento, execução em campo e mensuração de presença das ações sociais comunitárias.',
   },
   {
     id: 'pedagogia',
     nome: 'Pedagogia',
     icone: GraduationCap,
     corPrimaria: '#0D9488',
-    badgeBg: 'bg-teal-500/10',
-    badgeBorder: 'border-teal-500/30',
-    badgeText: 'text-teal-600 dark:text-teal-400',
     missao: 'Desenvolvimento metodológico, mediação de conflitos e avaliação socioemocional dos educandos.',
-    resumoGestao: 'Planos de oficina estruturados, fichas de monitoramento e alinhamento pedagógico dos encontros.',
-    resumoImpacto: 'Evolução na autonomia, comunicação não-violenta, escuta ativa e fortalecimento de vínculos.',
   },
   {
     id: 'administracao',
     nome: 'Administração',
     icone: Building2,
     corPrimaria: '#2563EB',
-    badgeBg: 'bg-blue-500/10',
-    badgeBorder: 'border-blue-500/30',
-    badgeText: 'text-blue-600 dark:text-blue-400',
-    missao: 'Coordenação da equipe voluntária, governança institucional, compliance e advocacy público.',
-    resumoGestao: 'Gestão de escalas, distribuição de voluntários por área, atas e reuniões com poder público.',
-    resumoImpacto: 'Horas voluntárias dedicadas e articulação institucional com SEDIHPOP, CAEMA e SINFRA.',
+    missao: 'Coordenação voluntária, governança institucional, compliance e advocacy comunitário.',
   },
   {
     id: 'comunicacao',
     nome: 'Comunicação',
     icone: Megaphone,
     corPrimaria: '#D97706',
-    badgeBg: 'bg-amber-500/10',
-    badgeBorder: 'border-amber-500/30',
-    badgeText: 'text-amber-600 dark:text-amber-400',
-    missao: 'Visibilidade da causa, calendário editorial, memória audiovisual e engajamento da sociedade civil.',
-    resumoGestao: 'Cumprimento de cronograma de postagens, campanhas estratégicas e catálogo de acervo no Drive.',
-    resumoImpacto: 'Disseminação da realidade infantil das periferias e conscientização pública sobre direitos.',
+    missao: 'Visibilidade da causa, calendário editorial, memória audiovisual e engajamento da sociedade.',
   },
   {
     id: 'financeiro',
     nome: 'Financeiro',
     icone: Coins,
     corPrimaria: '#059669',
-    badgeBg: 'bg-emerald-500/10',
-    badgeBorder: 'border-emerald-500/30',
-    badgeText: 'text-emerald-600 dark:text-emerald-400',
-    missao: 'Sustentabilidade orçamentária, programas de apadrinhamento e suprimentos para as ações comunitárias.',
-    resumoGestao: 'Estruturação de planos de doação mensal, fluxo de compras e gestão de requisições de materiais.',
-    resumoImpacto: 'Custo social por criança atendida e garantia de lanches e materiais sem interrupções.',
+    missao: 'Sustentabilidade orçamentária, programas de apadrinhamento e suprimentos para as ações.',
   },
   {
     id: 'tecnologia',
     nome: 'Tecnologia',
     icone: Cpu,
     corPrimaria: '#0891B2',
-    badgeBg: 'bg-cyan-500/10',
-    badgeBorder: 'border-cyan-500/30',
-    badgeText: 'text-cyan-600 dark:text-cyan-400',
-    missao: 'Digitalização segura de prontuários, arquitetura de sistemas, proteção de dados e automações.',
-    resumoGestao: 'Governança de acessos, integridade de banco relacional e disponibilidade da plataforma ELO.',
-    resumoImpacto: 'Proteção de privacidade de 163 famílias vulneráveis (LGPD/ECA) e agilidade em emergências de campo.',
+    missao: 'Digitalização segura de prontuários, arquitetura de dados e proteção da privacidade (LGPD/ECA).',
   },
 ];
 
 export default function IndicadoresPage() {
   const [equipeAtiva, setEquipeAtiva] = useState<EquipeId>('projetos');
+  const [subFiltro, setSubFiltro] = useState<SubFiltro>('todos');
   const [loading, setLoading] = useState(true);
 
-  // Estados dos Dados Reais
+  // Estados dos Dados Reais Consolidados
   const [dadosGerais, setDadosGerais] = useState<any>({
     // Projetos
     totalBeneficiarios: 163,
@@ -258,9 +214,9 @@ export default function IndicadoresPage() {
     prontuariosDigitalizados: 163,
     fichasFisicasRemovidas: 163,
     segurancaDados: [
-      { tipo: 'Prontuários Digitais Protegidos', quantidade: 163, cor: PALETA_CORES.ciano },
+      { tipo: 'Prontuários Protegidos', quantidade: 163, cor: PALETA_CORES.ciano },
       { tipo: 'Tabelas com RLS Ativo', quantidade: 38, cor: PALETA_CORES.esmeralda },
-      { tipo: 'Fichas em Papel / Vulneráveis', quantidade: 0, cor: PALETA_CORES.cinza },
+      { tipo: 'Fichas em Papel', quantidade: 0, cor: PALETA_CORES.cinza },
     ],
     perfisUsuarios: [
       { papel: 'Administrador / Coord.', usuarios: 6 },
@@ -277,7 +233,6 @@ export default function IndicadoresPage() {
     const supabase = createClient();
 
     try {
-      // 1. Projetos & Beneficiários
       const [
         { count: cBenefTotal },
         { count: cBenefAtivos },
@@ -357,1222 +312,1042 @@ export default function IndicadoresPage() {
 
   const equipeConfig = EQUIPES.find((e) => e.id === equipeAtiva)!;
 
+  const showGestao = subFiltro === 'todos' || subFiltro === 'gestao';
+  const showImpacto = subFiltro === 'todos' || subFiltro === 'impacto';
+  const showOrientacoes = subFiltro === 'todos' || subFiltro === 'orientacoes';
+
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-[var(--bg-default)]">
+    <div className="flex-1 flex flex-col min-w-0">
       {/* Topbar Padronizada */}
       <Topbar
-        title="Painel Estratégico de Indicadores & BI"
-        subtitle="Métricas de Gestão de Processos e Impacto Social por Equipe Funcional do Instituto Ádapo"
+        title="Painel de Indicadores"
+        subtitle="Métricas de Gestão e Impacto Social por Equipe Funcional"
         action={
           <div className="flex items-center gap-2">
             <Button
               size="sm"
               variant="secondary"
-              icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
               onClick={carregarDadosBanco}
-              title="Atualizar Dados do Supabase"
+              title="Atualizar Dados"
             >
-              <span className="hidden sm:inline">Atualizar Dados</span>
+              <span className="hidden sm:inline">Atualizar</span>
             </Button>
             <Button
               size="sm"
               variant="primary"
-              icon={<Printer className="w-4 h-4" />}
+              icon={<Printer className="w-3.5 h-3.5" />}
               onClick={() => window.print()}
               title="Imprimir Relatório"
             >
-              <span className="hidden sm:inline">Imprimir Relatório</span>
+              <span className="hidden sm:inline">Imprimir</span>
             </Button>
           </div>
         }
       />
 
       {/* Conteúdo Principal */}
-      <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-7xl mx-auto w-full flex-1 overflow-y-auto">
-        {/* SELETOR DE EQUIPES (6 EQUIPES OBRIGATÓRIAS) */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              Selecione a Equipe para Análise
-            </p>
-            <span className="text-xs text-[var(--text-muted)]">
-              6 frentes estratégicas integradas
-            </span>
-          </div>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-[1600px] mx-auto w-full flex-1 overflow-y-auto">
+        
+        {/* 1. SELETOR DE EQUIPES (MINIMALISTA, FLUIDO & ALTO CONTRASTE) */}
+        <div className="p-1.5 bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-[var(--shadow-card)] flex items-center gap-1.5 overflow-x-auto custom-scrollbar">
+          {EQUIPES.map((equipe) => {
+            const Icon = equipe.icone;
+            const isSelected = equipeAtiva === equipe.id;
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-            {EQUIPES.map((equipe) => {
-              const Icon = equipe.icone;
-              const isSelected = equipeAtiva === equipe.id;
-
-              return (
-                <button
-                  key={equipe.id}
-                  onClick={() => setEquipeAtiva(equipe.id)}
-                  style={{
-                    borderColor: isSelected ? equipe.corPrimaria : 'var(--border-default)',
-                    boxShadow: isSelected ? `0 4px 12px ${equipe.corPrimaria}25` : 'none',
-                  }}
-                  className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all group ${
-                    isSelected
-                      ? 'bg-[var(--bg-elevated)] border-2 font-bold ring-2 ring-offset-1 ring-slate-400/20'
-                      : 'bg-[var(--bg-surface)] hover:bg-[var(--bg-elevated)] border-[var(--border-default)]'
-                  }`}
-                >
-                  <div
-                    className="p-2 rounded-lg mb-2 transition-transform group-hover:scale-110"
-                    style={{
-                      backgroundColor: `${equipe.corPrimaria}15`,
-                      color: equipe.corPrimaria,
-                    }}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <span
-                    className={`text-xs sm:text-sm ${
-                      isSelected
-                        ? 'text-[var(--text-primary)] font-bold'
-                        : 'text-[var(--text-secondary)] font-medium'
-                    }`}
-                  >
-                    {equipe.nome}
-                  </span>
-                  <div className="mt-1 flex items-center gap-1">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{
-                        backgroundColor: isSelected ? equipe.corPrimaria : 'var(--text-muted)',
-                      }}
-                    />
-                    <span className="text-[10px] text-[var(--text-muted)]">
-                      {isSelected ? 'Ativo' : 'Ver KPIs'}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+            return (
+              <button
+                key={equipe.id}
+                type="button"
+                onClick={() => setEquipeAtiva(equipe.id)}
+                style={isSelected ? { backgroundColor: equipe.corPrimaria } : undefined}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer ${
+                  isSelected
+                    ? 'text-white shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span>{equipe.nome}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* BANNER DA EQUIPE ATIVA */}
-        <div
-          className="p-5 sm:p-6 rounded-2xl border bg-[var(--bg-elevated)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
-          style={{ borderLeft: `6px solid ${equipeConfig.corPrimaria}` }}
-        >
-          <div className="flex items-start gap-4">
+        {/* 2. BARRA CONTEXTUAL DA EQUIPE & SUB-FILTROS DE VISUALIZAÇÃO */}
+        <div className="p-3.5 sm:p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div
-              className="p-3.5 rounded-2xl shrink-0"
+              className="p-2 rounded-lg shrink-0"
               style={{
                 backgroundColor: `${equipeConfig.corPrimaria}15`,
                 color: equipeConfig.corPrimaria,
               }}
             >
-              <equipeConfig.icone className="w-8 h-8" />
+              <equipeConfig.icone className="w-5 h-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
+                <h2 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
                   Equipe de {equipeConfig.nome}
                 </h2>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${equipeConfig.badgeBg} ${equipeConfig.badgeBorder} ${equipeConfig.badgeText}`}
-                >
-                  Dados Conectados via Supabase MCP
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Supabase MCP Ativo
                 </span>
               </div>
-              <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-2xl">
+              <p className="text-xs text-[var(--text-muted)] truncate max-w-xl">
                 {equipeConfig.missao}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-            <div className="text-right hidden md:block">
-              <p className="text-xs text-[var(--text-muted)]">Atualização em tempo real</p>
-              <p className="text-xs font-semibold text-[var(--text-primary)]">
-                Ambiente de Produção (São Paulo)
-              </p>
-            </div>
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          {/* Sub-Filtro de Navegação Rápida (Todos / Gestão / Impacto / Orientações) */}
+          <div className="flex items-center gap-1 p-1 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl shrink-0 self-start md:self-auto">
+            {[
+              { key: 'todos', label: 'Todos' },
+              { key: 'gestao', label: 'Gestão' },
+              { key: 'impacto', label: 'Impacto Social' },
+              { key: 'orientacoes', label: 'Como Capturar' },
+            ].map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setSubFiltro(f.key as SubFiltro)}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  subFiltro === f.key
+                    ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* ========================================================================= */}
-        {/* RENDERIZAÇÃO ESPECÍFICA POR EQUIPE */}
+        {/* CONTEÚDO DINÂMICO DA EQUIPE ATIVA */}
         {/* ========================================================================= */}
 
-        {/* 1. EQUIPE DE PROJETOS */}
+        {/* 1. EQUIPE: PROJETOS */}
         {equipeAtiva === 'projetos' && (
-          <div className="space-y-8">
-            {/* SEÇÃO 1: INDICADORES DE GESTÃO (PROCESSOS) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <ClipboardList className="w-5 h-5 text-[#F2632D]" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores de Gestão (Processos & Execução)
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* SEÇÃO 1: GESTÃO */}
+            {showGestao && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-[#F2632D]" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores de Gestão (Processos & Operação)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)] font-medium">Rotinas de Campo</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-[#F2632D]">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Ações Cadastradas</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.acoesTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">
+                      7 realizadas, 5 programadas
+                    </span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Chamadas de Presença</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.chamadasTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">
+                      Registros nominais nas oficinas
+                    </span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Projetos Sociais Ativos</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.projetosAtivos}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">
+                      Pipoteca, Arte de Cria, etc.
+                    </span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-amber-500">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Aderência aos Roteiros</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">58.3%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">
+                      Com documento estruturador
+                    </span>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* SEÇÃO 2: IMPACTO SOCIAL */}
+            {showImpacto && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <HeartHandshake className="w-4 h-4 text-emerald-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores Sociais (Impacto Comunitário)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-emerald-600 font-semibold">Transformação Comunitária</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Beneficiários Atendidos</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.totalBeneficiarios}</p>
+                    <span className="text-[11px] text-emerald-600 font-medium mt-0.5 block">
+                      {dadosGerais.beneficiariosAtivos} com frequência ativa
+                    </span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-[#F2632D]">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Presença em Oficinas</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">68.2%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">
+                      Média em dias de ação presencial
+                    </span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Territórios Cobertos</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">4 Comunidades</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">
+                      Novo Angelim, Vila Sapo, etc.
+                    </span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Primeira Infância (0-5)</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">27.0%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">
+                      44 crianças acompanhadas
+                    </span>
+                  </Card>
+                </div>
+
+                {/* Gráficos */}
+                <ProjetosCharts
+                  presencasPorAcao={dadosGerais.presencasPorAcao}
+                  faixasEtarias={dadosGerais.faixasEtarias}
+                  comunidades={dadosGerais.comunidades}
+                />
+              </div>
+            )}
+
+            {/* SEÇÃO 3: COMO COMEÇAR A CAPTURAR */}
+            {showOrientacoes && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                  <Compass className="w-4 h-4 text-amber-500" />
+                  <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                    Como Começar a Capturar — Métricas Emergentes
                   </h3>
                 </div>
-                <Badge variant="neutral" size="sm">
-                  Rotinas Operacionais
-                </Badge>
-              </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Métricas de planejamento, execução das ações de sábado e assiduidade dos registros.
-              </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-[#F2632D]">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Ações Totais Cadastradas</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.acoesTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    7 com chamadas realizadas, 5 programadas
-                  </p>
-                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-amber-500">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">beneficiarios / frequencias_acao</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Taxa de Evasão / Desistência Contínua
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Permite identificar quando uma criança falta a 3 sábados consecutivos e disparar acolhimento antes de perder o vínculo.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Como os voluntários devem agir:</p>
+                      <p>Na chamada de sábado, filtrar faltas acumuladas e preencher o motivo de ausência ou flag de visita familiar.</p>
+                    </div>
+                    <Link href="/dashboard/projetos" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700">
+                      Ir para Chamada de Projetos <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Card>
 
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Chamadas de Campo Registradas</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.chamadasTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Registros nominais de presença/falta
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Projetos Sociais Ativos</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.projetosAtivos}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Clube das Pipas, Arte de Cria, etc.
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-amber-500">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Aderência Metodológica</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">58.3%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Ações com documento estruturador
-                  </p>
-                </Card>
-              </div>
-            </div>
-
-            {/* SEÇÃO 2: INDICADORES SOCIAIS (IMPACTO) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <HeartHandshake className="w-5 h-5 text-emerald-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores Sociais (Impacto Comunitário)
-                  </h3>
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-teal-600">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-teal-500/10 text-teal-700 dark:text-teal-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">beneficiarios.renda_familiar</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Vulnerabilidade Socioeconômica & Renda Familiar
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Dados cruciais para editais públicos e comprovação de insegurança alimentar nas famílias atendidas.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Como os voluntários devem agir:</p>
+                      <p>98% dos cadastros não têm renda preenchida. Realizar mutirão rápido no encerramento de ciclo com os pais.</p>
+                    </div>
+                    <Link href="/dashboard/beneficiarios" className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700">
+                      Ir para Cadastro de Beneficiários <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Card>
                 </div>
-                <Badge variant="success" size="sm">
-                  Transformação Social
-                </Badge>
               </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Métricas do impacto direto na vida das crianças, jovens e famílias do território periférico.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Crianças & Jovens Atendidos</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.totalBeneficiarios}</p>
-                  <p className="text-xs text-emerald-600 font-medium mt-1">
-                    {dadosGerais.beneficiariosAtivos} com status ativo regular
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-[#F2632D]">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Taxa de Presença Efetiva</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">68.2%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Média nas oficinas realizadas (Dança, Teatro, Grafiti)
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Cobertura Territorial</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">4 Comunidades</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Novo Angelim (70%), Vila Sapo (22%), Angelim Velho (7%)
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Foco na Primeira Infância</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">27.0%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    44 bebês e crianças de 0 a 5 anos acompanhados
-                  </p>
-                </Card>
-              </div>
-
-              {/* Gráficos Reais de Projetos */}
-              <ProjetosCharts
-                presencasPorAcao={dadosGerais.presencasPorAcao}
-                faixasEtarias={dadosGerais.faixasEtarias}
-                comunidades={dadosGerais.comunidades}
-              />
-            </div>
-
-            {/* SEÇÃO 3: COMO COMEÇAR A CAPTURAR (MÉTRICAS EMERGENTES) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
-                <Compass className="w-5 h-5 text-amber-500" />
-                <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                  Como Começar a Capturar — Métricas Emergentes de Projetos
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="p-5 border-dashed border-2 border-amber-500/40 bg-amber-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabela: beneficiarios / frequencias_acao</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Taxa de Evasão / Desistência Contínua de Oficinas
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Permite à coordenação identificar precocemente quando uma criança começa a se afastar das atividades e intervir antes da perda de vínculo.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Como os voluntários devem registrar:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Ao final da chamada de sábado em <code>/dashboard/projetos</code>, filtrar faltas consecutivas.</li>
-                      <li>Caso uma criança atinja 3 faltas seguidas, marcar no prontuário a flag <em>'necessita_visita_acolhimento'</em>.</li>
-                      <li>Se confirmado desligamento por mudança de bairro, preencher o campo <code>motivo_desligamento</code> em fichas de monitoramento.</li>
-                    </ol>
-                  </div>
-                  <Link href="/dashboard/projetos" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700">
-                    Ir para Chamada de Projetos <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </Card>
-
-                <Card className="p-5 border-dashed border-2 border-teal-500/40 bg-teal-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-teal-500/20 text-teal-700 dark:text-teal-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabela: beneficiarios.renda_familiar</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Vulnerabilidade Socioeconômica & Renda Familiar
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Dados cruciais para relatórios de editais públicos, captação de recursos com empresas e mapeamento da insegurança alimentar nas famílias.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Como os voluntários devem registrar:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Hoje, 98% dos registros de beneficiários têm o campo de renda não informado.</li>
-                      <li>Aproveitar a recepção dos pais no encerramento das oficinas para atualizar <code>renda_familiar</code> e número de dependentes.</li>
-                      <li>Registrar na aba de Cadastro de Beneficiários em <code>/dashboard/beneficiarios</code>.</li>
-                    </ol>
-                  </div>
-                  <Link href="/dashboard/beneficiarios" className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700">
-                    Ir para Cadastro de Beneficiários <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </Card>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* 2. EQUIPE DE PEDAGOGIA */}
+        {/* 2. EQUIPE: PEDAGOGIA */}
         {equipeAtiva === 'pedagogia' && (
-          <div className="space-y-8">
-            {/* SEÇÃO 1: INDICADORES DE GESTÃO (PROCESSOS) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <ClipboardList className="w-5 h-5 text-teal-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores de Gestão (Processos & Instrumentos Pedagógicos)
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* GESTÃO */}
+            {showGestao && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-teal-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores de Gestão (Instrumentos Metodológicos)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)] font-medium">Governança Pedagógica</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Planos de Oficina</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.planosOficinaTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Estruturas curriculares ativas</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Fichas de Monitoramento</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.fichasMonitoramentoTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Anamnese socioeducativa</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-amber-500">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Acompanhamentos Mensais</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.acompanhamentosTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Mapeamento nos 3 eixos</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Educadoras Sociais</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">5 Voluntárias</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Coordenação e mediação</span>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* IMPACTO SOCIAL */}
+            {showImpacto && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-teal-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores Sociais (Desenvolvimento Socioemocional)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-teal-600 font-semibold">Avanço dos Educandos</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Autonomia & Expressão</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">50.0%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Espontaneidade nas atividades</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Mediação de Conflitos</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100.0%</p>
+                    <span className="text-[11px] text-emerald-600 font-medium mt-0.5 block">Diálogo antes da agressão</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-amber-500">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Vínculos & Escuta</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">50.0%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Seguem rotina com apoio</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Pertencimento Coletivo</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Consolidado</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Identidade comunitária</span>
+                  </Card>
+                </div>
+
+                <PedagogiaCharts
+                  eixosData={dadosGerais.eixosSocioemocionais}
+                  instrumentosData={dadosGerais.instrumentosPedagogicos}
+                />
+              </div>
+            )}
+
+            {/* COMO CAPTURAR */}
+            {showOrientacoes && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                  <Compass className="w-4 h-4 text-teal-600" />
+                  <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                    Como Começar a Capturar — Métricas Emergentes
                   </h3>
                 </div>
-                <Badge variant="neutral" size="sm">
-                  Metodologia & Planejamento
-                </Badge>
-              </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Estruturação e cumprimento dos instrumentos metodológicos que orientam as atividades com os educandos.
-              </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Planos de Oficina Cadastrados</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.planosOficinaTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Estruturas curriculares ativas
-                  </p>
-                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-teal-600">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-teal-500/10 text-teal-700 dark:text-teal-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">planos_aula (0 registros)</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Planos de Aula Semanais Pré-Ação
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Previsibilidade pedagógica e segurança sobre temas e materiais requisitados antes do sábado.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
+                      <p>O educador social submete o roteiro da aula em <code>/dashboard/pedagogia</code> até quinta-feira anterior à oficina.</p>
+                    </div>
+                    <Link href="/dashboard/pedagogia" className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700">
+                      Acessar Módulo Pedagogia <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Card>
 
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Fichas de Monitoramento</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.fichasMonitoramentoTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Anamnese socioeducativa individual
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-amber-500">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Acompanhamentos Socioemocionais</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.acompanhamentosTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Mapeamento nos 3 eixos humanos
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Educadores Sociais na Equipe</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">5 Voluntárias</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Coordenação, psicologia e abordagem
-                  </p>
-                </Card>
-              </div>
-            </div>
-
-            {/* SEÇÃO 2: INDICADORES SOCIAIS (IMPACTO) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-teal-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores Sociais (Desenvolvimento Humano & Socioemocional)
-                  </h3>
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-emerald-600">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">rodas_conversa_psicossocial (0)</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Rodas de Conversa Psicossociais com Famílias
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Documenta a escuta ativa das mães sobre vulnerabilidades, saúde mental e acesso a direitos sociais.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
+                      <p>Psicólogo/assistente voluntário registrar pauta mensal e encaminhamentos feitos aos órgãos competentes (CRAS/CREAS).</p>
+                    </div>
+                    <Link href="/dashboard/pedagogia" className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700">
+                      Registrar Roda Psicossocial <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Card>
                 </div>
-                <Badge variant="success" size="sm">
-                  Avanço das Crianças
-                </Badge>
               </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Evolução comportamental e afetiva das crianças mapeada nos registros de acompanhamento.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Eixo 1: Expressão & Autonomia</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">50.0%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Espontaneidade e posicionamento no grupo
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Eixo 2: Mediação de Conflitos</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100.0%</p>
-                  <p className="text-xs text-emerald-600 font-medium mt-1">
-                    Educandos buscam diálogo antes da agressão
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-amber-500">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Eixo 3: Vínculos & Escuta</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">50.0%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Capacidade de escuta e rotina compartilhada
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Pertencimento Comunitário</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Alto</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Demonstrado nas oficinas de arte e memória
-                  </p>
-                </Card>
-              </div>
-
-              {/* Gráficos Reais de Pedagogia */}
-              <PedagogiaCharts
-                eixosData={dadosGerais.eixosSocioemocionais}
-                instrumentosData={dadosGerais.instrumentosPedagogicos}
-              />
-            </div>
-
-            {/* SEÇÃO 3: COMO COMEÇAR A CAPTURAR (MÉTRICAS EMERGENTES) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
-                <Compass className="w-5 h-5 text-teal-600" />
-                <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                  Como Começar a Capturar — Métricas Emergentes de Pedagogia
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="p-5 border-dashed border-2 border-teal-500/40 bg-teal-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-teal-500/20 text-teal-700 dark:text-teal-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabela: planos_aula (0 registros)</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Planos de Aula Semanais Pré-Ação
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Garante previsibilidade pedagógica, alinhamento dos objetivos com a BNCC/educação popular e segurança nos materiais necessários.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Passo a passo para a coordenação pedagógica:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>O educador responsável cadastra o plano de aula em <code>/dashboard/pedagogia</code> até quinta-feira.</li>
-                      <li>Descrever o tema da oficina, materiais requisitados e dinâmica de acolhimento inicial.</li>
-                      <li>O sistema vinculará o plano de aula à respectiva ação na tabela <code>acoes_projeto</code>.</li>
-                    </ol>
-                  </div>
-                  <Link href="/dashboard/pedagogia" className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700">
-                    Acessar Módulo Pedagogia <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </Card>
-
-                <Card className="p-5 border-dashed border-2 border-emerald-500/40 bg-emerald-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabela: rodas_conversa_psicossocial (0 registros)</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Rodas de Conversa Psicossociais com Mães & Famílias
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Documenta a escuta ativa da comunidade sobre violência doméstica, saúde mental materna e acesso a programas sociais como Bolsa Família.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Passo a passo para os psicólogos voluntários:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Ao final de cada mês, realizar uma roda de acolhimento com os responsáveis na sede comunitária.</li>
-                      <li>Registrar na tela psicossocial o número de participantes, principais demandas trazidas e encaminhamentos feitos para CRAS/CREAS.</li>
-                    </ol>
-                  </div>
-                  <Link href="/dashboard/pedagogia" className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700">
-                    Registrar Roda Psicossocial <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </Card>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* 3. EQUIPE DE ADMINISTRAÇÃO */}
+        {/* 3. EQUIPE: ADMINISTRAÇÃO */}
         {equipeAtiva === 'administracao' && (
-          <div className="space-y-8">
-            {/* SEÇÃO 1: INDICADORES DE GESTÃO (PROCESSOS) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores de Gestão (Governança & Força Voluntária)
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* GESTÃO */}
+            {showGestao && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores de Gestão (Governança & Voluntários)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)] font-medium">Compliance Estatutário</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Voluntários Ativos</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.totalVoluntarios}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">100% com termo assinado</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Reuniões Institucionais</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.reunioesTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">3 realizadas, 3 agendadas</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-amber-500">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Pausas / Recessos</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.voluntariosEmRecesso}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Prevenção de sobrecarga</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Áreas Funcionais</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">4 Frentes</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Pedagogia, Projetos, etc.</span>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* IMPACTO SOCIAL */}
+            {showImpacto && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores Sociais (Advocacy Comunitário)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-blue-600 font-semibold">Articulação Pública</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Articulações de Alto Nível</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">5 Órgãos</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">SEDIHPOP, CAEMA, SINFRA</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Horas Doadas Estimadas</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">240+ h</p>
+                    <span className="text-[11px] text-emerald-600 font-medium mt-0.5 block">Ações e governança</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Conformidade Legal</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Atas e deliberações em dia</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-amber-500">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Pautas da Vila Sapo</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Saneamento e cidadania</span>
+                  </Card>
+                </div>
+
+                <AdministracaoCharts
+                  voluntariosPorArea={dadosGerais.voluntariosPorArea}
+                  reunioesPorTipo={dadosGerais.reunioesPorTipo}
+                />
+              </div>
+            )}
+
+            {/* COMO CAPTURAR */}
+            {showOrientacoes && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                  <Compass className="w-4 h-4 text-blue-600" />
+                  <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                    Como Começar a Capturar — Métricas Emergentes
                   </h3>
                 </div>
-                <Badge variant="neutral" size="sm">
-                  Rotinas de Governança
-                </Badge>
-              </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Alocação de voluntários, controle de escalas, pausas programadas e compliance estatutário.
-              </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Equipe Voluntária Ativa</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.totalVoluntarios}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    100% com termo de voluntariado
-                  </p>
-                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-blue-600">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/10 text-blue-700 dark:text-blue-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">voluntarios.horas_acumuladas</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Banco de Horas Comunitárias Efetivas
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Permite emitir certificados de voluntariado com horas exatas e comprovar capacidade em editais.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
+                      <p>Atualmente constam 0 horas. Ao fim de cada mês, consolidar 4h por sábado na tela <code>/dashboard/voluntarios</code>.</p>
+                    </div>
+                    <Link href="/dashboard/voluntarios" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
+                      Acessar Gestão de Voluntários <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Card>
 
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Reuniões Formais de Governança</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.reunioesTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    3 realizadas e 3 agendadas com ata
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-amber-500">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Gestão de Recessos & Saúde</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.voluntariosEmRecesso}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Pausas programadas para evitar burnout
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Distribuição por Área</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">4 Áreas</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Pedagogia, Projetos, Diretoria, Comunicação
-                  </p>
-                </Card>
-              </div>
-            </div>
-
-            {/* SEÇÃO 2: INDICADORES SOCIAIS (IMPACTO) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores Sociais (Advocacy & Articulação Pública)
-                  </h3>
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-teal-600">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-teal-500/10 text-teal-700 dark:text-teal-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">disponibilidades_voluntarios</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Pesquisa de Clima & NPS do Voluntariado
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Identifica pontos de sobrecarga e atrito nas equipes antes de ocorrerem pedidos de desligamento.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
+                      <p>Aplicar formulário de 3 perguntas em julho e dezembro e registrar índice de recomendação na aba de voluntários.</p>
+                    </div>
+                    <Link href="/dashboard/voluntarios" className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700">
+                      Ver Voluntários no Sistema <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Card>
                 </div>
-                <Badge variant="success" size="sm">
-                  Cidadania & Direitos
-                </Badge>
               </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Incidência política em favor da garantia de saneamento básico, iluminação e direitos na Vila Sapo.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Articulações de Alto Nível</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">5 Órgãos</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    SEDIHPOP, CAEMA, SINFRA, Ouvidoria Geral
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Horas Voluntárias Estimadas</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">240+ h</p>
-                  <p className="text-xs text-emerald-600 font-medium mt-1">
-                    Dedicação direta em oficinas e suporte
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Conformidade Regimental</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Diretoria Executiva atuante
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-amber-500">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Pautas Comunitárias Defendidas</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Reivindicações legítimas da periferia
-                  </p>
-                </Card>
-              </div>
-
-              {/* Gráficos Reais de Administração */}
-              <AdministracaoCharts
-                voluntariosPorArea={dadosGerais.voluntariosPorArea}
-                reunioesPorTipo={dadosGerais.reunioesPorTipo}
-              />
-            </div>
-
-            {/* SEÇÃO 3: COMO COMEÇAR A CAPTURAR (MÉTRICAS EMERGENTES) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
-                <Compass className="w-5 h-5 text-blue-600" />
-                <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                  Como Começar a Capturar — Métricas Emergentes de Administração
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="p-5 border-dashed border-2 border-blue-500/40 bg-blue-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-blue-500/20 text-blue-700 dark:text-blue-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabela: voluntarios.horas_acumuladas</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Banco de Horas Comunitárias Efetivas por Voluntário
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Permite emitir certificados de voluntariado com carga horária exata para faculdades e comprovar capacidade institucional em editais.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Como começar a registrar:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Hoje os voluntários constam com <code>horas_acumuladas = 0</code>.</li>
-                      <li>Ao final de cada mês, o coordenador acessa <code>/dashboard/voluntarios</code> e adiciona 4h por sábado participado.</li>
-                      <li>O sistema somará automaticamente no perfil do voluntário.</li>
-                    </ol>
-                  </div>
-                  <Link href="/dashboard/voluntarios" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
-                    Acessar Gestão de Voluntários <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </Card>
-
-                <Card className="p-5 border-dashed border-2 border-teal-500/40 bg-teal-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-teal-500/20 text-teal-700 dark:text-teal-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabela: disponibilidades_voluntarios</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Pesquisa Semestral de Clima & Satisfação do Voluntariado (NPS)
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Identifica pontos de atrito e sobrecarga nas equipes antes que voluntários qualificados peçam desligamento.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Como começar a registrar:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Aplicar um formulário rápido de 3 perguntas em julho e dezembro.</li>
-                      <li>Registrar o índice de recomendação (0 a 10) e as sugestões de melhoria na aba administrativa.</li>
-                    </ol>
-                  </div>
-                  <Link href="/dashboard/voluntarios" className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700">
-                    Ver Equipe no Dashboard <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </Card>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* 4. EQUIPE DE COMUNICAÇÃO */}
+        {/* 4. EQUIPE: COMUNICAÇÃO */}
         {equipeAtiva === 'comunicacao' && (
-          <div className="space-y-8">
-            {/* SEÇÃO 1: INDICADORES DE GESTÃO (PROCESSOS) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <Megaphone className="w-5 h-5 text-amber-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores de Gestão (Calendário Editorial & Produção)
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* GESTÃO */}
+            {showGestao && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-amber-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores de Gestão (Calendário & Produção)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)] font-medium">Fluxo Editorial</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-amber-500">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Peças no Calendário</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.conteudosTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">7 publicadas, 2 produção, 4 plano</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Taxa de Cumprimento</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">53.8%</p>
+                    <span className="text-[11px] text-emerald-600 font-medium mt-0.5 block">Publicadas no prazo previsto</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Pastas no Drive</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.galeriaPastasTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Acervo fotográfico e vídeos</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Macro-Campanhas</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.campanhasTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Metodologia 10 blocos</span>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* IMPACTO SOCIAL */}
+            {showImpacto && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <Megaphone className="w-4 h-4 text-amber-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores Sociais (Visibilidade da Causa)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-amber-600 font-semibold">Voz da Infância Periférica</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-amber-500">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Memória das Crianças</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Coberturas no Angelim e Vila Sapo</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Mobilização Social</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">3 Campanhas</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Dia das Crianças, Amazônia</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Narrativa Antirracista</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Ativa</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Cultura e infância digna</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Canal de Tickets</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Ativo</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Suporte às demais frentes</span>
+                  </Card>
+                </div>
+
+                <ComunicacaoCharts
+                  statusConteudos={dadosGerais.statusConteudos}
+                  midiasPorProjeto={dadosGerais.midiasPorProjeto}
+                />
+              </div>
+            )}
+
+            {/* COMO CAPTURAR */}
+            {showOrientacoes && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                  <Compass className="w-4 h-4 text-amber-500" />
+                  <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                    Como Começar a Capturar — Métricas Emergentes
                   </h3>
                 </div>
-                <Badge variant="neutral" size="sm">
-                  Fluxo de Produção
-                </Badge>
-              </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Prazos de postagens, acervo de mídia no Drive, atendimento a tickets e cumprimento do cronograma.
-              </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-amber-500">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Peças no Calendário Editorial</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.conteudosTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    7 publicadas, 2 em produção, 4 não iniciadas
-                  </p>
-                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-amber-500">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">metricas_redes_sociais (0)</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Integração Automática da API Meta (Instagram)
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Coleta sem esforço o alcance mensal, engajamento e novos seguidores para prestação de contas.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
+                      <p>Acessar <code>/dashboard/comunicacao?tab=indicadores</code> e colar o Token de Página do Instagram para sincronizar.</p>
+                    </div>
+                    <Link href="/dashboard/comunicacao?tab=indicadores" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700">
+                      Configurar Token Meta <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Card>
 
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Taxa de Cumprimento</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">53.8%</p>
-                  <p className="text-xs text-emerald-600 font-medium mt-1">
-                    Peças concluídas e publicadas no prazo
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Pastas de Fotos & Vídeos no Drive</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.galeriaPastasTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Com links e fotógrafos voluntários
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Campanhas Estratégicas</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.campanhasTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Estruturadas com metodologia 10 blocos
-                  </p>
-                </Card>
-              </div>
-            </div>
-
-            {/* SEÇÃO 2: INDICADORES SOCIAIS (IMPACTO) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <Share2 className="w-5 h-5 text-amber-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores Sociais (Visibilidade da Causa & Sensibilização)
-                  </h3>
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-blue-600">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/10 text-blue-700 dark:text-blue-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">solicitacoes_comunicacao</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      SLA & Tempo de Resposta aos Tickets
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Mede o tempo médio entre o pedido de materiais feito pelos voluntários e a entrega final.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
+                      <p>Voluntários abrem demandas na aba de tickets e a equipe converte em peça do calendário em 1 clique.</p>
+                    </div>
+                    <Link href="/dashboard/comunicacao?tab=tickets" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
+                      Ver Central de Tickets <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Card>
                 </div>
-                <Badge variant="success" size="sm">
-                  Voz Comunitária
-                </Badge>
               </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Impacto da narrativa institucional na conscientização pública sobre direitos da infância na periferia.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-amber-500">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Memória das Comunidades</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Coberturas da Vila Sapo e Novo Angelim
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Campanhas de Mobilização</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">3 Macro-Ações</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Dia das Crianças, Dia da Amazônia, Pipas
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Narrativa Antirracista e Popular</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Ativa</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Foco na cultura periférica e infância digna
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Canal de Tickets para Voluntários</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Operacional</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Apoio gráfico para todas as equipes
-                  </p>
-                </Card>
-              </div>
-
-              {/* Gráficos Reais de Comunicação */}
-              <ComunicacaoCharts
-                statusConteudos={dadosGerais.statusConteudos}
-                midiasPorProjeto={dadosGerais.midiasPorProjeto}
-              />
-            </div>
-
-            {/* SEÇÃO 3: COMO COMEÇAR A CAPTURAR (MÉTRICAS EMERGENTES) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
-                <Compass className="w-5 h-5 text-amber-500" />
-                <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                  Como Começar a Capturar — Métricas Emergentes de Comunicação
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="p-5 border-dashed border-2 border-amber-500/40 bg-amber-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabela: metricas_redes_sociais (0 registros)</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Integração Automática da API Meta (Instagram & Facebook)
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Coleta sem esforço humano o alcance mensal, engajamento e novos seguidores para prestação de contas aos apoiadores do instituto.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Como ativar em 3 minutos:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Acessar <code>/dashboard/comunicacao?tab=indicadores</code>.</li>
-                      <li>Clicar em <em>'Configurar Integração Meta'</em> e colar o Token de Página do Instagram.</li>
-                      <li>O sistema sincronizará os gráficos de alcance automaticamente a cada 24 horas.</li>
-                    </ol>
-                  </div>
-                  <Link href="/dashboard/comunicacao?tab=indicadores" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700">
-                    Configurar Token Meta <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </Card>
-
-                <Card className="p-5 border-dashed border-2 border-blue-500/40 bg-blue-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-blue-500/20 text-blue-700 dark:text-blue-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabela: solicitacoes_comunicacao</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    SLA & Tempo de Resposta aos Tickets de Materiais
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Mede a eficiência no atendimento aos pedidos de crachás, camisetas e banners feitos pelos voluntários das ações.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Como a equipe deve operar:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Voluntários abrem demandas em <code>/dashboard/comunicacao?tab=tickets</code>.</li>
-                      <li>A equipe de comunicação avalia o prazo desejado e converte em peça do calendário em 1 clique.</li>
-                      <li>O sistema calcula o tempo médio entre o pedido e a entrega.</li>
-                    </ol>
-                  </div>
-                  <Link href="/dashboard/comunicacao?tab=tickets" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
-                    Ver Central de Tickets <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </Card>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* 5. EQUIPE DE FINANCEIRO */}
+        {/* 5. EQUIPE: FINANCEIRO */}
         {equipeAtiva === 'financeiro' && (
-          <div className="space-y-8">
-            {/* SEÇÃO 1: INDICADORES DE GESTÃO (PROCESSOS) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <Coins className="w-5 h-5 text-emerald-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores de Gestão (Estrutura Orçamentária & Suprimentos)
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* GESTÃO */}
+            {showGestao && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-emerald-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores de Gestão (Estrutura Orçamentária)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)] font-medium">Fluxos Orçamentários</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Planos de Apadrinhamento</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.planosTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Brisa (R$20), Vento (R$50), etc.</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Programas de Captação</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.programasCaptacaoTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Apadrinhamento contínuo</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-amber-500">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Requisições de Compra</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.requisicoesTotal}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Insumos para as oficinas</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Automação de Assinaturas</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Configurada</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Tabelas de recorrência ativas</span>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* IMPACTO SOCIAL */}
+            {showImpacto && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <Coins className="w-4 h-4 text-emerald-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores Sociais (Sustentabilidade das Ações)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-emerald-600 font-semibold">Custo Social</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Custo Social Estimado</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">R$ 28,50</p>
+                    <span className="text-[11px] text-emerald-600 font-medium mt-0.5 block">Lanches e insumos por criança/mês</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Meta de Padrinhos</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">50 Aliados</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Garante custeio de 1 ano</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Segurança Alimentar</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Lanches em todos os sábados</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-amber-500">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Transparência Ativa</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Total</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Prestação de contas aos membros</span>
+                  </Card>
+                </div>
+
+                <FinanceiroCharts
+                  planosDisponiveis={dadosGerais.planosDisponiveis}
+                  projecaoRecorrencia={dadosGerais.projecaoRecorrencia}
+                />
+              </div>
+            )}
+
+            {/* COMO CAPTURAR */}
+            {showOrientacoes && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                  <Compass className="w-4 h-4 text-emerald-600" />
+                  <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                    Como Começar a Capturar — Métricas Emergentes
                   </h3>
                 </div>
-                <Badge variant="neutral" size="sm">
-                  Fluxos Orçamentários
-                </Badge>
-              </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Planos de doação configurados, processamento de compras e requisições para as oficinas comunitárias.
-              </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Planos de Apadrinhamento</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.planosTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Brisa (R$20), Vento (R$50), Tempestade (R$100)
-                  </p>
-                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-emerald-600">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">doacoes / subscriptions (0)</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Lançamento de Doações Pix & Padrinhos
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Permite calcular o ticket médio de doações, taxa de retenção dos apoiadores e fluxo de caixa real.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
+                      <p>Importar os recebimentos Pix da conta na tabela <code>doacoes</code> e divulgar a página de apadrinhamento recorrente.</p>
+                    </div>
+                    <Link href="/dashboard/financeiro" className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700">
+                      Acessar Módulo Financeiro <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Card>
 
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Programas de Captação</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.programasCaptacaoTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Campanha de apadrinhamento contínuo
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-amber-500">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Requisições de Materiais</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.requisicoesTotal}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Pedidos de insumos para as oficinas
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Automação de Recorrência</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Pronta</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Tabelas subscribers/subscriptions ativas
-                  </p>
-                </Card>
-              </div>
-            </div>
-
-            {/* SEÇÃO 2: INDICADORES SOCIAIS (IMPACTO) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-emerald-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores Sociais (Sustentabilidade do Impacto & Lanches)
-                  </h3>
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-amber-500">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">estoque_itens (0 registros)</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Controle de Estoque de Alimentos & Insumos
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Evita desperdício de lanches doados e emite alerta quando o estoque de sucos ou tintas estiver no limite.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
+                      <p>Fazer inventário na sede, cadastrar itens em <code>/dashboard/estoque</code> e registrar baixas aos sábados.</p>
+                    </div>
+                    <Link href="/dashboard/estoque" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700">
+                      Cadastrar Itens de Estoque <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </Card>
                 </div>
-                <Badge variant="success" size="sm">
-                  Custo Social
-                </Badge>
               </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Garantia de recursos financeiros para alimentação saudável e materiais pedagógicos das crianças.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Custo Médio por Criança/Mês</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">R$ 28,50</p>
-                  <p className="text-xs text-emerald-600 font-medium mt-1">
-                    Lanche integral + insumos pedagógicos
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Meta de Padrinhos Ativos</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">50 Aliados</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Garante 100% dos custos fixos do ano
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Segurança Alimentar nas Oficinas</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Lanches servidos em todos os sábados
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-amber-500">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Transparência Financeira</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Pública</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Prestação de contas aos membros
-                  </p>
-                </Card>
-              </div>
-
-              {/* Gráficos Reais de Financeiro */}
-              <FinanceiroCharts
-                planosDisponiveis={dadosGerais.planosDisponiveis}
-                projecaoRecorrencia={dadosGerais.projecaoRecorrencia}
-              />
-            </div>
-
-            {/* SEÇÃO 3: COMO COMEÇAR A CAPTURAR (MÉTRICAS EMERGENTES) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
-                <Compass className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                  Como Começar a Capturar — Métricas Emergentes do Financeiro
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="p-5 border-dashed border-2 border-emerald-500/40 bg-emerald-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabelas: doacoes / subscriptions (0 registros)</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Ativação da Base de Padrinhos & Doações Pix
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Atualmente as tabelas financeiras não possuem transações registradas, impedindo a visualização da receita real mensal do instituto.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Como começar a capturar hoje:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Lançar os extratos mensais de Pix recebidos na conta bancária do instituto na tabela <code>doacoes</code>.</li>
-                      <li>Divulgar a página pública com os planos <em>Aliado Brisa</em> e <em>Aliado Vento</em> para cadastrar os padrinhos recorrentes.</li>
-                      <li>O sistema calculará automaticamente o ticket médio e a taxa de retenção dos doadores.</li>
-                    </ol>
-                  </div>
-                  <Link href="/dashboard/financeiro" className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700">
-                    Acessar Módulo Financeiro <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </Card>
-
-                <Card className="p-5 border-dashed border-2 border-amber-500/40 bg-amber-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabela: estoque_itens (0 registros)</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Inventário de Lanches & Tintas em Estoque
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Evita desperdício de alimentos perecíveis doados e avisa quando o estoque de sucos, biscoitos ou papéis de pipa estiver abaixo do mínimo.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Passo a passo para a logística:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Fazer a contagem física dos insumos guardados na sede.</li>
-                      <li>Cadastrar os itens e quantidades mínimas no módulo de Estoque.</li>
-                      <li>Ao entregar lanches no sábado, registrar a saída de estoque para manter o saldo atualizado.</li>
-                    </ol>
-                  </div>
-                  <Link href="/dashboard/financeiro" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700">
-                    Cadastrar Itens de Estoque <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </Card>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* 6. EQUIPE DE TECNOLOGIA */}
+        {/* 6. EQUIPE: TECNOLOGIA */}
         {equipeAtiva === 'tecnologia' && (
-          <div className="space-y-8">
-            {/* SEÇÃO 1: INDICADORES DE GESTÃO (PROCESSOS) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <Cpu className="w-5 h-5 text-cyan-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores de Gestão (Infraestrutura & Segurança Relacional)
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* GESTÃO */}
+            {showGestao && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-cyan-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores de Gestão (Infraestrutura & Nuvem)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)] font-medium">Segurança Relacional</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-cyan-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Contas Ativas no ELO</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.totalUsuariosProfiles}</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Autenticação Supabase Auth</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Tabelas Relacionais</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.tabelasBancoTotal}</p>
+                    <span className="text-[11px] text-emerald-600 font-medium mt-0.5 block">PostgreSQL 17 com RLS</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Disponibilidade</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">99.9%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Supabase sa-east-1 + Vercel</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Módulos do Sistema</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">7 Módulos</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Projetos, BI, Voluntários, etc.</span>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* IMPACTO SOCIAL */}
+            {showImpacto && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="w-4 h-4 text-cyan-600" />
+                    <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                      Indicadores Sociais (Proteção de Dados & Direitos da Criança)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-cyan-600 font-semibold">LGPD & ECA</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <Card className="p-4 border-l-4 border-l-cyan-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Prontuários Digitalizados</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.prontuariosDigitalizados}</p>
+                    <span className="text-[11px] text-cyan-600 font-medium mt-0.5 block">Zero fichas físicas de papel</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-emerald-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Resposta a Emergências</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">&lt; 5 seg</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Acesso instantâneo a alergias</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-teal-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Proteção de Identidade</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Blindada</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Art. 17 do ECA respeitado</span>
+                  </Card>
+
+                  <Card className="p-4 border-l-4 border-l-blue-600">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Auditoria de Registros</span>
+                    <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100%</p>
+                    <span className="text-[11px] text-[var(--text-muted)] mt-0.5 block">Rastreabilidade ponta a ponta</span>
+                  </Card>
+                </div>
+
+                <TecnologiaCharts
+                  segurancaDados={dadosGerais.segurancaDados}
+                  perfisUsuarios={dadosGerais.perfisUsuarios}
+                />
+              </div>
+            )}
+
+            {/* COMO CAPTURAR */}
+            {showOrientacoes && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
+                  <Compass className="w-4 h-4 text-cyan-600" />
+                  <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                    Como Começar a Capturar — Métricas Emergentes
                   </h3>
                 </div>
-                <Badge variant="neutral" size="sm">
-                  Sistemas & Nuvem
-                </Badge>
-              </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Governança de contas de usuários, políticas de RLS no PostgreSQL e integridade das 38 tabelas.
-              </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-cyan-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Contas Ativas no Sistema ELO</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.totalUsuariosProfiles}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Autenticação via Supabase Auth
-                  </p>
-                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-cyan-600">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-cyan-500/10 text-cyan-700 dark:text-cyan-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">webhook_logs (0 registros)</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Webhooks & Mensageria WhatsApp aos Pais
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Permite disparar avisos de saída de ônibus e presença para os pais de forma 100% automatizada.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
+                      <p>Conectar serviço de WhatsApp (Z-API/Twilio) à rota <code>/api/webhooks</code> e registrar taxas de entrega em <code>webhook_logs</code>.</p>
+                    </div>
+                    <span className="text-xs font-semibold text-cyan-600 block">
+                      Endpoint ativo em /api/webhooks
+                    </span>
+                  </Card>
 
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Tabelas Relacionais Ativas</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.tabelasBancoTotal}</p>
-                  <p className="text-xs text-emerald-600 font-medium mt-1">
-                    PostgreSQL 17 com RLS ativado
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Disponibilidade dos Serviços</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">99.9%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Supabase sa-east-1 + Vercel Edge
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Módulos do Sistema</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">7 Módulos</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Projetos, Voluntários, Comunicação, BI, etc.
-                  </p>
-                </Card>
-              </div>
-            </div>
-
-            {/* SEÇÃO 2: INDICADORES SOCIAIS (IMPACTO) */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-cyan-600" />
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                    Indicadores Sociais (Proteção da Infância & Conformidade LGPD)
-                  </h3>
+                  <Card className="p-4 space-y-2.5 border-l-4 border-l-blue-600">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/10 text-blue-700 dark:text-blue-300">
+                        Orientação de Coleta
+                      </span>
+                      <span className="text-[11px] text-[var(--text-muted)]">Telemetria de Campo</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                      Tempo de Conclusão da Chamada no Celular
+                    </h4>
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                      <strong>Importância:</strong> Em áreas periféricas com sinal 3G fraco, a chamada deve ser rápida para não reter os educadores.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
+                      <p>Registrar métrica de tempo local entre abrir a lista e salvar para identificar e corrigir telas lentas.</p>
+                    </div>
+                    <span className="text-xs font-semibold text-blue-600 block">
+                      Monitoramento offline-first
+                    </span>
+                  </Card>
                 </div>
-                <Badge variant="success" size="sm">
-                  Privacidade & ECA
-                </Badge>
               </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Segurança digital e proteção contra vazamento de dados de crianças e famílias em situação de vulnerabilidade.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 border-l-4 border-l-cyan-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Prontuários 100% Digitalizados</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{dadosGerais.prontuariosDigitalizados}</p>
-                  <p className="text-xs text-cyan-600 font-medium mt-1">
-                    Zero fichas de papel extraviáveis
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-emerald-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Agilidade em Emergências</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">&lt; 5 seg</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Consulta instantânea a contatos e alergias
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-teal-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Proteção de Identidade</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">Total</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Conformidade com Art. 17 do ECA e LGPD
-                  </p>
-                </Card>
-
-                <Card className="p-4 border-l-4 border-l-blue-600">
-                  <p className="text-xs font-semibold text-[var(--text-muted)] uppercase">Rastreabilidade Operacional</p>
-                  <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">100%</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Logs de criação e atualização nas tabelas
-                  </p>
-                </Card>
-              </div>
-
-              {/* Gráficos Reais de Tecnologia */}
-              <TecnologiaCharts
-                segurancaDados={dadosGerais.segurancaDados}
-                perfisUsuarios={dadosGerais.perfisUsuarios}
-              />
-            </div>
-
-            {/* SEÇÃO 3: COMO COMEÇAR A CAPTURAR (MÉTRICAS EMERGENTES) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
-                <Compass className="w-5 h-5 text-cyan-600" />
-                <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-                  Como Começar a Capturar — Métricas Emergentes de Tecnologia
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="p-5 border-dashed border-2 border-cyan-500/40 bg-cyan-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-cyan-500/20 text-cyan-700 dark:text-cyan-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Tabela: webhook_logs (0 registros)</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Automação de Webhooks & Mensageria Comunitária
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Permite disparar mensagens automáticas de confirmação para voluntários e avisos aos responsáveis no WhatsApp sobre horários de saída de ônibus e lanches.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Como começar a capturar:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Conectar o serviço de mensageria (ex: Z-API ou Twilio) ao endpoint do Next.js <code>/api/webhooks</code>.</li>
-                      <li>Salvar o status de entrega e leitura de cada notificação na tabela <code>webhook_logs</code>.</li>
-                      <li>Monitorar a taxa de entrega aos pais para garantir que ninguém fique sem aviso.</li>
-                    </ol>
-                  </div>
-                  <div className="text-xs font-semibold text-cyan-600">
-                    Endpoint ativo em /api/webhooks
-                  </div>
-                </Card>
-
-                <Card className="p-5 border-dashed border-2 border-blue-500/40 bg-blue-500/5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide bg-blue-500/20 text-blue-700 dark:text-blue-300">
-                      Orientação de Coleta
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">Módulo: Auditoria de Usabilidade</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                    Tempo de Conclusão da Chamada de Presença no Celular
-                  </h4>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    <strong>Importância:</strong> Em campo (na quadra ou na rua), a conexão de internet costuma oscilar. Medir o tempo de preenchimento garante que o sistema não atrapalhe a atenção dos educadores às crianças.
-                  </p>
-                  <div className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs space-y-1.5">
-                    <p className="font-semibold text-[var(--text-primary)]">Como começar a capturar:</p>
-                    <ol className="list-decimal pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li>Adicionar medição de tempo local (offline-first) na abertura e fechamento da lista de presença.</li>
-                      <li>Identificar se o educador gastou mais de 2 minutos por turma.</li>
-                      <li>Simplificar a UI móvel caso surjam relatos de lentidão em campo.</li>
-                    </ol>
-                  </div>
-                  <div className="text-xs font-semibold text-blue-600">
-                    Testes periódicos em rede 3G/4G
-                  </div>
-                </Card>
-              </div>
-            </div>
+            )}
           </div>
         )}
+
       </div>
     </div>
   );
