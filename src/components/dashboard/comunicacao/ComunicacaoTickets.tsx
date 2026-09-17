@@ -63,17 +63,42 @@ interface ComunicacaoTicketsProps {
   initialOpenNew?: boolean;
 }
 
-const TIPOS_MATERIAL = [
-  { value: 'feed_carrossel', label: 'Post Feed / Carrossel (Instagram/LinkedIn)' },
-  { value: 'reels_video', label: 'Vídeo Reels / TikTok / Short' },
-  { value: 'story', label: 'Stories (Instagram/WhatsApp)' },
-  { value: 'banner_impresso', label: 'Banner ou Faixa Impressa' },
-  { value: 'cracha', label: 'Crachá de Identificação' },
-  { value: 'camiseta', label: 'Arte para Camiseta / Uniforme' },
-  { value: 'apresentacao_pdf', label: 'Apresentação em Slides / PDF Institucional' },
-  { value: 'cobertura_foto_video', label: 'Cobertura de Foto / Vídeo de Ação' },
-  { value: 'outro', label: 'Outro Material / Demanda Específica' },
+export interface TipoMaterialOption {
+  value: string;
+  label: string;
+  categoria: 'redes' | 'fisico' | 'institucional';
+}
+
+export const TIPOS_MATERIAL: TipoMaterialOption[] = [
+  // Redes Sociais (Formatos integrados ao Calendário Editorial)
+  { value: 'carrossel', label: 'Carrossel de Fotos/Artes', categoria: 'redes' },
+  { value: 'reels', label: 'Reels / Vídeo Curto', categoria: 'redes' },
+  { value: 'stories', label: 'Sequência de Stories', categoria: 'redes' },
+  { value: 'estatico', label: 'Post Estático (Foto única)', categoria: 'redes' },
+  { value: 'video_longo', label: 'Vídeo Longo / Documentário', categoria: 'redes' },
+  { value: 'artigo', label: 'Artigo / Comunicado Digital', categoria: 'redes' },
+
+  // Materiais Gráficos & Físicos (Para eventos e identificação)
+  { value: 'cracha', label: 'Crachá de Identificação', categoria: 'fisico' },
+  { value: 'camiseta', label: 'Arte para Camiseta / Uniforme', categoria: 'fisico' },
+  { value: 'banner_impresso', label: 'Banner ou Faixa Impressa', categoria: 'fisico' },
+  { value: 'adesivo_brinde', label: 'Adesivo ou Brinde', categoria: 'fisico' },
+
+  // Institucional & Eventos
+  { value: 'apresentacao_pdf', label: 'Apresentação em Slides / PDF', categoria: 'institucional' },
+  { value: 'cobertura_foto_video', label: 'Cobertura de Foto / Vídeo', categoria: 'institucional' },
+  { value: 'outro', label: 'Outro Material / Demanda Específica', categoria: 'institucional' },
 ];
+
+export const getTipoMaterialLabel = (tipo?: string | null): string => {
+  if (!tipo) return 'Material';
+  const found = TIPOS_MATERIAL.find((t) => t.value === tipo);
+  if (found) return found.label;
+  if (tipo === 'feed_carrossel') return 'Carrossel de Fotos/Artes';
+  if (tipo === 'reels_video') return 'Reels / Vídeo Curto';
+  if (tipo === 'story') return 'Sequência de Stories';
+  return tipo.replace('_', ' ');
+};
 
 export function ComunicacaoTickets({
   tickets,
@@ -99,7 +124,7 @@ export function ComunicacaoTickets({
   const [formProjetoId, setFormProjetoId] = useState('');
   const [formSolicitanteNome, setFormSolicitanteNome] = useState('');
   const [formSolicitanteId, setFormSolicitanteId] = useState('');
-  const [formTipoMaterial, setFormTipoMaterial] = useState('feed_carrossel');
+  const [formTipoMaterial, setFormTipoMaterial] = useState('carrossel');
   const [formPublicoAlvo, setFormPublicoAlvo] = useState('');
   const [formObjetivo, setFormObjetivo] = useState('');
   const [formDescricao, setFormDescricao] = useState('');
@@ -125,7 +150,7 @@ export function ComunicacaoTickets({
   const filteredTickets = useMemo(() => {
     return tickets.filter((item) => {
       const matchSearch =
-        item.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.titulo || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.solicitante_nome && item.solicitante_nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.descricao_detalhes && item.descricao_detalhes.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -150,7 +175,7 @@ export function ComunicacaoTickets({
     setFormProjetoId('');
     setFormSolicitanteNome('');
     setFormSolicitanteId('');
-    setFormTipoMaterial('feed_carrossel');
+    setFormTipoMaterial('carrossel');
     setFormPublicoAlvo('');
     setFormObjetivo('');
     setFormDescricao('');
@@ -469,7 +494,7 @@ export function ComunicacaoTickets({
               className="px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold cursor-pointer shrink-0"
             >
               <option value="todos">Todas Urgências</option>
-              <option value="urgente">Urgente 🔥</option>
+              <option value="urgente">Urgente</option>
               <option value="alta">Alta</option>
               <option value="normal">Normal</option>
               <option value="baixa">Baixa</option>
@@ -509,6 +534,7 @@ export function ComunicacaoTickets({
             const cor = ticket.projetos_sociais?.cor_identificacao || '#F2632D';
             const nomeProjeto = ticket.projetos_sociais?.nome || 'Institucional Ádapo';
             const tipoObj = TIPOS_MATERIAL.find((t) => t.value === ticket.tipo_material);
+            const isRedeSocial = !tipoObj || tipoObj.categoria === 'redes';
 
             return (
               <Card
@@ -543,7 +569,7 @@ export function ComunicacaoTickets({
                   {/* Título e Tipo */}
                   <div>
                     <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)] inline-block mb-1">
-                      {tipoObj?.label || ticket.tipo_material}
+                      {getTipoMaterialLabel(ticket.tipo_material)}
                     </span>
                     <h4 className="font-display font-bold text-sm text-[var(--text-primary)] leading-snug line-clamp-2">
                       {ticket.titulo}
@@ -595,8 +621,8 @@ export function ComunicacaoTickets({
                     Ver & Responder
                   </Button>
 
-                  {/* Botão de Conversão Direta em Peça do Calendário */}
-                  {!ticket.conteudo_criado_id && ticket.status !== 'recusado' && (
+                  {/* Se for rede social e ainda não convertido, agenda no calendário */}
+                  {isRedeSocial && !ticket.conteudo_criado_id && ticket.status !== 'recusado' && (
                     <button
                       type="button"
                       onClick={() => onConvertToConteudo(ticket)}
@@ -605,6 +631,19 @@ export function ComunicacaoTickets({
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">+ Calendário</span>
+                    </button>
+                  )}
+
+                  {/* Se for material físico/institucional e pendente/em análise, aprova direto para o Quadro de Tarefas */}
+                  {!isRedeSocial && (ticket.status === 'pendente' || ticket.status === 'em_analise') && (
+                    <button
+                      type="button"
+                      onClick={() => onSaveTicket({ id: ticket.id, status: 'em_producao' })}
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                      title="Aprovar e enviar demanda diretamente para o Quadro de Tarefas em Produção"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Aprovar Produção</span>
                     </button>
                   )}
 
@@ -694,11 +733,27 @@ export function ComunicacaoTickets({
                     onChange={(e) => setFormTipoMaterial(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer"
                   >
-                    {TIPOS_MATERIAL.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
+                    <optgroup label="Redes Sociais">
+                      {TIPOS_MATERIAL.filter((t) => t.categoria === 'redes').map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Materiais Físicos & Gráficos">
+                      {TIPOS_MATERIAL.filter((t) => t.categoria === 'fisico').map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Institucional & Cobertura">
+                      {TIPOS_MATERIAL.filter((t) => t.categoria === 'institucional').map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
               </div>
@@ -706,16 +761,46 @@ export function ComunicacaoTickets({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                    Seu Nome (Solicitante) *
+                    Nome do Solicitante (Voluntário) *
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Seu nome completo"
-                    value={formSolicitanteNome}
-                    onChange={(e) => setFormSolicitanteNome(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium"
+                  <select
+                    value={formSolicitanteId}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormSolicitanteId(val);
+                      if (val === 'outro_externo') {
+                        setFormSolicitanteNome('');
+                      } else {
+                        const vol = voluntarios.find((v) => v.id === val);
+                        if (vol) {
+                          setFormSolicitanteNome(vol.nome_completo);
+                        } else {
+                          setFormSolicitanteNome('');
+                        }
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer"
                     required
-                  />
+                  >
+                    <option value="">Selecione o voluntário solicitante...</option>
+                    {voluntarios.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
+                      </option>
+                    ))}
+                    <option value="outro_externo">Outro (Parceiro / Demanda Externa)</option>
+                  </select>
+
+                  {formSolicitanteId === 'outro_externo' && (
+                    <input
+                      type="text"
+                      placeholder="Digite o nome do solicitante externo"
+                      value={formSolicitanteNome}
+                      onChange={(e) => setFormSolicitanteNome(e.target.value)}
+                      className="w-full mt-2 px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium"
+                      required
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -922,21 +1007,46 @@ export function ComunicacaoTickets({
               </div>
 
               <div className="pt-2 flex items-center justify-between border-t border-[var(--border-default)]">
-                {/* Botão de Conversão Direta */}
+                {/* Botão de Ação Direta conforme o tipo de material */}
                 {!selectedTicketDetail.conteudo_criado_id && selectedTicketDetail.status !== 'recusado' && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    icon={<Sparkles className="w-4 h-4 text-[var(--color-primary)]" />}
-                    onClick={() => {
-                      const t = selectedTicketDetail;
-                      setSelectedTicketDetail(null);
-                      onConvertToConteudo(t);
-                    }}
-                  >
-                    Converter em Publicação
-                  </Button>
+                  (() => {
+                    const tipoObj = TIPOS_MATERIAL.find((t) => t.value === selectedTicketDetail.tipo_material);
+                    const isRede = !tipoObj || tipoObj.categoria === 'redes';
+
+                    if (isRede) {
+                      return (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          icon={<Sparkles className="w-4 h-4 text-[var(--color-primary)]" />}
+                          onClick={() => {
+                            const t = selectedTicketDetail;
+                            setSelectedTicketDetail(null);
+                            onConvertToConteudo(t);
+                          }}
+                        >
+                          Agendar no Calendário
+                        </Button>
+                      );
+                    } else {
+                      return (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          icon={<CheckCircle2 className="w-4 h-4 text-blue-600" />}
+                          onClick={async () => {
+                            const t = selectedTicketDetail;
+                            setSelectedTicketDetail(null);
+                            await onSaveTicket({ id: t.id, status: 'em_producao' });
+                          }}
+                        >
+                          Aprovar para Produção
+                        </Button>
+                      );
+                    }
+                  })()
                 )}
 
                 <div className="flex items-center gap-2 ml-auto">

@@ -760,8 +760,9 @@ export function ComunicacaoCampanhas({
                           <span className="font-bold text-[var(--text-muted)] uppercase tracking-wider text-[9px] block">
                             Meta Principal:
                           </span>
-                          <p className="font-semibold text-[var(--text-primary)] line-clamp-1">
-                            🎯 {camp.objetivos.meta_principal}
+                          <p className="font-semibold text-[var(--text-primary)] line-clamp-1 flex items-center gap-1.5">
+                            <Target className="w-3.5 h-3.5 text-[var(--color-primary)] shrink-0" />
+                            <span>{camp.objetivos.meta_principal}</span>
                           </p>
                         </div>
                       )}
