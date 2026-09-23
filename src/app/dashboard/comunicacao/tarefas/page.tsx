@@ -88,10 +88,16 @@ function TarefasContent() {
         safeFetch(
           supabase
             .from('solicitacoes_comunicacao')
-            .select('*, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
+            .select('*, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo, avatar_url)')
             .order('created_at', { ascending: false })
         ),
       ]);
+
+      if (respProj?.error) console.warn('[Kanban] Erro ao carregar projetos:', respProj.error);
+      if (respVol?.error) console.warn('[Kanban] Erro ao carregar voluntários:', respVol.error);
+      if (respTar?.error) console.warn('[Kanban] Erro ao carregar tarefas:', respTar.error);
+      if (respCont?.error) console.warn('[Kanban] Erro ao carregar conteúdos:', respCont.error);
+      if (respTick?.error) console.warn('[Kanban] Erro ao carregar tickets:', respTick.error);
 
       if (respProj?.data) {
         setProjetos(respProj.data as any);
