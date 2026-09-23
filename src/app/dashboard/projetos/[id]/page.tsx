@@ -4015,7 +4015,7 @@ O desenvolvimento socioemocional e as pesquisas de satisfação atestam a efetiv
                     </div>
                   </div>
 
-                  <Link href="/dashboard/comunicacao">
+                  <Link href="/dashboard/comunicacao/tarefas">
                     <Button size="sm" variant="secondary" icon={<ExternalLink className="w-4 h-4" />}>
                       Abrir Módulo de Comunicação
                     </Button>

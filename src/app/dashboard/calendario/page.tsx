@@ -214,7 +214,7 @@ export default function CalendarioPage() {
           projeto_nome: proj ? proj.nome : 'Comunicação Geral',
           projeto_cor: '#8B5CF6',
           projeto_icone: 'Share2',
-          link_modulo: '/dashboard/comunicacao',
+          link_modulo: '/dashboard/comunicacao/gestao?tab=calendario',
         });
       });
 

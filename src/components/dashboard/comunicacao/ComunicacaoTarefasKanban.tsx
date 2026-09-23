@@ -22,12 +22,18 @@ import {
   ExternalLink,
   Edit2,
   Trash2,
-  MoreVertical,
   Layers,
+  GripVertical,
 } from 'lucide-react';
 import { ConteudoItem } from './ComunicacaoCalendario';
 import { SolicitacaoComunicacaoItem } from './ComunicacaoTickets';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
+
+export interface ChecklistItem {
+  id: string;
+  texto: string;
+  concluido: boolean;
+}
 
 export interface TarefaAvulsaItem {
   id: string;
@@ -39,6 +45,7 @@ export interface TarefaAvulsaItem {
   responsavel_id?: string | null;
   data_limite?: string | null;
   etiquetas?: string[];
+  checklist?: ChecklistItem[] | null;
   created_at?: string;
   updated_at?: string;
   projetos_sociais?: { nome: string; cor_identificacao?: string } | null;
@@ -58,6 +65,7 @@ export interface KanbanCard {
   solicitanteNome?: string;
   dataLimite?: string | null;
   tipoRotulo: string;
+  checklist?: ChecklistItem[] | null;
   rawItem: any;
 }
 
@@ -74,19 +82,21 @@ interface ComunicacaoTarefasKanbanProps {
   projetos: ProjetoSimples[];
   voluntarios: Voluntario[];
   loading: boolean;
+  canEdit?: boolean;
   onRefresh: () => void;
   onSaveTarefa: (tarefa: Partial<TarefaAvulsaItem>) => Promise<void>;
   onDeleteTarefa: (id: string) => Promise<void>;
   onUpdateConteudoStatus: (id: string, status: ConteudoItem['status']) => Promise<void>;
   onUpdateTicketStatus: (id: string, status: SolicitacaoComunicacaoItem['status']) => Promise<void>;
-  onNavigateToTab: (tab: 'calendario' | 'tickets') => void;
+  onUpdateChecklist?: (id: string, origem: 'conteudo' | 'ticket' | 'tarefa', checklist: ChecklistItem[]) => Promise<void>;
+  onNavigateToTab?: (tab: 'calendario' | 'tickets' | 'campanhas' | 'galeria') => void;
 }
 
 const COLUNAS = [
-  { id: 'a_fazer', titulo: 'A Fazer', badgeBg: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20' },
-  { id: 'em_producao', titulo: 'Em Produção', badgeBg: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20' },
-  { id: 'em_revisao', titulo: 'Em Revisão', badgeBg: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20' },
-  { id: 'concluido', titulo: 'Concluído', badgeBg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' },
+  { id: 'a_fazer', titulo: 'A Fazer', badgeBg: 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700' },
+  { id: 'em_producao', titulo: 'Em Produção', badgeBg: 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800' },
+  { id: 'em_revisao', titulo: 'Em Revisão', badgeBg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800' },
+  { id: 'concluido', titulo: 'Concluído', badgeBg: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' },
 ] as const;
 
 export function ComunicacaoTarefasKanban({
@@ -96,19 +106,25 @@ export function ComunicacaoTarefasKanban({
   projetos,
   voluntarios,
   loading,
+  canEdit = true,
   onRefresh,
   onSaveTarefa,
   onDeleteTarefa,
   onUpdateConteudoStatus,
   onUpdateTicketStatus,
+  onUpdateChecklist,
   onNavigateToTab,
 }: ComunicacaoTarefasKanbanProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [origemFilter, setOrigemFilter] = useState<'todos' | 'conteudo' | 'ticket' | 'tarefa'>('todos');
-  const [projetoFilter, setProjetoFilter] = useState('todos');
-  const [prioridadeFilter, setPrioridadeFilter] = useState('todos');
+  const [origemFilter, setOrigemFilter] = useState<'todos' | 'tarefa' | 'conteudo' | 'ticket'>('todos');
+  const [projetoFilter, setProjetoFilter] = useState<string>('todos');
+  const [prioridadeFilter, setPrioridadeFilter] = useState<string>('todos');
 
-  // Modal para Nova Tarefa Avulsa
+  // Estados para Drag and Drop
+  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+
+  // Estados de Modal para Criar / Editar Tarefa Operacional Avulsa
   const [showModalTarefa, setShowModalTarefa] = useState(false);
   const [editingTarefa, setEditingTarefa] = useState<TarefaAvulsaItem | null>(null);
   const [formTitulo, setFormTitulo] = useState('');
@@ -120,11 +136,12 @@ export function ComunicacaoTarefasKanban({
   const [formDataLimite, setFormDataLimite] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Modal para Detalhes do Card
+  // Modal de Detalhes do Card Selecionado (com visualização e Checklist)
   const [selectedCardDetail, setSelectedCardDetail] = useState<KanbanCard | null>(null);
+  const [newChecklistText, setNewChecklistText] = useState('');
 
-  // 1. Mapeamento Unificado de Itens para o Quadro Kanban
-  const kanbanCards = useMemo<KanbanCard[]>(() => {
+  // 1. Unificação dos 3 tipos de dados em cards para o Kanban
+  const kanbanCards: KanbanCard[] = useMemo(() => {
     const cards: KanbanCard[] = [];
 
     // A. Produções do Calendário Editorial
@@ -146,6 +163,7 @@ export function ComunicacaoTarefasKanban({
         responsavelNome: c.voluntarios?.nome_completo,
         dataLimite: c.data_publicacao,
         tipoRotulo: `Rede Social (${c.tipo_conteudo?.toUpperCase() || 'POST'})`,
+        checklist: Array.isArray((c as any).checklist) ? (c as any).checklist : [],
         rawItem: c,
       });
     });
@@ -169,11 +187,12 @@ export function ComunicacaoTarefasKanban({
         solicitanteNome: t.solicitante_nome || t.solicitante?.nome_completo,
         dataLimite: t.prazo_desejado,
         tipoRotulo: `Demanda (${(t.tipo_material || 'material').replace('_', ' ').toUpperCase()})`,
+        checklist: Array.isArray((t as any).checklist) ? (t as any).checklist : [],
         rawItem: t,
       });
     });
 
-    // C. Tarefas Avulsas & Notas da Rotina de Comunicação
+    // C. Tarefas Avulsas & Rotina Operacional
     tarefas.forEach((ta) => {
       let coluna: KanbanCard['coluna'] = 'a_fazer';
       if (ta.status === 'em_andamento') coluna = 'em_producao';
@@ -192,6 +211,7 @@ export function ComunicacaoTarefasKanban({
         responsavelNome: ta.voluntarios?.nome_completo,
         dataLimite: ta.data_limite,
         tipoRotulo: 'Tarefa Operacional',
+        checklist: Array.isArray(ta.checklist) ? ta.checklist : [],
         rawItem: ta,
       });
     });
@@ -219,47 +239,91 @@ export function ComunicacaoTarefasKanban({
     });
   }, [kanbanCards, searchTerm, origemFilter, projetoFilter, prioridadeFilter]);
 
-  // 3. Ações de Movimentação de Colunas (Kanban Flow)
-  const handleMoverCard = async (card: KanbanCard, direcao: 'avancar' | 'recuar') => {
-    const ordemColunas: KanbanCard['coluna'][] = ['a_fazer', 'em_producao', 'em_revisao', 'concluido'];
-    const idxAtual = ordemColunas.indexOf(card.coluna);
-    const novoIdx = direcao === 'avancar' ? idxAtual + 1 : idxAtual - 1;
+  // 3. Mover Card entre Colunas (Drag and Drop ou Botões)
+  const handleMoverCardToCol = async (
+    cardId: string,
+    origem: KanbanCard['origem'],
+    novaColuna: KanbanCard['coluna']
+  ) => {
+    if (!canEdit) return;
 
-    if (novoIdx < 0 || novoIdx >= ordemColunas.length) return;
-    const novaColuna = ordemColunas[novoIdx];
-
-    if (card.origem === 'tarefa') {
-      const statusMap: Record<KanbanCard['coluna'], TarefaAvulsaItem['status']> = {
-        a_fazer: 'a_fazer',
-        em_producao: 'em_andamento',
-        em_revisao: 'revisao',
-        concluido: 'concluido',
-      };
-      await onSaveTarefa({ id: card.id, status: statusMap[novaColuna] });
-    } else if (card.origem === 'conteudo') {
+    if (origem === 'conteudo') {
       const statusMap: Record<KanbanCard['coluna'], ConteudoItem['status']> = {
         a_fazer: 'nao_iniciado',
         em_producao: 'producao',
         em_revisao: 'analise',
         concluido: 'publicado',
       };
-      await onUpdateConteudoStatus(card.id, statusMap[novaColuna]);
-    } else if (card.origem === 'ticket') {
+      await onUpdateConteudoStatus(cardId, statusMap[novaColuna]);
+    } else if (origem === 'ticket') {
       const statusMap: Record<KanbanCard['coluna'], SolicitacaoComunicacaoItem['status']> = {
         a_fazer: 'pendente',
         em_producao: 'em_producao',
         em_revisao: 'em_analise',
         concluido: 'concluido',
       };
-      await onUpdateTicketStatus(card.id, statusMap[novaColuna]);
+      await onUpdateTicketStatus(cardId, statusMap[novaColuna]);
+    } else {
+      const statusMap: Record<KanbanCard['coluna'], TarefaAvulsaItem['status']> = {
+        a_fazer: 'a_fazer',
+        em_producao: 'em_andamento',
+        em_revisao: 'revisao',
+        concluido: 'concluido',
+      };
+      await onSaveTarefa({ id: cardId, status: statusMap[novaColuna] });
     }
   };
 
-  const handleOpenNovaTarefa = (colunaPadrao: TarefaAvulsaItem['status'] = 'a_fazer') => {
+  const handleMoverCard = async (card: KanbanCard, direcao: 'avancar' | 'recuar') => {
+    const ordemColunas: KanbanCard['coluna'][] = ['a_fazer', 'em_producao', 'em_revisao', 'concluido'];
+    const currentIndex = ordemColunas.indexOf(card.coluna);
+    const targetIndex = direcao === 'avancar' ? currentIndex + 1 : currentIndex - 1;
+
+    if (targetIndex < 0 || targetIndex >= ordemColunas.length) return;
+    const novaColuna = ordemColunas[targetIndex];
+    await handleMoverCardToCol(card.id, card.origem, novaColuna);
+  };
+
+  // 4. Checklist Handlers
+  const handleToggleChecklistItem = async (itemId: string) => {
+    if (!selectedCardDetail || !onUpdateChecklist || !canEdit) return;
+    const currentList = selectedCardDetail.checklist || [];
+    const updated = currentList.map((i) => (i.id === itemId ? { ...i, concluido: !i.concluido } : i));
+
+    setSelectedCardDetail((prev) => (prev ? { ...prev, checklist: updated } : null));
+    await onUpdateChecklist(selectedCardDetail.id, selectedCardDetail.origem, updated);
+  };
+
+  const handleAddChecklistItem = async () => {
+    if (!selectedCardDetail || !newChecklistText.trim() || !onUpdateChecklist || !canEdit) return;
+    const currentList = selectedCardDetail.checklist || [];
+    const newItem: ChecklistItem = {
+      id: `chk-${Date.now()}`,
+      texto: newChecklistText.trim(),
+      concluido: false,
+    };
+    const updated = [...currentList, newItem];
+    setNewChecklistText('');
+
+    setSelectedCardDetail((prev) => (prev ? { ...prev, checklist: updated } : null));
+    await onUpdateChecklist(selectedCardDetail.id, selectedCardDetail.origem, updated);
+  };
+
+  const handleRemoveChecklistItem = async (itemId: string) => {
+    if (!selectedCardDetail || !onUpdateChecklist || !canEdit) return;
+    const currentList = selectedCardDetail.checklist || [];
+    const updated = currentList.filter((i) => i.id !== itemId);
+
+    setSelectedCardDetail((prev) => (prev ? { ...prev, checklist: updated } : null));
+    await onUpdateChecklist(selectedCardDetail.id, selectedCardDetail.origem, updated);
+  };
+
+  // 5. Modal Criar / Editar Tarefa
+  const handleOpenNovaTarefa = (colunaStatus: TarefaAvulsaItem['status'] = 'a_fazer') => {
     setEditingTarefa(null);
     setFormTitulo('');
     setFormDescricao('');
-    setFormColuna(colunaPadrao);
+    setFormColuna(colunaStatus);
     setFormPrioridade('normal');
     setFormProjetoId('');
     setFormResponsavelId('');
@@ -340,23 +404,23 @@ export function ComunicacaoTarefasKanban({
   return (
     <div className="space-y-4">
       {/* Barra Superior de Filtros e Adição Rápida */}
-      <div className="p-3 sm:p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="p-3 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 flex-1 flex-wrap">
           <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Buscar no quadro de tarefas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[var(--color-primary)] font-medium"
             />
           </div>
 
           <select
             value={origemFilter}
             onChange={(e: any) => setOrigemFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] font-medium cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-medium cursor-pointer"
           >
             <option value="todos">Todas as Origens</option>
             <option value="tarefa">Apenas Tarefas Avulsas</option>
@@ -367,7 +431,7 @@ export function ComunicacaoTarefasKanban({
           <select
             value={projetoFilter}
             onChange={(e) => setProjetoFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] font-medium cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-medium cursor-pointer"
           >
             <option value="todos">Todos os Projetos</option>
             {projetos.map((p) => (
@@ -380,7 +444,7 @@ export function ComunicacaoTarefasKanban({
           <select
             value={prioridadeFilter}
             onChange={(e) => setPrioridadeFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] font-medium cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-medium cursor-pointer"
           >
             <option value="todos">Todas as Prioridades</option>
             <option value="urgente">Urgente</option>
@@ -390,32 +454,68 @@ export function ComunicacaoTarefasKanban({
           </select>
         </div>
 
-        <div className="flex items-center gap-2 self-end md:self-auto">
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Plus className="w-3.5 h-3.5" />}
-            onClick={() => handleOpenNovaTarefa('a_fazer')}
-          >
-            Nova Tarefa
-          </Button>
-        </div>
+        {canEdit && (
+          <div className="flex items-center gap-2 self-end md:self-auto">
+            <Button
+              size="sm"
+              variant="primary"
+              icon={<Plus className="w-3.5 h-3.5" />}
+              onClick={() => handleOpenNovaTarefa('a_fazer')}
+            >
+              Nova Tarefa
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* QUADRO KANBAN (4 COLUNAS) */}
+      {/* QUADRO KANBAN (4 COLUNAS) COM ARRASTAR E SOLTAR (DRAG & DROP) */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
         {COLUNAS.map((coluna) => {
           const cardsDaColuna = filteredCards.filter((c) => c.coluna === coluna.id);
+          const isOver = dragOverColumn === coluna.id;
 
           return (
             <div
               key={coluna.id}
-              className="flex flex-col rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/50 p-3 min-h-[580px] space-y-3"
+              onDragOver={(e) => {
+                if (!canEdit) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dragOverColumn !== coluna.id) {
+                  setDragOverColumn(coluna.id);
+                }
+              }}
+              onDragLeave={(e) => {
+                if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                if (dragOverColumn === coluna.id) {
+                  setDragOverColumn(null);
+                }
+              }}
+              onDrop={async (e) => {
+                if (!canEdit) return;
+                e.preventDefault();
+                setDragOverColumn(null);
+                setDraggedCardId(null);
+                try {
+                  const rawData = e.dataTransfer.getData('text/plain');
+                  if (!rawData) return;
+                  const { id, origem, coluna: fromCol } = JSON.parse(rawData);
+                  if (fromCol === coluna.id) return;
+                  await handleMoverCardToCol(id, origem, coluna.id);
+                } catch (err) {
+                  console.error('Erro no drag and drop:', err);
+                }
+              }}
+              className={`flex flex-col rounded-2xl border transition-all duration-200 min-h-[620px] p-3.5 space-y-3 ${
+                isOver
+                  ? 'border-2 border-dashed border-[var(--color-primary)] bg-[var(--color-primary-soft)]/30 ring-4 ring-[var(--color-primary)]/15 scale-[1.01]'
+                  : 'border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-md'
+              }`}
             >
               {/* Cabeçalho da Coluna */}
-              <div className="flex items-center justify-between pb-2 border-b border-[var(--border-default)]">
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
                     {coluna.titulo}
                   </h3>
                   <span
@@ -425,47 +525,84 @@ export function ComunicacaoTarefasKanban({
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  title="Adicionar tarefa nesta coluna"
-                  onClick={() => {
-                    const statusMap: Record<string, TarefaAvulsaItem['status']> = {
-                      a_fazer: 'a_fazer',
-                      em_producao: 'em_andamento',
-                      em_revisao: 'revisao',
-                      concluido: 'concluido',
-                    };
-                    handleOpenNovaTarefa(statusMap[coluna.id]);
-                  }}
-                  className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+                {canEdit && (
+                  <button
+                    type="button"
+                    title="Adicionar tarefa nesta coluna"
+                    onClick={() => {
+                      const statusMap: Record<string, TarefaAvulsaItem['status']> = {
+                        a_fazer: 'a_fazer',
+                        em_producao: 'em_andamento',
+                        em_revisao: 'revisao',
+                        concluido: 'concluido',
+                      };
+                      handleOpenNovaTarefa(statusMap[coluna.id]);
+                    }}
+                    className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               {/* Lista de Cartões da Coluna */}
-              <div className="space-y-2.5 flex-1 overflow-y-auto custom-scrollbar pr-0.5">
+              <div className="space-y-2.5 flex-1 overflow-y-auto custom-scrollbar pr-0.5 min-h-[200px]">
                 {cardsDaColuna.length === 0 ? (
-                  <div className="h-32 flex flex-col items-center justify-center text-center p-4 border border-dashed border-[var(--border-default)] rounded-xl">
-                    <span className="text-xs text-[var(--text-muted)]">Nenhum item nesta etapa</span>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenNovaTarefa(coluna.id === 'em_producao' ? 'em_andamento' : coluna.id === 'em_revisao' ? 'revisao' : coluna.id === 'concluido' ? 'concluido' : 'a_fazer')}
-                      className="mt-2 text-xs font-semibold text-[var(--color-primary)] hover:underline"
-                    >
-                      + Criar cartão
-                    </button>
+                  <div className="h-36 flex flex-col items-center justify-center text-center p-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
+                    <Layers className="w-5 h-5 text-slate-400 dark:text-slate-500 mb-1" />
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Nenhum item nesta etapa</span>
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Arraste um cartão para cá</span>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleOpenNovaTarefa(
+                            coluna.id === 'em_producao'
+                              ? 'em_andamento'
+                              : coluna.id === 'em_revisao'
+                              ? 'revisao'
+                              : coluna.id === 'concluido'
+                              ? 'concluido'
+                              : 'a_fazer'
+                          )
+                        }
+                        className="mt-2 text-xs font-bold text-[var(--color-primary)] hover:underline cursor-pointer"
+                      >
+                        + Criar cartão
+                      </button>
+                    )}
                   </div>
                 ) : (
                   cardsDaColuna.map((card) => {
                     const isTask = card.origem === 'tarefa';
                     const isContent = card.origem === 'conteudo';
                     const isTicket = card.origem === 'ticket';
+                    const isDragging = draggedCardId === card.id;
+
+                    const chkTotal = card.checklist?.length || 0;
+                    const chkDone = card.checklist?.filter((i) => i.concluido).length || 0;
+                    const chkAllDone = chkTotal > 0 && chkDone === chkTotal;
 
                     return (
-                      <Card
+                      <div
                         key={`${card.origem}-${card.id}`}
-                        className="p-3.5 space-y-2.5 bg-[var(--bg-elevated)] border-[var(--border-default)] hover:border-[var(--color-primary)] transition-all shadow-xs group"
+                        draggable={canEdit}
+                        onDragStart={(e) => {
+                          if (!canEdit) return;
+                          setDraggedCardId(card.id);
+                          e.dataTransfer.setData(
+                            'text/plain',
+                            JSON.stringify({ id: card.id, origem: card.origem, coluna: card.coluna })
+                          );
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onDragEnd={() => {
+                          setDraggedCardId(null);
+                          setDragOverColumn(null);
+                        }}
+                        className={`p-3.5 space-y-2.5 rounded-xl border transition-all shadow-xs group bg-white dark:bg-slate-800/90 border-slate-200/90 dark:border-slate-700/80 hover:border-[var(--color-primary)]/80 hover:shadow-md ${
+                          canEdit ? 'cursor-grab active:cursor-grabbing' : ''
+                        } ${isDragging ? 'opacity-40 scale-95 border-blue-500 ring-2 ring-blue-500/20' : ''}`}
                       >
                         {/* Linha Superior: Origem & Prioridade */}
                         <div className="flex items-center justify-between gap-1.5 flex-wrap">
@@ -484,50 +621,80 @@ export function ComunicacaoTarefasKanban({
                             <span className="truncate max-w-[120px]">{card.tipoRotulo}</span>
                           </span>
 
-                          {renderPrioridadeBadge(card.prioridade)}
+                          <div className="flex items-center gap-1">
+                            {renderPrioridadeBadge(card.prioridade)}
+                            {canEdit && (
+                              <GripVertical className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-slate-400" />
+                            )}
+                          </div>
                         </div>
 
                         {/* Título do Cartão */}
                         <h4
                           onClick={() => setSelectedCardDetail(card)}
-                          className="font-bold text-xs sm:text-sm text-[var(--text-primary)] hover:text-[var(--color-primary)] cursor-pointer line-clamp-2 leading-snug transition-colors"
+                          className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 hover:text-[var(--color-primary)] cursor-pointer line-clamp-2 leading-snug transition-colors"
                         >
                           {card.titulo}
                         </h4>
 
+                        {/* Indicador de Progresso de Checklist */}
+                        {chkTotal > 0 && (
+                          <div className="pt-1">
+                            <div className="flex items-center justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                              <span className="flex items-center gap-1">
+                                <CheckSquare
+                                  className={`w-3 h-3 ${chkAllDone ? 'text-emerald-500' : 'text-slate-400'}`}
+                                />
+                                <span>{chkDone}/{chkTotal} checklist</span>
+                              </span>
+                              <span className={chkAllDone ? 'text-emerald-600 font-bold' : ''}>
+                                {Math.round((chkDone / chkTotal) * 100)}%
+                              </span>
+                            </div>
+                            <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  chkAllDone ? 'bg-emerald-500' : 'bg-[var(--color-primary)]'
+                                }`}
+                                style={{ width: `${Math.round((chkDone / chkTotal) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
                         {/* Projeto e Responsável */}
-                        <div className="flex items-center justify-between text-[11px] gap-2 pt-1 border-t border-[var(--border-default)]/60">
+                        <div className="flex items-center justify-between text-[11px] gap-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
                           {card.projetoNome ? (
                             <div className="flex items-center gap-1.5 truncate">
                               <span
                                 className="w-2 h-2 rounded-full shrink-0"
                                 style={{ backgroundColor: card.projetoCor || '#F2632D' }}
                               />
-                              <span className="text-[var(--text-secondary)] font-medium truncate max-w-[110px]">
+                              <span className="text-slate-600 dark:text-slate-300 font-medium truncate max-w-[110px]">
                                 {card.projetoNome}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-[var(--text-muted)] text-[10px]">Institucional</span>
+                            <span className="text-slate-400 dark:text-slate-500 text-[10px]">Institucional</span>
                           )}
 
                           {card.responsavelNome ? (
-                            <div className="flex items-center gap-1 text-[var(--text-secondary)] truncate">
-                              <User className="w-3 h-3 text-[var(--text-muted)] shrink-0" />
+                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 truncate">
+                              <User className="w-3 h-3 text-slate-400 shrink-0" />
                               <span className="truncate max-w-[90px]">{card.responsavelNome}</span>
                             </div>
                           ) : card.solicitanteNome ? (
-                            <div className="flex items-center gap-1 text-[var(--text-secondary)] truncate">
-                              <span className="text-[var(--text-muted)] text-[10px]">Por:</span>
+                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 truncate">
+                              <span className="text-slate-400 text-[10px]">Por:</span>
                               <span className="truncate max-w-[90px]">{card.solicitanteNome}</span>
                             </div>
                           ) : null}
                         </div>
 
-                        {/* Prazo e Ações de Movimentação */}
+                        {/* Prazo e Ações Manuais de Movimentação */}
                         <div className="flex items-center justify-between pt-1 text-[11px]">
                           {card.dataLimite ? (
-                            <div className="flex items-center gap-1 text-[var(--text-muted)] font-mono-data text-[10px]">
+                            <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-mono-data text-[10px]">
                               <Clock className="w-3 h-3 shrink-0" />
                               <span>{new Date(card.dataLimite).toLocaleDateString('pt-BR')}</span>
                             </div>
@@ -535,74 +702,58 @@ export function ComunicacaoTarefasKanban({
                             <span />
                           )}
 
-                          {/* Botões Rápidos para Mover de Coluna */}
-                          <div className="flex items-center gap-1">
-                            {coluna.id !== 'a_fazer' && (
-                              <button
-                                type="button"
-                                title="Mover para etapa anterior"
-                                onClick={() => handleMoverCard(card, 'recuar')}
-                                className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-all cursor-pointer"
-                              >
-                                <ArrowLeft className="w-3 h-3" />
-                              </button>
-                            )}
+                          {canEdit && (
+                            <div className="flex items-center gap-1">
+                              {coluna.id !== 'a_fazer' && (
+                                <button
+                                  type="button"
+                                  title="Mover para etapa anterior"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMoverCard(card, 'recuar');
+                                  }}
+                                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                >
+                                  <ArrowLeft className="w-3 h-3" />
+                                </button>
+                              )}
 
-                            {coluna.id !== 'concluido' && (
-                              <button
-                                type="button"
-                                title="Avançar para próxima etapa"
-                                onClick={() => handleMoverCard(card, 'avancar')}
-                                className="p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-all cursor-pointer"
-                              >
-                                <ArrowRight className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
+                              {coluna.id !== 'concluido' && (
+                                <button
+                                  type="button"
+                                  title="Avançar para próxima etapa"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMoverCard(card, 'avancar');
+                                  }}
+                                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                >
+                                  <ArrowRight className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      </Card>
+                      </div>
                     );
                   })
                 )}
               </div>
-
-              {/* Botão de Adição Rápida no Rodapé da Coluna */}
-              <button
-                type="button"
-                onClick={() => {
-                  const statusMap: Record<string, TarefaAvulsaItem['status']> = {
-                    a_fazer: 'a_fazer',
-                    em_producao: 'em_andamento',
-                    em_revisao: 'revisao',
-                    concluido: 'concluido',
-                  };
-                  handleOpenNovaTarefa(statusMap[coluna.id]);
-                }}
-                className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] border border-dashed border-[var(--border-default)] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Adicionar Cartão</span>
-              </button>
             </div>
           );
         })}
       </div>
 
       {/* ========================================================================= */}
-      {/* MODAL: NOVA TAREFA / EDITAR TAREFA AVULSA */}
+      {/* MODAL: CRIAR / EDITAR TAREFA OPERACIONAL AVULSA */}
       {/* ========================================================================= */}
       {showModalTarefa && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border-default)]">
-              <div>
-                <h3 className="font-bold text-base text-[var(--text-primary)]">
-                  {editingTarefa ? 'Editar Tarefa' : 'Nova Tarefa no Quadro'}
-                </h3>
-                <p className="text-xs text-[var(--text-muted)]">
-                  Atividade de apoio, preparativo ou organização da comunicação
-                </p>
-              </div>
+              <h3 className="font-bold text-base text-[var(--text-primary)]">
+                {editingTarefa ? 'Editar Tarefa Operacional' : 'Nova Tarefa Operacional'}
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowModalTarefa(false)}
@@ -619,18 +770,18 @@ export function ComunicacaoTarefasKanban({
                 </label>
                 <input
                   type="text"
-                  placeholder="Ex: Cotação de camisetas para o evento / Separar cartões de memória"
+                  required
+                  placeholder="Ex: Enviar briefing para gráfica / Revisar roteiro do evento"
                   value={formTitulo}
                   onChange={(e) => setFormTitulo(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
-                  required
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                    Coluna Inicial
+                    Coluna / Etapa
                   </label>
                   <select
                     value={formColuna}
@@ -664,14 +815,14 @@ export function ComunicacaoTarefasKanban({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                    Projeto Vinculado
+                    Projeto Social (Opcional)
                   </label>
                   <select
                     value={formProjetoId}
                     onChange={(e) => setFormProjetoId(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer"
                   >
-                    <option value="">Institucional Geral (Ádapo)</option>
+                    <option value="">Institucional Geral</option>
                     {projetos.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.nome}
@@ -682,7 +833,7 @@ export function ComunicacaoTarefasKanban({
 
                 <div>
                   <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                    Responsável da Equipe
+                    Responsável na Equipe
                   </label>
                   <select
                     value={formResponsavelId}
@@ -692,7 +843,7 @@ export function ComunicacaoTarefasKanban({
                     <option value="">Não atribuído</option>
                     {voluntarios.map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
+                        {v.nome_completo}
                       </option>
                     ))}
                   </select>
@@ -768,7 +919,7 @@ export function ComunicacaoTarefasKanban({
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: DETALHES DO CARD (REDE SOCIAL, TICKET OU TAREFA) */}
+      {/* MODAL: DETALHES DO CARD (COM CHECKLIST INTERATIVO) */}
       {/* ========================================================================= */}
       {selectedCardDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
@@ -848,24 +999,132 @@ export function ComunicacaoTarefasKanban({
                 </div>
               )}
 
-              {/* Ações Específicas conforme a Origem */}
-              <div className="flex items-center justify-between pt-3 border-t border-[var(--border-default)]">
-                {selectedCardDetail.origem === 'tarefa' ? (
+              {/* ========================================================= */}
+              {/* CHECKLIST DE ATIVIDADES DO ITEM */}
+              {/* ========================================================= */}
+              <div className="space-y-2 pt-2 border-t border-[var(--border-default)]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-[var(--text-primary)]">
+                    <CheckSquare className="w-4 h-4 text-[var(--color-primary)]" />
+                    <span>Checklist de Atividades</span>
+                  </div>
+                  {(selectedCardDetail.checklist?.length || 0) > 0 && (
+                    <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
+                      {selectedCardDetail.checklist?.filter((i) => i.concluido).length} de{' '}
+                      {selectedCardDetail.checklist?.length} concluídos
+                    </span>
+                  )}
+                </div>
+
+                {/* Barra de Progresso */}
+                {(selectedCardDetail.checklist?.length || 0) > 0 && (
+                  <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.round(
+                          ((selectedCardDetail.checklist?.filter((i) => i.concluido).length || 0) /
+                            (selectedCardDetail.checklist?.length || 1)) *
+                            100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Lista de Itens do Checklist */}
+                <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                  {(selectedCardDetail.checklist || []).length === 0 ? (
+                    <p className="text-[11px] text-[var(--text-muted)] italic py-1">
+                      Nenhum item no checklist ainda. Adicione as etapas necessárias abaixo.
+                    </p>
+                  ) : (
+                    (selectedCardDetail.checklist || []).map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-2 rounded-xl bg-[var(--bg-secondary)]/70 hover:bg-[var(--bg-secondary)] border border-[var(--border-default)]/60 text-xs transition-colors"
+                      >
+                        <label className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={item.concluido}
+                            disabled={!canEdit}
+                            onChange={() => handleToggleChecklistItem(item.id)}
+                            className="w-4 h-4 rounded text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
+                          />
+                          <span
+                            className={`truncate ${
+                              item.concluido
+                                ? 'line-through text-[var(--text-muted)]'
+                                : 'text-[var(--text-primary)] font-medium'
+                            }`}
+                          >
+                            {item.texto}
+                          </span>
+                        </label>
+
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveChecklistItem(item.id)}
+                            className="p-1 rounded text-slate-400 hover:text-rose-500 transition-colors ml-2"
+                            title="Remover item"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Adicionar Novo Item ao Checklist */}
+                {canEdit && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="text"
+                      placeholder="Adicionar tarefa ao checklist (ex: Revisar arte, agendar post)..."
+                      value={newChecklistText}
+                      onChange={(e) => setNewChecklistText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddChecklistItem();
+                        }
+                      }}
+                      className="flex-1 px-3 py-1.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                    />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={handleAddChecklistItem}
+                      disabled={!newChecklistText.trim()}
+                      className="shrink-0 text-xs"
+                    >
+                      + Adicionar
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Botões de Ação do Modal */}
+              <div className="pt-3 border-t border-[var(--border-default)] flex items-center justify-between gap-2">
+                {selectedCardDetail.origem === 'tarefa' && canEdit && (
                   <Button
                     size="sm"
                     variant="secondary"
                     icon={<Edit2 className="w-3.5 h-3.5" />}
                     onClick={() => {
-                      const t = tarefas.find((item) => item.id === selectedCardDetail.id);
-                      if (t) {
-                        setSelectedCardDetail(null);
-                        handleEditTarefa(t);
-                      }
+                      const t = selectedCardDetail.rawItem as TarefaAvulsaItem;
+                      setSelectedCardDetail(null);
+                      handleEditTarefa(t);
                     }}
                   >
-                    Editar Tarefa
+                    Editar Dados
                   </Button>
-                ) : selectedCardDetail.origem === 'conteudo' ? (
+                )}
+
+                {selectedCardDetail.origem === 'conteudo' && onNavigateToTab && (
                   <Button
                     size="sm"
                     variant="secondary"
@@ -875,9 +1134,11 @@ export function ComunicacaoTarefasKanban({
                       onNavigateToTab('calendario');
                     }}
                   >
-                    Abrir no Calendário Editorial
+                    Ver no Calendário
                   </Button>
-                ) : (
+                )}
+
+                {selectedCardDetail.origem === 'ticket' && onNavigateToTab && (
                   <Button
                     size="sm"
                     variant="secondary"
@@ -887,17 +1148,19 @@ export function ComunicacaoTarefasKanban({
                       onNavigateToTab('tickets');
                     }}
                   >
-                    Abrir em Solicitações & Tickets
+                    Ver Solicitação
                   </Button>
                 )}
 
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={() => setSelectedCardDetail(null)}
-                >
-                  Fechar
-                </Button>
+                <div className="flex items-center gap-2 ml-auto">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedCardDetail(null)}
+                  >
+                    Fechar
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

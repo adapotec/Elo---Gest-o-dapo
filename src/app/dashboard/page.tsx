@@ -516,7 +516,7 @@ export default function DashboardPage() {
               areaLabel: 'Comunicação',
               icon: Megaphone,
               color: '#F2632D',
-              href: '/dashboard/comunicacao',
+              href: '/dashboard/comunicacao/gestao',
             });
           });
         }
@@ -535,7 +535,7 @@ export default function DashboardPage() {
               areaLabel: 'Galeria & Drive',
               icon: ImageIcon,
               color: '#10B981',
-              href: '/dashboard/comunicacao?tab=galeria',
+              href: '/dashboard/comunicacao/gestao?tab=galeria',
             });
           });
         }
@@ -1331,7 +1331,7 @@ export default function DashboardPage() {
                   </a>
 
                   <Link
-                    href="/dashboard/comunicacao?tab=galeria"
+                    href="/dashboard/comunicacao/gestao?tab=galeria"
                     className="p-3 rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--bg-secondary)]/20 hover:bg-[var(--bg-secondary)]/50 transition-colors flex items-center justify-center gap-2 text-xs font-bold text-[var(--color-primary)]"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -1439,7 +1439,7 @@ export default function DashboardPage() {
                   </a>
 
                   <Link
-                    href="/dashboard/comunicacao?tab=galeria"
+                    href="/dashboard/comunicacao/gestao?tab=galeria"
                     className="flex items-center justify-center gap-1 py-2 px-3 rounded-xl text-xs font-bold bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] border border-[var(--border-default)] transition-colors"
                   >
                     <span>/comunicação</span>
@@ -1611,7 +1611,7 @@ export default function DashboardPage() {
             {/* Rodapé */}
             <div className="border-t border-[var(--border-default)] pt-3 flex items-center justify-between gap-3 shrink-0">
               <Link
-                href="/dashboard/comunicacao?tab=galeria"
+                href="/dashboard/comunicacao/gestao?tab=galeria"
                 onClick={() => setShowLinksModal(false)}
                 className="text-xs font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1"
               >

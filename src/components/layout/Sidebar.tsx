@@ -27,6 +27,7 @@ import {
   HelpCircle,
   X,
   ShieldCheck,
+  LayoutGrid,
 } from 'lucide-react';
 
 interface MenuItemChild {
@@ -71,7 +72,16 @@ const navigationItems: MenuItem[] = [
       { name: 'Controle de Estoque', href: '/dashboard/estoque', icon: Package, color: '#8B4A2E' },
     ],
   },
-  { name: 'Comunicação', href: '/dashboard/comunicacao', icon: Megaphone, color: '#EF4444' },
+  {
+    name: 'Comunicação',
+    icon: Megaphone,
+    color: '#EF4444',
+    children: [
+      { name: 'Quadro de Tarefas', href: '/dashboard/comunicacao/tarefas', icon: LayoutGrid, color: '#EF4444' },
+      { name: 'Gestão Comunicação', href: '/dashboard/comunicacao/gestao', icon: Calendar, color: '#F2632D' },
+      { name: 'Indicadores', href: '/dashboard/comunicacao/indicadores', icon: BarChart3, color: '#3B82F6' },
+    ],
+  },
   { name: 'Indicadores Sociais', href: '/dashboard/indicadores', icon: BarChart3, color: '#3B82F6' },
   { name: 'Reuniões & Governança', href: '/dashboard/institucional', icon: Landmark, color: '#6D28D9' },
 ];

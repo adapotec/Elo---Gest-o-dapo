@@ -1014,10 +1014,10 @@ export default function IndicadoresPage() {
                     </p>
                     <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
                       <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
-                      <p>Acessar <code>/dashboard/comunicacao?tab=indicadores</code> e colar o Token de Página do Instagram para sincronizar.</p>
+                      <p>Acessar <code>/dashboard/comunicacao/indicadores</code> e conferir o guia de integração da Graph API.</p>
                     </div>
-                    <Link href="/dashboard/comunicacao?tab=indicadores" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700">
-                      Configurar Token Meta <ArrowRight className="w-3.5 h-3.5" />
+                    <Link href="/dashboard/comunicacao/indicadores" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700">
+                      Ver Indicadores e Guia Meta <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </Card>
 
@@ -1038,7 +1038,7 @@ export default function IndicadoresPage() {
                       <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
                       <p>Voluntários abrem demandas na aba de tickets e a equipe converte em peça do calendário em 1 clique.</p>
                     </div>
-                    <Link href="/dashboard/comunicacao?tab=tickets" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
+                    <Link href="/dashboard/comunicacao/gestao?tab=tickets" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
                       Ver Central de Tickets <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </Card>
