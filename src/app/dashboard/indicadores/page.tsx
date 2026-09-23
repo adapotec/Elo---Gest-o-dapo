@@ -1038,7 +1038,7 @@ export default function IndicadoresPage() {
                       <p className="font-semibold text-[var(--text-primary)]">Passo a passo:</p>
                       <p>Voluntários abrem demandas na aba de tickets e a equipe converte em peça do calendário em 1 clique.</p>
                     </div>
-                    <Link href="/dashboard/comunicacao/gestao?tab=tickets" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
+                    <Link href="/dashboard/comunicacao/tickets" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
                       Ver Central de Tickets <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </Card>

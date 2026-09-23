@@ -8,7 +8,6 @@ import {
   Calendar as CalendarIcon,
   Megaphone,
   FolderOpen,
-  FileText,
 } from 'lucide-react';
 
 import {
@@ -23,13 +22,9 @@ import {
   ComunicacaoGaleria,
   GaleriaItem,
 } from '@/components/dashboard/comunicacao/ComunicacaoGaleria';
-import {
-  ComunicacaoTickets,
-  SolicitacaoComunicacaoItem,
-} from '@/components/dashboard/comunicacao/ComunicacaoTickets';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
 
-type GestaoTabKey = 'calendario' | 'campanhas' | 'galeria' | 'tickets';
+type GestaoTabKey = 'calendario' | 'campanhas' | 'galeria';
 
 interface GestaoTabItem {
   key: GestaoTabKey;
@@ -41,7 +36,6 @@ const TABS: GestaoTabItem[] = [
   { key: 'calendario', label: 'Calendário Editorial', icon: CalendarIcon },
   { key: 'campanhas', label: 'Campanhas Estratégicas', icon: Megaphone },
   { key: 'galeria', label: 'Galeria & Drive', icon: FolderOpen },
-  { key: 'tickets', label: 'Solicitações & Tickets', icon: FileText },
 ];
 
 const safeSetItem = (key: string, value: any) => {
@@ -52,7 +46,10 @@ const safeSetItem = (key: string, value: any) => {
   }
 };
 
-async function safeFetch<T>(promise: PromiseLike<{ data: T | null; error: any }>, timeoutMs = 8000): Promise<{ data: T | null; error: any }> {
+async function safeFetch<T>(
+  promise: PromiseLike<{ data: T | null; error: any }>,
+  timeoutMs = 8000
+): Promise<{ data: T | null; error: any }> {
   try {
     const timeout = new Promise<{ data: null; error: any }>((resolve) =>
       setTimeout(() => resolve({ data: null, error: new Error('Timeout') }), timeoutMs)
@@ -67,20 +64,18 @@ function GestaoContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const tabParam = searchParams.get('tab') as GestaoTabKey | null;
-  const novoParam = searchParams.get('novo') === 'true';
+  const tabParam = searchParams.get('tab') as string | null;
 
   // Por padrão a tela inicial de Gestão de Comunicação abre no Calendário Editorial
   const [activeTab, setActiveTab] = useState<GestaoTabKey>(
-    tabParam && ['calendario', 'campanhas', 'galeria', 'tickets'].includes(tabParam)
-      ? tabParam
+    tabParam && ['calendario', 'campanhas', 'galeria'].includes(tabParam)
+      ? (tabParam as GestaoTabKey)
       : 'calendario'
   );
 
   const [conteudos, setConteudos] = useState<ConteudoItem[]>([]);
   const [campanhas, setCampanhas] = useState<CampanhaItem[]>([]);
   const [galeria, setGaleria] = useState<GaleriaItem[]>([]);
-  const [tickets, setTickets] = useState<SolicitacaoComunicacaoItem[]>([]);
   const [projetos, setProjetos] = useState<{ id: string; nome: string; cor_identificacao?: string }[]>([]);
   const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,30 +86,41 @@ function GestaoContent() {
   const supabase = createClient();
 
   useEffect(() => {
+    // Se a rota acessada for a antiga aba de tickets, redireciona para a nova rota dedicada
+    if (tabParam === 'tickets') {
+      router.replace('/dashboard/comunicacao/tickets');
+      return;
+    }
+
     try {
       const cachedProj = localStorage.getItem('elo_comunicacao_projetos');
       const cachedVol = localStorage.getItem('elo_comunicacao_voluntarios');
       const cachedCont = localStorage.getItem('elo_comunicacao_conteudos');
       const cachedCamp = localStorage.getItem('elo_comunicacao_campanhas');
       const cachedGal = localStorage.getItem('elo_comunicacao_galeria');
-      const cachedTick = localStorage.getItem('elo_comunicacao_tickets');
 
       if (cachedProj) setProjetos(JSON.parse(cachedProj));
       if (cachedVol) setVoluntarios(JSON.parse(cachedVol));
       if (cachedCont) setConteudos(JSON.parse(cachedCont));
       if (cachedCamp) setCampanhas(JSON.parse(cachedCamp));
       if (cachedGal) setGaleria(JSON.parse(cachedGal));
-      if (cachedTick) setTickets(JSON.parse(cachedTick));
 
       if (cachedProj || cachedCont) {
         setLoading(false);
+      }
+
+      // Checa se há prefill pendente de ticket convertido
+      const storedPrefill = sessionStorage.getItem('elo_prefill_conteudo');
+      if (storedPrefill) {
+        setPrefillConteudo(JSON.parse(storedPrefill));
+        sessionStorage.removeItem('elo_prefill_conteudo');
       }
     } catch (e) {
       console.warn('Erro ao restaurar cache de gestão de comunicação:', e);
     }
 
     loadInitialNetworkData();
-  }, []);
+  }, [tabParam, router]);
 
   const loadInitialNetworkData = async () => {
     try {
@@ -135,7 +141,6 @@ function GestaoContent() {
       if (activeTab === 'calendario') await loadConteudosOnly();
       else if (activeTab === 'campanhas') await loadCampanhasOnly();
       else if (activeTab === 'galeria') await loadGaleriaOnly();
-      else if (activeTab === 'tickets') await loadTicketsOnly();
 
       setLoading(false);
 
@@ -143,7 +148,6 @@ function GestaoContent() {
         if (activeTab !== 'calendario') loadConteudosOnly();
         if (activeTab !== 'campanhas') loadCampanhasOnly();
         if (activeTab !== 'galeria') loadGaleriaOnly();
-        if (activeTab !== 'tickets') loadTicketsOnly();
       }, 300);
     } catch (err) {
       console.error('Erro ao carregar dados de gestão:', err);
@@ -159,7 +163,6 @@ function GestaoContent() {
     if (key === 'calendario' && conteudos.length === 0) loadConteudosOnly();
     if (key === 'campanhas' && campanhas.length === 0) loadCampanhasOnly();
     if (key === 'galeria' && galeria.length === 0) loadGaleriaOnly();
-    if (key === 'tickets' && tickets.length === 0) loadTicketsOnly();
   };
 
   const loadConteudosOnly = async () => {
@@ -213,29 +216,11 @@ function GestaoContent() {
     }
   };
 
-  const loadTicketsOnly = async () => {
-    try {
-      const resp = await safeFetch(
-        supabase
-          .from('solicitacoes_comunicacao')
-          .select('*, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
-          .order('created_at', { ascending: false })
-      );
-      if (resp?.data && !resp.error) {
-        setTickets(resp.data as SolicitacaoComunicacaoItem[]);
-        safeSetItem('elo_comunicacao_tickets', resp.data);
-      }
-    } catch (e) {
-      console.warn('Erro ao carregar tickets:', e);
-    }
-  };
-
   const loadAllData = async () => {
     await Promise.all([
       loadConteudosOnly(),
       loadCampanhasOnly(),
       loadGaleriaOnly(),
-      loadTicketsOnly(),
     ]);
   };
 
@@ -251,19 +236,18 @@ function GestaoContent() {
           updated_at: new Date().toISOString(),
         };
         if (conteudo.titulo !== undefined) updatePayload.titulo = conteudo.titulo;
-        if (conteudo.data_publicacao !== undefined) updatePayload.data_publicacao = new Date(conteudo.data_publicacao).toISOString();
-        if (conteudo.tipo_conteudo !== undefined) updatePayload.tipo_conteudo = conteudo.tipo_conteudo;
         if (conteudo.descricao !== undefined) updatePayload.descricao = conteudo.descricao;
-        if (conteudo.observacoes !== undefined) updatePayload.observacoes = conteudo.observacoes;
-        if (conteudo.roteiro_legenda !== undefined) updatePayload.roteiro_legenda = conteudo.roteiro_legenda;
+        if (conteudo.tipo_conteudo !== undefined) updatePayload.tipo_conteudo = conteudo.tipo_conteudo;
+        if (conteudo.categoria !== undefined) updatePayload.categoria = conteudo.categoria;
+        if (conteudo.status !== undefined) updatePayload.status = conteudo.status;
+        if (conteudo.data_publicacao !== undefined) updatePayload.data_publicacao = conteudo.data_publicacao;
         if (conteudo.projeto_id !== undefined) updatePayload.projeto_id = conteudo.projeto_id;
         if (conteudo.campanha_id !== undefined) updatePayload.campanha_id = conteudo.campanha_id;
-        if (conteudo.status !== undefined) updatePayload.status = conteudo.status;
         if (conteudo.responsavel_id !== undefined) updatePayload.responsavel_id = conteudo.responsavel_id;
-        if (conteudo.categoria !== undefined) updatePayload.categoria = conteudo.categoria;
         if (conteudo.link_producao !== undefined) updatePayload.link_producao = conteudo.link_producao;
         if (conteudo.link_publicacao !== undefined) updatePayload.link_publicacao = conteudo.link_publicacao;
-        if (conteudo.metricas !== undefined) updatePayload.metricas = conteudo.metricas;
+        if (conteudo.roteiro_legenda !== undefined) updatePayload.roteiro_legenda = conteudo.roteiro_legenda;
+        if (conteudo.observacoes !== undefined) updatePayload.observacoes = conteudo.observacoes;
 
         setConteudos((prev) =>
           prev.map((c) =>
@@ -271,9 +255,9 @@ function GestaoContent() {
               ? ({
                   ...c,
                   ...updatePayload,
-                  ...(proj !== undefined ? { projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null } : {}),
-                  ...(camp !== undefined ? { campanhas_comunicacao: camp ? { titulo: camp.titulo } : null } : {}),
-                  ...(vol !== undefined ? { voluntarios: vol ? { nome_completo: vol.nome_completo, avatar_url: vol.avatar_url || undefined } : null } : {}),
+                  ...(conteudo.projeto_id !== undefined ? { projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null } : {}),
+                  ...(conteudo.campanha_id !== undefined ? { campanhas_comunicacao: camp ? { titulo: camp.titulo } : null } : {}),
+                  ...(conteudo.responsavel_id !== undefined ? { voluntarios: vol ? { nome_completo: vol.nome_completo, avatar_url: vol.avatar_url } : null } : {}),
                 } as ConteudoItem)
               : c
           )
@@ -281,24 +265,20 @@ function GestaoContent() {
 
         await supabase.from('conteudos_comunicacao').update(updatePayload).eq('id', conteudo.id);
       } else {
-        const textoDescricao = (conteudo.observacoes || conteudo.descricao || '').trim() || null;
-        const textoLegenda = (conteudo.roteiro_legenda || '').trim() || null;
-
         const payload: Record<string, any> = {
-          titulo: conteudo.titulo || 'Novo Conteúdo',
-          data_publicacao: conteudo.data_publicacao ? new Date(conteudo.data_publicacao).toISOString() : new Date().toISOString(),
+          titulo: conteudo.titulo || 'Nova Publicação',
+          descricao: conteudo.descricao || null,
           tipo_conteudo: conteudo.tipo_conteudo || 'carrossel',
-          descricao: textoDescricao,
-          observacoes: textoDescricao,
-          roteiro_legenda: textoLegenda,
+          categoria: conteudo.categoria || 'avulso',
+          status: conteudo.status || 'planejado',
+          data_publicacao: conteudo.data_publicacao || new Date().toISOString(),
           projeto_id: conteudo.projeto_id || null,
           campanha_id: conteudo.campanha_id || null,
-          status: conteudo.status || 'nao_iniciado',
           responsavel_id: conteudo.responsavel_id || null,
-          categoria: conteudo.categoria || 'engajamento',
           link_producao: conteudo.link_producao || null,
           link_publicacao: conteudo.link_publicacao || null,
-          metricas: conteudo.metricas || { alcance: 0, curtidas: 0, salvamentos: 0, compartilhamentos: 0 },
+          roteiro_legenda: conteudo.roteiro_legenda || null,
+          observacoes: conteudo.observacoes || null,
           updated_at: new Date().toISOString(),
         };
 
@@ -309,7 +289,7 @@ function GestaoContent() {
           ...payload,
           projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
           campanhas_comunicacao: camp ? { titulo: camp.titulo } : null,
-          voluntarios: vol ? { nome_completo: vol.nome_completo, avatar_url: vol.avatar_url || undefined } : null,
+          voluntarios: vol ? { nome_completo: vol.nome_completo, avatar_url: vol.avatar_url } : null,
         } as unknown as ConteudoItem;
 
         setConteudos((prev) => [tempItem, ...prev]);
@@ -328,7 +308,7 @@ function GestaoContent() {
       loadConteudosOnly();
     } catch (err: any) {
       console.error('Erro ao salvar conteúdo:', err);
-      alert('Erro ao salvar conteúdo: ' + err.message);
+      alert('Erro ao salvar publicação: ' + err.message);
     }
   };
 
@@ -340,43 +320,63 @@ function GestaoContent() {
 
   const handleSaveCampanha = async (campanha: Partial<CampanhaItem>) => {
     try {
-      const payload: Record<string, any> = {
-        titulo: campanha.titulo,
-        projeto_id: campanha.projeto_id || null,
-        responsavel_id: campanha.responsavel_id || null,
-        status: campanha.status || 'planejamento',
-        data_inicio: campanha.data_inicio || null,
-        data_fim: campanha.data_fim || null,
-        resumo: campanha.resumo || null,
-        diagnostico_contexto: campanha.diagnostico_contexto || null,
-        personas_publico: campanha.personas_publico || {},
-        objetivos: campanha.objetivos || {},
-        estrategia_narrativa: campanha.estrategia_narrativa || {},
-        gatilhos_persuasao: campanha.gatilhos_persuasao || null,
-        canais_ferramentas: campanha.canais_ferramentas || [],
-        recursos_equipe: campanha.recursos_equipe || [],
-        indicadores_esperados: campanha.indicadores_esperados || {},
-        updated_at: new Date().toISOString(),
-      };
+      const proj = campanha.projeto_id !== undefined ? projetos.find((p) => p.id === campanha.projeto_id) : undefined;
+      const vol = campanha.responsavel_id !== undefined ? voluntarios.find((v) => v.id === campanha.responsavel_id) : undefined;
 
-      const proj = projetos.find((p) => p.id === campanha.projeto_id);
-      const vol = voluntarios.find((v) => v.id === campanha.responsavel_id);
+      if (campanha.id && !campanha.id.startsWith('local-')) {
+        const updatePayload: Record<string, any> = {
+          updated_at: new Date().toISOString(),
+        };
+        if (campanha.titulo !== undefined) updatePayload.titulo = campanha.titulo;
+        if (campanha.resumo !== undefined) updatePayload.resumo = campanha.resumo;
+        if (campanha.diagnostico_contexto !== undefined) updatePayload.diagnostico_contexto = campanha.diagnostico_contexto;
+        if (campanha.status !== undefined) updatePayload.status = campanha.status;
+        if (campanha.data_inicio !== undefined) updatePayload.data_inicio = campanha.data_inicio;
+        if (campanha.data_fim !== undefined) updatePayload.data_fim = campanha.data_fim;
+        if (campanha.personas_publico !== undefined) updatePayload.personas_publico = campanha.personas_publico;
+        if (campanha.objetivos !== undefined) updatePayload.objetivos = campanha.objetivos;
+        if (campanha.estrategia_narrativa !== undefined) updatePayload.estrategia_narrativa = campanha.estrategia_narrativa;
+        if (campanha.gatilhos_persuasao !== undefined) updatePayload.gatilhos_persuasao = campanha.gatilhos_persuasao;
+        if (campanha.canais_ferramentas !== undefined) updatePayload.canais_ferramentas = campanha.canais_ferramentas;
+        if (campanha.recursos_equipe !== undefined) updatePayload.recursos_equipe = campanha.recursos_equipe;
+        if (campanha.indicadores_esperados !== undefined) updatePayload.indicadores_esperados = campanha.indicadores_esperados;
+        if (campanha.projeto_id !== undefined) updatePayload.projeto_id = campanha.projeto_id;
+        if (campanha.responsavel_id !== undefined) updatePayload.responsavel_id = campanha.responsavel_id;
 
-      if (campanha.id && !campanha.id.startsWith('local-') && !campanha.id.startsWith('temp-')) {
         setCampanhas((prev) =>
           prev.map((c) =>
             c.id === campanha.id
               ? ({
                   ...c,
-                  ...payload,
-                  projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
-                  voluntarios: vol ? { nome_completo: vol.nome_completo } : null,
+                  ...updatePayload,
+                  ...(campanha.projeto_id !== undefined ? { projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null } : {}),
+                  ...(campanha.responsavel_id !== undefined ? { voluntarios: vol ? { nome_completo: vol.nome_completo } : null } : {}),
                 } as CampanhaItem)
               : c
           )
         );
-        await supabase.from('campanhas_comunicacao').update(payload).eq('id', campanha.id);
+
+        await supabase.from('campanhas_comunicacao').update(updatePayload).eq('id', campanha.id);
       } else {
+        const payload: Record<string, any> = {
+          titulo: campanha.titulo || 'Nova Campanha',
+          resumo: campanha.resumo || null,
+          diagnostico_contexto: campanha.diagnostico_contexto || null,
+          status: campanha.status || 'planejamento',
+          data_inicio: campanha.data_inicio || null,
+          data_fim: campanha.data_fim || null,
+          personas_publico: campanha.personas_publico || null,
+          objetivos: campanha.objetivos || null,
+          estrategia_narrativa: campanha.estrategia_narrativa || null,
+          gatilhos_persuasao: campanha.gatilhos_persuasao || null,
+          canais_ferramentas: campanha.canais_ferramentas || [],
+          recursos_equipe: campanha.recursos_equipe || [],
+          indicadores_esperados: campanha.indicadores_esperados || null,
+          projeto_id: campanha.projeto_id || null,
+          responsavel_id: campanha.responsavel_id || null,
+          updated_at: new Date().toISOString(),
+        };
+
         const tempId = `local-${Date.now()}`;
         const tempItem: CampanhaItem = {
           id: tempId,
@@ -414,35 +414,46 @@ function GestaoContent() {
 
   const handleSaveGaleria = async (item: Partial<GaleriaItem>) => {
     try {
-      const payload: Record<string, any> = {
-        titulo: item.titulo,
-        projeto_id: item.projeto_id || null,
-        data_evento: item.data_evento || new Date().toISOString().slice(0, 10),
-        link_drive: item.link_drive,
-        fotografo_voluntario_id: item.fotografo_voluntario_id || null,
-        descricao: item.descricao || null,
-        tags: item.tags || [],
-        updated_at: new Date().toISOString(),
-      };
-
-      const proj = projetos.find((p) => p.id === item.projeto_id);
-      const vol = voluntarios.find((v) => v.id === item.fotografo_voluntario_id);
+      const proj = item.projeto_id !== undefined ? projetos.find((p) => p.id === item.projeto_id) : undefined;
+      const vol = item.fotografo_voluntario_id !== undefined ? voluntarios.find((v) => v.id === item.fotografo_voluntario_id) : undefined;
 
       if (item.id && !item.id.startsWith('local-')) {
+        const updatePayload: Record<string, any> = {
+          updated_at: new Date().toISOString(),
+        };
+        if (item.titulo !== undefined) updatePayload.titulo = item.titulo;
+        if (item.descricao !== undefined) updatePayload.descricao = item.descricao;
+        if (item.link_drive !== undefined) updatePayload.link_drive = item.link_drive;
+        if (item.data_evento !== undefined) updatePayload.data_evento = item.data_evento;
+        if (item.tags !== undefined) updatePayload.tags = item.tags;
+        if (item.projeto_id !== undefined) updatePayload.projeto_id = item.projeto_id;
+        if (item.fotografo_voluntario_id !== undefined) updatePayload.fotografo_voluntario_id = item.fotografo_voluntario_id;
+
         setGaleria((prev) =>
           prev.map((g) =>
             g.id === item.id
               ? ({
                   ...g,
-                  ...payload,
-                  projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
-                  voluntarios: vol ? { nome_completo: vol.nome_completo } : null,
+                  ...updatePayload,
+                  ...(item.projeto_id !== undefined ? { projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null } : {}),
+                  ...(item.fotografo_voluntario_id !== undefined ? { voluntarios: vol ? { nome_completo: vol.nome_completo } : null } : {}),
                 } as GaleriaItem)
               : g
           )
         );
-        await supabase.from('galeria_midia_acoes').update(payload).eq('id', item.id);
+
+        await supabase.from('galeria_midia_acoes').update(updatePayload).eq('id', item.id);
       } else {
+        const payload: Record<string, any> = {
+          titulo: item.titulo || 'Nova Pasta de Mídia',
+          descricao: item.descricao || null,
+          link_drive: item.link_drive || 'https://drive.google.com',
+          data_evento: item.data_evento || new Date().toISOString().slice(0, 10),
+          tags: item.tags || [],
+          projeto_id: item.projeto_id || null,
+          fotografo_voluntario_id: item.fotografo_voluntario_id || null,
+        };
+
         const tempId = `local-${Date.now()}`;
         const tempItem: GaleriaItem = {
           id: tempId,
@@ -477,142 +488,11 @@ function GestaoContent() {
     loadGaleriaOnly();
   };
 
-  const handleSaveTicket = async (ticket: Partial<SolicitacaoComunicacaoItem>) => {
-    try {
-      const proj = ticket.projeto_id !== undefined ? projetos.find((p) => p.id === ticket.projeto_id) : undefined;
-      const volResp = ticket.responsavel_comunicacao_id !== undefined ? voluntarios.find((v) => v.id === ticket.responsavel_comunicacao_id) : undefined;
-
-      if (ticket.id && !ticket.id.startsWith('local-')) {
-        const updatePayload: Record<string, any> = {
-          updated_at: new Date().toISOString(),
-        };
-        if (ticket.titulo !== undefined) updatePayload.titulo = ticket.titulo;
-        if (ticket.projeto_id !== undefined) updatePayload.projeto_id = ticket.projeto_id;
-        if (ticket.solicitante_id !== undefined) updatePayload.solicitante_id = ticket.solicitante_id;
-        if (ticket.solicitante_nome !== undefined) updatePayload.solicitante_nome = ticket.solicitante_nome;
-        if (ticket.tipo_material !== undefined) updatePayload.tipo_material = ticket.tipo_material;
-        if (ticket.publico_alvo !== undefined) updatePayload.publico_alvo = ticket.publico_alvo;
-        if (ticket.objetivo !== undefined) updatePayload.objetivo = ticket.objetivo;
-        if (ticket.descricao_detalhes !== undefined) updatePayload.descricao_detalhes = ticket.descricao_detalhes;
-        if (ticket.prazo_desejado !== undefined) updatePayload.prazo_desejado = ticket.prazo_desejado;
-        if (ticket.urgencia !== undefined) updatePayload.urgencia = ticket.urgencia;
-        if (ticket.links_referencia !== undefined) updatePayload.links_referencia = ticket.links_referencia;
-        if (ticket.status !== undefined) updatePayload.status = ticket.status;
-        if (ticket.resposta_comunicacao !== undefined) updatePayload.resposta_comunicacao = ticket.resposta_comunicacao;
-        if (ticket.responsavel_comunicacao_id !== undefined) updatePayload.responsavel_comunicacao_id = ticket.responsavel_comunicacao_id;
-        if (ticket.conteudo_criado_id !== undefined) updatePayload.conteudo_criado_id = ticket.conteudo_criado_id;
-
-        setTickets((prev) =>
-          prev.map((t) =>
-            t.id === ticket.id
-              ? ({
-                  ...t,
-                  ...updatePayload,
-                  ...(proj !== undefined ? { projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null } : {}),
-                  ...(volResp !== undefined ? { responsavel: volResp ? { nome_completo: volResp.nome_completo } : null } : {}),
-                } as SolicitacaoComunicacaoItem)
-              : t
-          )
-        );
-
-        await supabase.from('solicitacoes_comunicacao').update(updatePayload).eq('id', ticket.id);
-      } else {
-        const payload: Record<string, any> = {
-          titulo: ticket.titulo || 'Nova Solicitação',
-          projeto_id: ticket.projeto_id || null,
-          solicitante_id: ticket.solicitante_id || null,
-          solicitante_nome: ticket.solicitante_nome || null,
-          tipo_material: ticket.tipo_material || 'carrossel',
-          publico_alvo: ticket.publico_alvo || null,
-          objetivo: ticket.objetivo || null,
-          descricao_detalhes: ticket.descricao_detalhes || null,
-          prazo_desejado: ticket.prazo_desejado || null,
-          urgencia: ticket.urgencia || 'normal',
-          links_referencia: ticket.links_referencia || null,
-          status: ticket.status || 'pendente',
-          resposta_comunicacao: ticket.resposta_comunicacao || null,
-          responsavel_comunicacao_id: ticket.responsavel_comunicacao_id || null,
-          conteudo_criado_id: ticket.conteudo_criado_id || null,
-          updated_at: new Date().toISOString(),
-        };
-
-        const tempId = `local-${Date.now()}`;
-        const tempItem: SolicitacaoComunicacaoItem = {
-          id: tempId,
-          created_at: new Date().toISOString(),
-          ...payload,
-          projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
-          responsavel: volResp ? { nome_completo: volResp.nome_completo } : null,
-        } as unknown as SolicitacaoComunicacaoItem;
-
-        setTickets((prev) => [tempItem, ...prev]);
-
-        const { data, error } = await supabase
-          .from('solicitacoes_comunicacao')
-          .insert([payload])
-          .select('*, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
-          .single();
-
-        if (!error && data) {
-          setTickets((prev) => prev.map((t) => (t.id === tempId ? (data as SolicitacaoComunicacaoItem) : t)));
-        }
-      }
-
-      loadTicketsOnly();
-    } catch (err: any) {
-      console.error('Erro ao salvar ticket:', err);
-      alert('Erro ao salvar solicitação: ' + err.message);
-    }
-  };
-
-  const handleDeleteTicket = async (id: string) => {
-    setTickets((prev) => prev.filter((t) => t.id !== id));
-    await supabase.from('solicitacoes_comunicacao').delete().eq('id', id);
-    loadTicketsOnly();
-  };
-
-  const handleConvertToConteudo = (ticket: SolicitacaoComunicacaoItem) => {
-    const tipoMap: Record<string, ConteudoItem['tipo_conteudo']> = {
-      carrossel: 'carrossel',
-      reels: 'reels',
-      stories: 'stories',
-      estatico: 'estatico',
-      video_longo: 'video_longo',
-      artigo: 'artigo',
-      feed_carrossel: 'carrossel',
-      reels_video: 'reels',
-      story: 'stories',
-      banner_impresso: 'estatico',
-      cracha: 'estatico',
-      camiseta: 'estatico',
-      apresentacao_pdf: 'carrossel',
-      cobertura_foto_video: 'reels',
-      outro: 'estatico',
-    };
-
-    const prefill: Partial<ConteudoItem> = {
-      titulo: ticket.titulo,
-      projeto_id: ticket.projeto_id || undefined,
-      tipo_conteudo: tipoMap[ticket.tipo_material] || 'carrossel',
-      observacoes: ticket.descricao_detalhes || undefined,
-      roteiro_legenda: ticket.objetivo ? `Objetivo: ${ticket.objetivo}\nPúblico: ${ticket.publico_alvo || 'Geral'}` : undefined,
-      data_publicacao: ticket.prazo_desejado ? new Date(ticket.prazo_desejado).toISOString() : new Date().toISOString(),
-      categoria: 'avulso',
-      link_producao: ticket.links_referencia || undefined,
-      status: 'producao',
-    };
-
-    setPrefillConteudo(prefill);
-    setActiveTab('calendario');
-    router.replace('/dashboard/comunicacao/gestao?tab=calendario', { scroll: false });
-    handleSaveTicket({ id: ticket.id, status: 'em_producao' });
-  };
-
   return (
     <div className="flex-1 flex flex-col min-w-0">
       <Topbar
         title="Gestão de Comunicação"
-        subtitle="Planejamento Editorial, Campanhas Estratégicas, Acervo no Google Drive e Demandas"
+        subtitle="Planejamento Editorial, Campanhas Estratégicas e Acervo no Google Drive"
       />
 
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6 flex-1 overflow-y-auto">
@@ -687,20 +567,6 @@ function GestaoContent() {
               onRefresh={loadAllData}
               onSaveGaleria={handleSaveGaleria}
               onDeleteGaleria={handleDeleteGaleria}
-            />
-          )}
-
-          {activeTab === 'tickets' && (
-            <ComunicacaoTickets
-              tickets={tickets}
-              projetos={projetos}
-              voluntarios={voluntarios}
-              loading={loading}
-              onRefresh={loadAllData}
-              onSaveTicket={handleSaveTicket}
-              onDeleteTicket={handleDeleteTicket}
-              onConvertToConteudo={handleConvertToConteudo}
-              initialOpenNew={novoParam}
             />
           )}
         </div>

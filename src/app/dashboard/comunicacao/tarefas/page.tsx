@@ -254,7 +254,11 @@ function TarefasContent() {
           onUpdateTicketStatus={handleUpdateTicketStatus}
           onUpdateChecklist={handleUpdateChecklist}
           onNavigateToTab={(tab) => {
-            router.push(`/dashboard/comunicacao/gestao?tab=${tab}`);
+            if (tab === 'tickets') {
+              router.push('/dashboard/comunicacao/tickets');
+            } else {
+              router.push(`/dashboard/comunicacao/gestao?tab=${tab}`);
+            }
           }}
         />
       </div>

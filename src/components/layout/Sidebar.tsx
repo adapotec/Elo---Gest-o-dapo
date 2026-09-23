@@ -28,6 +28,7 @@ import {
   X,
   ShieldCheck,
   LayoutGrid,
+  FileText,
 } from 'lucide-react';
 
 interface MenuItemChild {
@@ -79,6 +80,7 @@ const navigationItems: MenuItem[] = [
     children: [
       { name: 'Quadro de Tarefas', href: '/dashboard/comunicacao/tarefas', icon: LayoutGrid, color: '#EF4444' },
       { name: 'Gestão Comunicação', href: '/dashboard/comunicacao/gestao', icon: Calendar, color: '#F2632D' },
+      { name: 'Solicitações & Tickets', href: '/dashboard/comunicacao/tickets', icon: FileText, color: '#8B5CF6' },
       { name: 'Indicadores', href: '/dashboard/comunicacao/indicadores', icon: BarChart3, color: '#3B82F6' },
     ],
   },

@@ -15,9 +15,11 @@ function ComunicacaoRedirect() {
       router.replace('/dashboard/comunicacao/indicadores');
     } else if (tab === 'tarefas') {
       router.replace('/dashboard/comunicacao/tarefas');
-    } else if (tab && ['calendario', 'campanhas', 'galeria', 'tickets'].includes(tab)) {
-      const query = novo ? `?tab=${tab}&novo=true` : `?tab=${tab}`;
-      router.replace(`/dashboard/comunicacao/gestao${query}`);
+    } else if (tab === 'tickets') {
+      const query = novo ? '?novo=true' : '';
+      router.replace(`/dashboard/comunicacao/tickets${query}`);
+    } else if (tab && ['calendario', 'campanhas', 'galeria'].includes(tab)) {
+      router.replace(`/dashboard/comunicacao/gestao?tab=${tab}`);
     } else {
       router.replace('/dashboard/comunicacao/tarefas');
     }
