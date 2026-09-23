@@ -21,7 +21,10 @@ const safeSetItem = (key: string, value: any) => {
   }
 };
 
-async function safeFetch<T>(promise: PromiseLike<{ data: T | null; error: any }>, timeoutMs = 8000): Promise<{ data: T | null; error: any }> {
+async function safeFetch<T>(
+  promise: PromiseLike<{ data: T | null; error: any }>,
+  timeoutMs = 15000
+): Promise<{ data: T | null; error: any }> {
   try {
     const timeout = new Promise<{ data: null; error: any }>((resolve) =>
       setTimeout(() => resolve({ data: null, error: new Error('Timeout') }), timeoutMs)
@@ -72,23 +75,23 @@ function TarefasContent() {
     try {
       const [respProj, respVol, respTar, respCont, respTick] = await Promise.all([
         safeFetch(supabase.from('projetos_sociais').select('id, nome, cor_identificacao').order('nome')),
-        safeFetch(supabase.from('voluntarios').select('*').eq('status', 'ativo').order('nome_completo')),
+        safeFetch(supabase.from('voluntarios').select('id, nome_completo, area_atuacao, funcao, status').eq('status', 'ativo').order('nome_completo')),
         safeFetch(
           supabase
             .from('tarefas_comunicacao')
-            .select('*, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo, avatar_url)')
+            .select('id, titulo, descricao, status, prioridade, data_limite, etiquetas, checklist, projeto_id, responsavel_id, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
             .order('created_at', { ascending: false })
         ),
         safeFetch(
           supabase
             .from('conteudos_comunicacao')
-            .select('*, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo, avatar_url)')
+            .select('id, titulo, descricao, observacoes, roteiro_legenda, status, tipo_conteudo, categoria, data_publicacao, link_producao, link_publicacao, checklist, projeto_id, responsavel_id, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo)')
             .order('data_publicacao', { ascending: true })
         ),
         safeFetch(
           supabase
             .from('solicitacoes_comunicacao')
-            .select('*, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo, avatar_url)')
+            .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
             .order('created_at', { ascending: false })
         ),
       ]);
@@ -152,7 +155,7 @@ function TarefasContent() {
                   ...t,
                   ...updatePayload,
                   ...(tarefa.projeto_id !== undefined ? { projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null } : {}),
-                  ...(tarefa.responsavel_id !== undefined ? { voluntarios: vol ? { nome_completo: vol.nome_completo, avatar_url: vol.avatar_url } : null } : {}),
+                  ...(tarefa.responsavel_id !== undefined ? { voluntarios: vol ? { nome_completo: vol.nome_completo } : null } : {}),
                 } as TarefaAvulsaItem)
               : t
           )
@@ -179,7 +182,7 @@ function TarefasContent() {
           created_at: new Date().toISOString(),
           ...payload,
           projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
-          voluntarios: vol ? { nome_completo: vol.nome_completo, avatar_url: vol.avatar_url } : null,
+          voluntarios: vol ? { nome_completo: vol.nome_completo } : null,
         } as unknown as TarefaAvulsaItem;
 
         setTarefas((prev) => [tempItem, ...prev]);
@@ -187,7 +190,7 @@ function TarefasContent() {
         const { data, error } = await supabase
           .from('tarefas_comunicacao')
           .insert([payload])
-          .select('*, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo, avatar_url)')
+          .select('id, titulo, descricao, status, prioridade, data_limite, etiquetas, checklist, projeto_id, responsavel_id, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
           .single();
 
         if (!error && data) {

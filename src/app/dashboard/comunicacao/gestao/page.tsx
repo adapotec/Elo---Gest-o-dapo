@@ -126,7 +126,7 @@ function GestaoContent() {
     try {
       const [respProj, respVol] = await Promise.all([
         safeFetch(supabase.from('projetos_sociais').select('id, nome, cor_identificacao').order('nome')),
-        safeFetch(supabase.from('voluntarios').select('*').eq('status', 'ativo').order('nome_completo')),
+        safeFetch(supabase.from('voluntarios').select('id, nome_completo, area_atuacao, funcao, status').eq('status', 'ativo').order('nome_completo')),
       ]);
 
       if (respProj?.data) {
@@ -170,7 +170,7 @@ function GestaoContent() {
       const resp = await safeFetch(
         supabase
           .from('conteudos_comunicacao')
-          .select('*, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo, avatar_url)')
+          .select('id, titulo, descricao, observacoes, roteiro_legenda, status, tipo_conteudo, categoria, data_publicacao, link_producao, link_publicacao, checklist, projeto_id, responsavel_id, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo)')
           .order('data_publicacao', { ascending: true })
       );
       if (resp?.data && !resp.error) {
@@ -257,7 +257,7 @@ function GestaoContent() {
                   ...updatePayload,
                   ...(conteudo.projeto_id !== undefined ? { projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null } : {}),
                   ...(conteudo.campanha_id !== undefined ? { campanhas_comunicacao: camp ? { titulo: camp.titulo } : null } : {}),
-                  ...(conteudo.responsavel_id !== undefined ? { voluntarios: vol ? { nome_completo: vol.nome_completo, avatar_url: vol.avatar_url } : null } : {}),
+                  ...(conteudo.responsavel_id !== undefined ? { voluntarios: vol ? { nome_completo: vol.nome_completo } : null } : {}),
                 } as ConteudoItem)
               : c
           )
@@ -289,7 +289,7 @@ function GestaoContent() {
           ...payload,
           projetos_sociais: proj ? { nome: proj.nome, cor_identificacao: proj.cor_identificacao } : null,
           campanhas_comunicacao: camp ? { titulo: camp.titulo } : null,
-          voluntarios: vol ? { nome_completo: vol.nome_completo, avatar_url: vol.avatar_url } : null,
+          voluntarios: vol ? { nome_completo: vol.nome_completo } : null,
         } as unknown as ConteudoItem;
 
         setConteudos((prev) => [tempItem, ...prev]);
@@ -297,7 +297,7 @@ function GestaoContent() {
         const { data, error } = await supabase
           .from('conteudos_comunicacao')
           .insert([payload])
-          .select('*, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo, avatar_url)')
+          .select('id, titulo, descricao, observacoes, roteiro_legenda, status, tipo_conteudo, categoria, data_publicacao, link_producao, link_publicacao, checklist, projeto_id, responsavel_id, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo)')
           .single();
 
         if (!error && data) {

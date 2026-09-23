@@ -70,7 +70,7 @@ function TicketsContent() {
         safeFetch(
           supabase
             .from('solicitacoes_comunicacao')
-            .select('*, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo, avatar_url)')
+            .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
             .order('created_at', { ascending: false })
         ),
         safeFetch(
@@ -82,7 +82,7 @@ function TicketsContent() {
         safeFetch(
           supabase
             .from('voluntarios')
-            .select('*')
+            .select('id, nome_completo, area_atuacao, funcao, status')
             .eq('status', 'ativo')
             .order('nome_completo')
         ),
@@ -180,7 +180,7 @@ function TicketsContent() {
         const { data, error } = await supabase
           .from('solicitacoes_comunicacao')
           .insert([payload])
-          .select('*, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo, avatar_url)')
+          .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
           .single();
 
         if (!error && data) {
