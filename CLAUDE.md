@@ -53,6 +53,29 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-09-24 — `[COMUNICAÇÃO] & [BUGFIX TIMEZONE & DATAS DO CALENDÁRIO EDITORIAL]` 🔴 CRÍTICO
+
+**Correção de Desvio de Fuso Horário (UTC vs Horário de Brasília) no Calendário Editorial e Gestão de Comunicação**
+- **Causa Raiz Identificada no Banco (Supabase MCP)**:
+  - A coluna `data_publicacao` da tabela `public.conteudos_comunicacao` é do tipo `TIMESTAMPTZ` (armazenada em UTC pelo PostgreSQL).
+  - O input HTML5 `<input type="datetime-local">` produz strings de data/hora sem indicador de fuso horário (ex.: `"2026-09-25T02:01"`).
+  - Ao salvar no Supabase sem conversão de timezone explícita, o PostgreSQL assumia UTC (`2026-09-25 02:01:00+00`).
+  - No navegador do usuário (Horário de Brasília, UTC-3), `new Date()` subtraía 3 horas ao exibir a data, transformando `02:01` do dia 25/09 em `23:01` do dia anterior (24/09).
+  - Ao abrir o modal para editar, `item.data_publicacao.slice(0, 16)` lia a string crua UTC (`2026-09-25T02:01`), criando discrepância visual gritante: o modal mostrava dia 25/09, mas a tabela e o calendário mostravam dia 24/09.
+- **Solução Arquitetural Aplicada**:
+  - Criado o módulo utilitário `src/lib/utils/dateTimeUtils.ts` com funções puras e determinísticas:
+    - `formatToDateTimeLocal()`: Converte timestamps UTC do Supabase/Postgres no formato local `YYYY-MM-DDTHH:mm` para pré-popular `<input type="datetime-local">`.
+    - `parseDateTimeLocalToISO()`: Converte strings locais do input em ISO 8601 completo em UTC com fuso horário local preservado.
+    - `getLocalMonthFromDateStr()`: Extrai o mês local (0 a 11) com base no fuso horário do usuário, alinhando filtros mensais à grade visual.
+  - Atualizados `ComunicacaoCalendario.tsx`, `gestao/page.tsx` e `ProjetoComunicacao.tsx` para usar o conversor bidirecional.
+  - **Detecção Dinâmica de Conteúdos em Atraso (`isConteudoEmAtraso`)**:
+    - Anteriormente, o KPI "Em Atraso" e os filtros dependiam exclusivamente do status estático `c.status === 'em_atraso'`. Caso um post passasse da data/hora de publicação em `producao`, `analise` ou `nao_iniciado`, ele não era contabilizado como atrasado.
+    - Implementada a função unificada `isConteudoEmAtraso(c)` que avalia: se o conteúdo não for `publicado` nem `cancelado`, e tiver `data_publicacao < NOW()` (ou status explícito `em_atraso`), ele é automaticamente identificado como atrasado.
+    - KPI "Em Atraso", filtros reativos, badges da tabela, células do calendário mensal (com destaque visual de alerta), modal de detalhes, exportação em PDF e prioridade do Kanban atualizados com a regra inteligente.
+  - Registro de teste no Supabase (`lançamento Oficial - Amazônia Brincante`) ajustado diretamente via MCP para `2026-09-25 05:01:00+00` (correspondente a 25/09/2026 às 02:01 no fuso de Brasília), sincronizando perfeitamente na visualização de tabela e grade do calendário.
+
+---
+
 ### 2026-09-10 — `[DASHBOARD] & [GALERIA DRIVE DINÂMICA & MOVIMENTAÇÕES EM TEMPO REAL]` 🟢 IMPLEMENTADO
 
 **Dinamização da Tela Inicial (/dashboard): Links Recentes de Comunicação e Feed em Tempo Real**

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { PapelTimbradoModal } from '@/components/ui/PapelTimbradoModal';
+import { parseDateTimeLocalToISO } from '@/lib/utils/dateTimeUtils';
 import {
   Megaphone,
   Image,
@@ -146,7 +147,7 @@ export function ProjetoComunicacao({
           titulo: formPeca.titulo_peca,
           tipo_conteudo: dbTipo,
           status: dbStatus,
-          data_publicacao: formPeca.prazo_entrega ? new Date(formPeca.prazo_entrega).toISOString() : new Date().toISOString(),
+          data_publicacao: formPeca.prazo_entrega ? parseDateTimeLocalToISO(`${formPeca.prazo_entrega}T12:00:00`) : new Date().toISOString(),
           link_producao: formPeca.link_midia || null,
           descricao: formPeca.observacoes || null,
           categoria: 'institucional',

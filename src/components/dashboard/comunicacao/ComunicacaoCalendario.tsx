@@ -41,6 +41,12 @@ import {
   Check,
 } from 'lucide-react';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
+import {
+  formatToDateTimeLocal,
+  parseDateTimeLocalToISO,
+  getLocalMonthFromDateStr,
+  isConteudoEmAtraso,
+} from '@/lib/utils/dateTimeUtils';
 
 export interface ConteudoItem {
   id: string;
@@ -176,8 +182,8 @@ export function ComunicacaoCalendario({
       setFormTitulo(prefillConteudo.titulo || '');
       setFormDataPub(
         prefillConteudo.data_publicacao
-          ? prefillConteudo.data_publicacao.slice(0, 16)
-          : new Date().toISOString().slice(0, 16)
+          ? formatToDateTimeLocal(prefillConteudo.data_publicacao)
+          : formatToDateTimeLocal(new Date())
       );
       setFormTipo(prefillConteudo.tipo_conteudo || 'reels');
       setFormObservacoes(prefillConteudo.observacoes || prefillConteudo.descricao || '');
@@ -198,7 +204,7 @@ export function ComunicacaoCalendario({
   const handleOpenNewModal = (datePrefill?: string) => {
     setEditingConteudo(null);
     setFormTitulo('');
-    setFormDataPub(datePrefill || new Date().toISOString().slice(0, 16));
+    setFormDataPub(datePrefill || formatToDateTimeLocal(new Date()));
     setFormTipo('reels');
     setFormObservacoes('');
     setFormRoteiroLegenda('');
@@ -216,7 +222,7 @@ export function ComunicacaoCalendario({
   const handleOpenEditModal = (item: ConteudoItem) => {
     setEditingConteudo(item);
     setFormTitulo(item.titulo);
-    setFormDataPub(item.data_publicacao ? item.data_publicacao.slice(0, 16) : '');
+    setFormDataPub(item.data_publicacao ? formatToDateTimeLocal(item.data_publicacao) : '');
     setFormTipo(item.tipo_conteudo);
     const legInicial = (item.roteiro_legenda || '').trim();
     let obsInicial = (item.observacoes || '').trim();
@@ -293,7 +299,7 @@ export function ComunicacaoCalendario({
     try {
       const payload: Partial<ConteudoItem> = {
         titulo: formTitulo.trim(),
-        data_publicacao: formDataPub,
+        data_publicacao: parseDateTimeLocalToISO(formDataPub),
         tipo_conteudo: formTipo,
         observacoes: formObservacoes.trim() || null,
         descricao: formObservacoes.trim() || null,
@@ -336,16 +342,9 @@ export function ComunicacaoCalendario({
     }
   }, [mesFilter]);
 
-  // Helper robusto para extrair o mês (0 a 11) independente de timezone UTC/local
+  // Helper robusto para extrair o mês (0 a 11) no fuso horário local
   const getMesFromDateStr = (dateStr?: string | null): number | null => {
-    if (!dateStr) return null;
-    const match = dateStr.match(/^\d{4}-(\d{2})/);
-    if (match) {
-      const m = parseInt(match[1], 10);
-      return !isNaN(m) && m >= 1 && m <= 12 ? m - 1 : null;
-    }
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d.getMonth();
+    return getLocalMonthFromDateStr(dateStr);
   };
 
   // Filtragem Geral
@@ -365,7 +364,14 @@ export function ComunicacaoCalendario({
       const matchProj =
         projetoFilter === 'todos' ||
         (projetoFilter === 'institucional' ? !c.projeto_id : c.projeto_id === projetoFilter);
-      const matchStat = statusFilter === 'todos' || c.status === statusFilter;
+      const isAtrasado = isConteudoEmAtraso(c);
+      const matchStat =
+        statusFilter === 'todos' ||
+        (statusFilter === 'em_atraso'
+          ? isAtrasado
+          : statusFilter === 'producao'
+          ? (c.status === 'producao' || c.status === 'analise') && !isAtrasado
+          : c.status === statusFilter);
       const matchTipo = tipoFilter === 'todos' || c.tipo_conteudo === tipoFilter;
       const matchCat = categoriaFilter === 'todos' || c.categoria === categoriaFilter;
 
@@ -440,7 +446,14 @@ export function ComunicacaoCalendario({
 
       const postMes = getMesFromDateStr(c.data_publicacao);
       const matchMes = mesFilter === 'todos' || postMes === Number(mesFilter);
-      const matchStat = statusFilter === 'todos' || c.status === statusFilter;
+      const isAtrasado = isConteudoEmAtraso(c);
+      const matchStat =
+        statusFilter === 'todos' ||
+        (statusFilter === 'em_atraso'
+          ? isAtrasado
+          : statusFilter === 'producao'
+          ? (c.status === 'producao' || c.status === 'analise') && !isAtrasado
+          : c.status === statusFilter);
       const matchTipo = tipoFilter === 'todos' || c.tipo_conteudo === tipoFilter;
       const matchCat = categoriaFilter === 'todos' || c.categoria === categoriaFilter;
 
@@ -452,8 +465,10 @@ export function ComunicacaoCalendario({
   const stats = useMemo(() => {
     const total = baseConteudosParaKpis.length;
     const publicados = baseConteudosParaKpis.filter((c) => c.status === 'publicado').length;
-    const emProducao = baseConteudosParaKpis.filter((c) => c.status === 'producao' || c.status === 'analise').length;
-    const atrasados = baseConteudosParaKpis.filter((c) => c.status === 'em_atraso').length;
+    const atrasados = baseConteudosParaKpis.filter(isConteudoEmAtraso).length;
+    const emProducao = baseConteudosParaKpis.filter(
+      (c) => (c.status === 'producao' || c.status === 'analise') && !isConteudoEmAtraso(c)
+    ).length;
     return { total, publicados, emProducao, atrasados };
   }, [baseConteudosParaKpis]);
 
@@ -508,7 +523,17 @@ export function ComunicacaoCalendario({
   };
 
   // Helper de badges de status com alto contraste
-  const renderStatusBadge = (status: ConteudoItem['status']) => {
+  const renderStatusBadge = (status: ConteudoItem['status'], item?: ConteudoItem) => {
+    // Se o conteúdo tiver passado da data de publicação e não tiver sido publicado/cancelado
+    if (item && isConteudoEmAtraso(item)) {
+      return (
+        <Badge variant="danger" className="whitespace-nowrap flex items-center gap-1 shadow-2xs">
+          <AlertTriangle className="w-3 h-3 shrink-0" />
+          EM ATRASO
+        </Badge>
+      );
+    }
+
     switch (status) {
       case 'publicado':
         return <Badge variant="success" className="whitespace-nowrap">PUBLICADO</Badge>;
@@ -517,7 +542,12 @@ export function ComunicacaoCalendario({
       case 'analise':
         return <Badge variant="purple" className="whitespace-nowrap">EM ANÁLISE</Badge>;
       case 'em_atraso':
-        return <Badge variant="danger" className="whitespace-nowrap">EM ATRASO</Badge>;
+        return (
+          <Badge variant="danger" className="whitespace-nowrap flex items-center gap-1 shadow-2xs">
+            <AlertTriangle className="w-3 h-3 shrink-0" />
+            EM ATRASO
+          </Badge>
+        );
       case 'cancelado':
         return <Badge variant="neutral" className="whitespace-nowrap">CANCELADO</Badge>;
       default:
@@ -699,7 +729,7 @@ export function ComunicacaoCalendario({
       align: 'center',
       className: 'whitespace-nowrap',
       headerClassName: 'whitespace-nowrap',
-      render: (item) => renderStatusBadge(item.status),
+      render: (item) => renderStatusBadge(item.status, item),
     },
     {
       key: 'acoes',
@@ -1401,18 +1431,29 @@ export function ComunicacaoCalendario({
                         const postTime = post.data_publicacao
                           ? new Date(post.data_publicacao).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
                           : '';
+                        const postAtrasado = isConteudoEmAtraso(post);
 
                         return (
                           <div
                             key={post.id}
                             className="text-[10px] truncate px-1.5 py-0.5 rounded-md font-bold border flex items-center justify-between gap-1 shadow-2xs"
                             style={{
-                              backgroundColor: `${post.projetos_sociais?.cor_identificacao || '#F2632D'}15`,
-                              borderColor: `${post.projetos_sociais?.cor_identificacao || '#F2632D'}35`,
-                              color: post.projetos_sociais?.cor_identificacao || '#F2632D',
+                              backgroundColor: postAtrasado
+                                ? '#ef444415'
+                                : `${post.projetos_sociais?.cor_identificacao || '#F2632D'}15`,
+                              borderColor: postAtrasado
+                                ? '#ef444450'
+                                : `${post.projetos_sociais?.cor_identificacao || '#F2632D'}35`,
+                              color: postAtrasado
+                                ? '#dc2626'
+                                : post.projetos_sociais?.cor_identificacao || '#F2632D',
                             }}
+                            title={postAtrasado ? `${post.titulo} (EM ATRASO)` : post.titulo}
                           >
-                            <span className="truncate">{post.titulo}</span>
+                            <span className="truncate flex items-center gap-1">
+                              {postAtrasado && <AlertTriangle className="w-2.5 h-2.5 text-rose-500 shrink-0" />}
+                              {post.titulo}
+                            </span>
                             {postTime && <span className="text-[8px] opacity-75 shrink-0">{postTime}</span>}
                           </div>
                         );
@@ -1509,7 +1550,7 @@ export function ComunicacaoCalendario({
                           <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider bg-[var(--bg-elevated)] text-[var(--text-muted)] border border-[var(--border-default)]">
                             {post.categoria}
                           </span>
-                          {renderStatusBadge(post.status)}
+                          {renderStatusBadge(post.status, post)}
                         </div>
 
                         <div className="flex items-center gap-1 text-xs font-mono-data font-bold text-[var(--text-primary)]">
@@ -1683,7 +1724,7 @@ export function ComunicacaoCalendario({
                   <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)]">
                     {selectedConteudoDetalhes.categoria}
                   </span>
-                  {renderStatusBadge(selectedConteudoDetalhes.status)}
+                  {renderStatusBadge(selectedConteudoDetalhes.status, selectedConteudoDetalhes)}
                 </div>
                 <h3 className="font-display font-extrabold text-base sm:text-xl text-[var(--text-primary)] leading-snug">
                   {selectedConteudoDetalhes.titulo}
@@ -2300,13 +2341,13 @@ export function ComunicacaoCalendario({
               <div className="p-2.5 bg-amber-50 rounded border border-amber-200">
                 <p className="text-[10px] uppercase font-bold text-amber-700">Em Produção</p>
                 <p className="text-base font-bold text-amber-700">
-                  {filteredConteudos.filter((c) => c.status === 'producao' || c.status === 'analise').length}
+                  {filteredConteudos.filter((c) => (c.status === 'producao' || c.status === 'analise') && !isConteudoEmAtraso(c)).length}
                 </p>
               </div>
               <div className="p-2.5 bg-rose-50 rounded border border-rose-200">
                 <p className="text-[10px] uppercase font-bold text-rose-700">Em Atraso</p>
                 <p className="text-base font-bold text-rose-700">
-                  {filteredConteudos.filter((c) => c.status === 'em_atraso').length}
+                  {filteredConteudos.filter((c) => isConteudoEmAtraso(c)).length}
                 </p>
               </div>
             </div>
@@ -2371,7 +2412,7 @@ export function ComunicacaoCalendario({
                             {c.voluntarios?.nome_completo || 'Não atribuído'}
                           </td>
                           <td className="border border-slate-300 p-1.5 text-center font-bold">
-                            {c.status.toUpperCase()}
+                            {isConteudoEmAtraso(c) ? 'EM ATRASO' : c.status.toUpperCase()}
                           </td>
                           <td className="border border-slate-300 p-1.5 truncate text-[9px]">
                             {c.link_publicacao ? (

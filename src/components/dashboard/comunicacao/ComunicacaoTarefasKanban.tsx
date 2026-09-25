@@ -28,6 +28,7 @@ import {
 import { ConteudoItem } from './ComunicacaoCalendario';
 import { SolicitacaoComunicacaoItem } from './ComunicacaoTickets';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
+import { isConteudoEmAtraso } from '@/lib/utils/dateTimeUtils';
 
 export interface ChecklistItem {
   id: string;
@@ -157,7 +158,7 @@ export function ComunicacaoTarefasKanban({
         titulo: c.titulo || 'Sem título',
         descricao: c.descricao || c.observacoes || null,
         coluna,
-        prioridade: c.status === 'em_atraso' ? 'urgente' : 'normal',
+        prioridade: (c.status === 'em_atraso' || isConteudoEmAtraso(c)) ? 'urgente' : 'normal',
         projetoNome: c.projetos_sociais?.nome,
         projetoCor: c.projetos_sociais?.cor_identificacao || '#F2632D',
         responsavelNome: c.voluntarios?.nome_completo,

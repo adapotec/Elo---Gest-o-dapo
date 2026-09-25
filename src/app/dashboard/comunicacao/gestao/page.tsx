@@ -23,6 +23,7 @@ import {
   GaleriaItem,
 } from '@/components/dashboard/comunicacao/ComunicacaoGaleria';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
+import { parseDateTimeLocalToISO } from '@/lib/utils/dateTimeUtils';
 
 type GestaoTabKey = 'calendario' | 'campanhas' | 'galeria';
 
@@ -240,7 +241,7 @@ function GestaoContent() {
         if (conteudo.tipo_conteudo !== undefined) updatePayload.tipo_conteudo = conteudo.tipo_conteudo;
         if (conteudo.categoria !== undefined) updatePayload.categoria = conteudo.categoria;
         if (conteudo.status !== undefined) updatePayload.status = conteudo.status;
-        if (conteudo.data_publicacao !== undefined) updatePayload.data_publicacao = conteudo.data_publicacao;
+        if (conteudo.data_publicacao !== undefined) updatePayload.data_publicacao = parseDateTimeLocalToISO(conteudo.data_publicacao);
         if (conteudo.projeto_id !== undefined) updatePayload.projeto_id = conteudo.projeto_id;
         if (conteudo.campanha_id !== undefined) updatePayload.campanha_id = conteudo.campanha_id;
         if (conteudo.responsavel_id !== undefined) updatePayload.responsavel_id = conteudo.responsavel_id;
@@ -271,7 +272,7 @@ function GestaoContent() {
           tipo_conteudo: conteudo.tipo_conteudo || 'carrossel',
           categoria: conteudo.categoria || 'avulso',
           status: conteudo.status || 'planejado',
-          data_publicacao: conteudo.data_publicacao || new Date().toISOString(),
+          data_publicacao: parseDateTimeLocalToISO(conteudo.data_publicacao),
           projeto_id: conteudo.projeto_id || null,
           campanha_id: conteudo.campanha_id || null,
           responsavel_id: conteudo.responsavel_id || null,
