@@ -41,6 +41,7 @@ export interface SolicitacaoComunicacaoItem {
   resposta_comunicacao?: string | null;
   responsavel_comunicacao_id?: string | null;
   conteudo_criado_id?: string | null;
+  checklist?: any[] | null;
   created_at?: string;
   updated_at?: string;
   projetos_sociais?: { nome: string; cor_identificacao?: string } | null;

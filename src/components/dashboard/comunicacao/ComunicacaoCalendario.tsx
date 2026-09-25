@@ -63,6 +63,9 @@ export interface ConteudoItem {
   categoria: 'engajamento' | 'informacao' | 'cta' | 'institucional' | 'avulso' | 'depoimento';
   link_producao?: string | null;
   link_publicacao?: string | null;
+  checklist?: any[] | null;
+  created_at?: string;
+  updated_at?: string;
   metricas?: Record<string, any> | null;
   projetos_sociais?: { nome: string; cor_identificacao?: string } | null;
   campanhas_comunicacao?: { titulo: string } | null;

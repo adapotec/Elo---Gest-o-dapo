@@ -78,6 +78,8 @@
       - *Título (A-Z)*
   - **Destaque Visual de Atraso**:
     - Cartões com prazo vencido recebem tipografia em vermelho suave (`text-rose-600`), ícone `AlertTriangle` e badge `Atrasado` para alerta visual imediato.
+  - **Ajuste de Tipagem TypeScript (`build` Vercel)**:
+    - Adicionadas propriedades opcionais `created_at?: string`, `updated_at?: string` e `checklist?: any[] | null` nas interfaces `ConteudoItem` e `SolicitacaoComunicacaoItem`, corrigindo erro de checagem do compilador Next.js na Vercel (TS2339).
 
 ---
 

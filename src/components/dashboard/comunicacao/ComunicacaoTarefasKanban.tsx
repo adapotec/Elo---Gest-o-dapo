@@ -173,7 +173,7 @@ export function ComunicacaoTarefasKanban({
         responsavelNome: c.voluntarios?.nome_completo,
         dataLimite: c.data_publicacao,
         tipoRotulo: `Rede Social (${c.tipo_conteudo?.toUpperCase() || 'POST'})`,
-        checklist: Array.isArray((c as any).checklist) ? (c as any).checklist : [],
+        checklist: Array.isArray(c.checklist) ? (c.checklist as any) : [],
         rawItem: c,
         createdAt: c.created_at,
       });
@@ -198,7 +198,7 @@ export function ComunicacaoTarefasKanban({
         solicitanteNome: t.solicitante_nome || t.solicitante?.nome_completo,
         dataLimite: t.prazo_desejado,
         tipoRotulo: `Demanda (${(t.tipo_material || 'material').replace('_', ' ').toUpperCase()})`,
-        checklist: Array.isArray((t as any).checklist) ? (t as any).checklist : [],
+        checklist: Array.isArray(t.checklist) ? (t.checklist as any) : [],
         rawItem: t,
         createdAt: t.created_at,
       });
