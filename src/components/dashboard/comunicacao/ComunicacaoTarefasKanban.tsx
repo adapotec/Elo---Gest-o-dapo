@@ -25,11 +25,17 @@ import {
   Layers,
   GripVertical,
   Bookmark,
+  ArrowUpDown,
 } from 'lucide-react';
 import { ConteudoItem } from './ComunicacaoCalendario';
 import { SolicitacaoComunicacaoItem } from './ComunicacaoTickets';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
-import { isConteudoEmAtraso } from '@/lib/utils/dateTimeUtils';
+import {
+  isConteudoEmAtraso,
+  formatDisplayDate,
+  getComparableTimestamp,
+  isPrazoVencido,
+} from '@/lib/utils/dateTimeUtils';
 
 export interface ChecklistItem {
   id: string;
@@ -69,6 +75,7 @@ export interface KanbanCard {
   tipoRotulo: string;
   checklist?: ChecklistItem[] | null;
   rawItem: any;
+  createdAt?: string;
 }
 
 interface ProjetoSimples {
@@ -121,6 +128,7 @@ export function ComunicacaoTarefasKanban({
   const [origemFilter, setOrigemFilter] = useState<'todos' | 'tarefa' | 'conteudo' | 'ticket'>('todos');
   const [projetoFilter, setProjetoFilter] = useState<string>('todos');
   const [prioridadeFilter, setPrioridadeFilter] = useState<string>('todos');
+  const [ordenacao, setOrdenacao] = useState<'prazo_asc' | 'prazo_desc' | 'prioridade' | 'recentes' | 'alfabetica'>('prazo_asc');
 
   // Estados para Drag and Drop
   const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
@@ -167,6 +175,7 @@ export function ComunicacaoTarefasKanban({
         tipoRotulo: `Rede Social (${c.tipo_conteudo?.toUpperCase() || 'POST'})`,
         checklist: Array.isArray((c as any).checklist) ? (c as any).checklist : [],
         rawItem: c,
+        createdAt: c.created_at,
       });
     });
 
@@ -191,6 +200,7 @@ export function ComunicacaoTarefasKanban({
         tipoRotulo: `Demanda (${(t.tipo_material || 'material').replace('_', ' ').toUpperCase()})`,
         checklist: Array.isArray((t as any).checklist) ? (t as any).checklist : [],
         rawItem: t,
+        createdAt: t.created_at,
       });
     });
 
@@ -215,6 +225,7 @@ export function ComunicacaoTarefasKanban({
         tipoRotulo: 'Tarefa Operacional',
         checklist: Array.isArray(ta.checklist) ? ta.checklist : [],
         rawItem: ta,
+        createdAt: ta.created_at,
       });
     });
 
@@ -240,6 +251,56 @@ export function ComunicacaoTarefasKanban({
       return matchSearch && matchOrigem && matchProj && matchPrio;
     });
   }, [kanbanCards, searchTerm, origemFilter, projetoFilter, prioridadeFilter]);
+
+  // 3. Ordenação Inteligente dos Cards (Padrão: Prazo Mais Próximo Primeiro)
+  const sortedFilteredCards = useMemo(() => {
+    const list = [...filteredCards];
+
+    list.sort((a, b) => {
+      if (ordenacao === 'prazo_asc') {
+        const timeA = getComparableTimestamp(a.dataLimite);
+        const timeB = getComparableTimestamp(b.dataLimite);
+        if (timeA !== timeB) return timeA - timeB;
+        // Desempate por prioridade
+        const prioWeight: Record<string, number> = { urgente: 4, alta: 3, normal: 2, baixa: 1 };
+        const diffPrio = (prioWeight[b.prioridade] || 0) - (prioWeight[a.prioridade] || 0);
+        if (diffPrio !== 0) return diffPrio;
+        return (a.titulo || '').localeCompare(b.titulo || '');
+      }
+
+      if (ordenacao === 'prazo_desc') {
+        const timeA = getComparableTimestamp(a.dataLimite);
+        const timeB = getComparableTimestamp(b.dataLimite);
+        if (timeA === Infinity && timeB !== Infinity) return 1;
+        if (timeB === Infinity && timeA !== Infinity) return -1;
+        if (timeA !== timeB) return timeB - timeA;
+        return (a.titulo || '').localeCompare(b.titulo || '');
+      }
+
+      if (ordenacao === 'prioridade') {
+        const prioWeight: Record<string, number> = { urgente: 4, alta: 3, normal: 2, baixa: 1 };
+        const diffPrio = (prioWeight[b.prioridade] || 0) - (prioWeight[a.prioridade] || 0);
+        if (diffPrio !== 0) return diffPrio;
+        const timeA = getComparableTimestamp(a.dataLimite);
+        const timeB = getComparableTimestamp(b.dataLimite);
+        return timeA - timeB;
+      }
+
+      if (ordenacao === 'recentes') {
+        const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return createdB - createdA;
+      }
+
+      if (ordenacao === 'alfabetica') {
+        return (a.titulo || '').localeCompare(b.titulo || '');
+      }
+
+      return 0;
+    });
+
+    return list;
+  }, [filteredCards, ordenacao]);
 
   // 3. Mover Card entre Colunas (Drag and Drop ou Botões)
   const handleMoverCardToCol = async (
@@ -454,6 +515,23 @@ export function ComunicacaoTarefasKanban({
             <option value="normal">Normal</option>
             <option value="baixa">Baixa</option>
           </select>
+
+          {/* Seletor de Ordenação Dinâmica */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
+            <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <select
+              value={ordenacao}
+              onChange={(e: any) => setOrdenacao(e.target.value)}
+              className="bg-transparent text-slate-800 dark:text-slate-200 font-medium cursor-pointer focus:outline-none"
+              title="Critério de ordenação dos cartões no Kanban"
+            >
+              <option value="prazo_asc">Prazo: Mais próximo primeiro</option>
+              <option value="prazo_desc">Prazo: Mais distante primeiro</option>
+              <option value="prioridade">Prioridade: Urgentes primeiro</option>
+              <option value="recentes">Mais recentes primeiro</option>
+              <option value="alfabetica">Título (A-Z)</option>
+            </select>
+          </div>
         </div>
 
         {canEdit && (
@@ -473,7 +551,7 @@ export function ComunicacaoTarefasKanban({
       {/* QUADRO KANBAN (4 COLUNAS) COM ARRASTAR E SOLTAR (DRAG & DROP) */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
         {COLUNAS.map((coluna) => {
-          const cardsDaColuna = filteredCards.filter((c) => c.coluna === coluna.id);
+          const cardsDaColuna = sortedFilteredCards.filter((c) => c.coluna === coluna.id);
           const isOver = dragOverColumn === coluna.id;
 
           return (
@@ -696,9 +774,29 @@ export function ComunicacaoTarefasKanban({
                         {/* Prazo e Ações Manuais de Movimentação */}
                         <div className="flex items-center justify-between pt-1 text-[11px]">
                           {card.dataLimite ? (
-                            <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-mono-data text-[10px]">
-                              <Clock className="w-3 h-3 shrink-0" />
-                              <span>{new Date(card.dataLimite).toLocaleDateString('pt-BR')}</span>
+                            <div
+                              className={`flex items-center gap-1 font-mono-data text-[10px] ${
+                                isPrazoVencido(card.dataLimite, card.coluna)
+                                  ? 'text-rose-600 dark:text-rose-400 font-bold'
+                                  : 'text-slate-500 dark:text-slate-400'
+                              }`}
+                              title={
+                                isPrazoVencido(card.dataLimite, card.coluna)
+                                  ? 'Atenção: Prazo de produção/publicação vencido!'
+                                  : 'Prazo estipulado'
+                              }
+                            >
+                              {isPrazoVencido(card.dataLimite, card.coluna) ? (
+                                <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
+                              ) : (
+                                <Clock className="w-3 h-3 shrink-0" />
+                              )}
+                              <span>{formatDisplayDate(card.dataLimite)}</span>
+                              {isPrazoVencido(card.dataLimite, card.coluna) && (
+                                <span className="px-1 py-0.2 rounded text-[8px] uppercase tracking-wider bg-rose-500/15 text-rose-600 dark:text-rose-300 font-extrabold border border-rose-500/30">
+                                  Atrasado
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <span />
@@ -984,7 +1082,7 @@ export function ComunicacaoTarefasKanban({
                   <div className="flex items-center justify-between">
                     <span className="text-[var(--text-muted)]">Data Limite:</span>
                     <span className="font-bold font-mono-data text-[var(--text-primary)]">
-                      {new Date(selectedCardDetail.dataLimite).toLocaleDateString('pt-BR')}
+                      {formatDisplayDate(selectedCardDetail.dataLimite)}
                     </span>
                   </div>
                 )}

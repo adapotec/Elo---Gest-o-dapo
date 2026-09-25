@@ -87,3 +87,58 @@ export function isConteudoEmAtraso(c?: { status?: string | null; data_publicacao
   return dataPub.getTime() < Date.now();
 }
 
+/**
+ * Formata qualquer data (string YYYY-MM-DD, TIMESTAMPTZ ou Date) para "DD/MM/YYYY" de forma segura,
+ * prevenindo que datas puras "YYYY-MM-DD" percam 1 dia por interpretação como UTC meia-noite no fuso local.
+ */
+export function formatDisplayDate(dateInput?: string | Date | null): string {
+  if (!dateInput) return '';
+  if (typeof dateInput === 'string') {
+    const plainMatch = dateInput.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (plainMatch) {
+      const [_, y, m, d] = plainMatch;
+      return `${d}/${m}/${y}`;
+    }
+    // Normaliza strings vindas do PostgreSQL com " 00:00:00+00"
+    const normalized = dateInput.replace(' ', 'T').replace(/\+00$/, '+00:00');
+    const d = new Date(normalized);
+    if (!isNaN(d.getTime())) return d.toLocaleDateString('pt-BR');
+  }
+  const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR');
+}
+
+/**
+ * Retorna o timestamp numérico para comparação e ordenação cronológica rigorosa.
+ * Garante que datas puras "YYYY-MM-DD" e ISO com timezone sejam comparáveis de forma justa.
+ * Retorna Infinity para itens sem data definida (colocando-os no fim da fila ascendente).
+ */
+export function getComparableTimestamp(dateStr?: string | null): number {
+  if (!dateStr) return Infinity;
+  if (typeof dateStr === 'string') {
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const [_, y, m, d] = match;
+      return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), 12, 0, 0).getTime();
+    }
+    const normalized = dateStr.replace(' ', 'T').replace(/\+00$/, '+00:00');
+    const d = new Date(normalized);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+  const fallback = new Date(dateStr);
+  return isNaN(fallback.getTime()) ? Infinity : fallback.getTime();
+}
+
+/**
+ * Verifica se um prazo limite já venceu em relação ao momento atual.
+ * Itens concluídos não são considerados vencidos.
+ */
+export function isPrazoVencido(dateStr?: string | null, status?: string | null): boolean {
+  if (!dateStr) return false;
+  if (status === 'concluido' || status === 'publicado') return false;
+  const ts = getComparableTimestamp(dateStr);
+  if (ts === Infinity) return false;
+  return ts < Date.now();
+}
+
+

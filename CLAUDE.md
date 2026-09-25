@@ -53,6 +53,34 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-09-25 — `[COMUNICAÇÃO] & [BUGFIX KANBAN & ORDENAÇÃO CRONOLÓGICA DE PRAZOS]` 🔴 CRÍTICO
+
+**Correção da Ordem dos Cartões nas Listas do Quadro de Tarefas (Kanban) e Exibição Precisa de Prazos**
+- **Causa Raiz Identificada**:
+  - Os cartões do Kanban eram gerados concatenando sequencialmente os 3 arrays de dados: `conteudos` (1º), `tickets` (2º) e `tarefas` (3º), sem qualquer ordenação por prazo de entrega (`dataLimite`).
+  - Dessa forma, qualquer tarefa avulsa recém-cadastrada com prazo próximo (ex.: 29/09) ficava presa no fim da lista da coluna, aparecendo atrás de cartões de conteúdos ou demandas com prazos distantes (ex.: 20/11 ou 30/11).
+  - Adicionalmente, strings de data pura `"YYYY-MM-DD"` sofriam desvio de fuso horário ao usar `new Date("YYYY-MM-DD").toLocaleDateString('pt-BR')`, que assumia UTC meia-noite e subtraía 3 horas no Brasil, subtraindo 1 dia da data exibida.
+- **Solução Arquitetural Aplicada**:
+  - **Funções Utilitárias em `src/lib/utils/dateTimeUtils.ts`**:
+    - `getComparableTimestamp()`: Normaliza datas puras e ISO com timezone para timestamps numéricos de comparação determinística.
+    - `formatDisplayDate()`: Formata de forma segura datas `"YYYY-MM-DD"` diretamente como `"DD/MM/YYYY"`, eliminando desvio de fuso em datas de tarefas e tickets.
+    - `isPrazoVencido()`: Avalia se o prazo expirou em relação ao momento atual para cartões não concluídos.
+  - **Ordenação Inteligente Padrão (Prazo Mais Próximo Primeiro)**:
+    - O Kanban agora ordena todos os cartões de cada coluna por `getComparableTimestamp(card.dataLimite)` em ordem crescente (`prazo_asc`). Cartões com prazos mais iminentes (29/09) sobem imediatamente para o topo, antes de prazos futuros (20/11).
+    - Desempate configurado por grau de prioridade (urgente > alta > normal > baixa) e título.
+    - Cartões sem prazo definido são alocados no fim da fila para não obstruir demandas urgentes.
+  - **Controle Interativo de Ordenação**:
+    - Adicionado dropdown com ícone `ArrowUpDown` na barra superior permitindo alternar livremente entre:
+      - *Prazo: Mais próximo primeiro* (Padrão)
+      - *Prazo: Mais distante primeiro*
+      - *Prioridade: Urgentes primeiro*
+      - *Mais recentes primeiro*
+      - *Título (A-Z)*
+  - **Destaque Visual de Atraso**:
+    - Cartões com prazo vencido recebem tipografia em vermelho suave (`text-rose-600`), ícone `AlertTriangle` e badge `Atrasado` para alerta visual imediato.
+
+---
+
 ### 2026-09-24 — `[COMUNICAÇÃO] & [TICKETS & DESTAQUES DE REFERÊNCIA VISUAL]` 🟢 IMPLEMENTADO
 
 **Especificação e Destaque Visual de Referências em Solicitações de Materiais e Tickets de Comunicação**

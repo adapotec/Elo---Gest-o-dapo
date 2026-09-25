@@ -79,19 +79,19 @@ function TarefasContent() {
         safeFetch(
           supabase
             .from('tarefas_comunicacao')
-            .select('id, titulo, descricao, status, prioridade, data_limite, etiquetas, checklist, projeto_id, responsavel_id, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
+            .select('id, titulo, descricao, status, prioridade, data_limite, etiquetas, checklist, projeto_id, responsavel_id, created_at, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
             .order('created_at', { ascending: false })
         ),
         safeFetch(
           supabase
             .from('conteudos_comunicacao')
-            .select('id, titulo, descricao, observacoes, roteiro_legenda, status, tipo_conteudo, categoria, data_publicacao, link_producao, link_publicacao, checklist, projeto_id, responsavel_id, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo)')
+            .select('id, titulo, descricao, observacoes, roteiro_legenda, status, tipo_conteudo, categoria, data_publicacao, link_producao, link_publicacao, checklist, projeto_id, responsavel_id, created_at, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo)')
             .order('data_publicacao', { ascending: true })
         ),
         safeFetch(
           supabase
             .from('solicitacoes_comunicacao')
-            .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, observacoes_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
+            .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, observacoes_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, created_at, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
             .order('created_at', { ascending: false })
         ),
       ]);
@@ -190,7 +190,7 @@ function TarefasContent() {
         const { data, error } = await supabase
           .from('tarefas_comunicacao')
           .insert([payload])
-          .select('id, titulo, descricao, status, prioridade, data_limite, etiquetas, checklist, projeto_id, responsavel_id, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
+          .select('id, titulo, descricao, status, prioridade, data_limite, etiquetas, checklist, projeto_id, responsavel_id, created_at, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
           .single();
 
         if (!error && data) {
