@@ -53,6 +53,27 @@
 - Políticas de captação usam `service_role` + `auth.uid()` (já refinadas)
 - Políticas operacionais estão em `USING (true)` — **pendente refinamento**
 
+### 2026-09-24 — `[COMUNICAÇÃO] & [TICKETS & DESTAQUES DE REFERÊNCIA VISUAL]` 🟢 IMPLEMENTADO
+
+**Especificação e Destaque Visual de Referências em Solicitações de Materiais e Tickets de Comunicação**
+- **Problema Solucionado**:
+  - Anteriormente, ao solicitar um material (post, carrossel, vídeo, faixa, brinde, etc.), o solicitante só dispunha de um único campo de URL (`links_referencia`), sem ter onde explicar o que exatamente daquele link servia como referência (ex.: se gostou das cores, da diagramação dos cards, do formato do texto, do enquadramento ou da transição de vídeo).
+- **Banco de Dados (Supabase via MCP)**:
+  - Adicionada a coluna `observacoes_referencia TEXT` na tabela `public.solicitacoes_comunicacao` com migração DDL executada e validada via MCP.
+- **Experiência do Usuário (UI/UX no Formulário de Solicitação)**:
+  - Bloco enriquecido e estilizado de referência visual com:
+    - Campo para URL do material de referência (Instagram, Reels, TikTok, Canva, Google Drive, etc.).
+    - Campo dedicado: *"O que você destaca nesta referência?"* com perguntas e exemplos guias.
+    - Tags/chips de seleção rápida com 1 clique para agilizar o preenchimento: `+ Paleta de cores`, `+ Estilo da tipografia`, `+ Diagramação dos cards`, `+ Enquadramento das fotos`, `+ Tom de voz e texto`, `+ Ritmo e transições`, `+ Formato antes e depois`.
+    - Área de texto para descrição detalhada dos pontos que a equipe deve reproduzir.
+- **Visualização & Triagem (Cards do Kanban e Modais de Detalhes)**:
+  - **Cards de Tickets na Grade**: Indicador destacado com link de acesso rápido e citação estilizada em itálico do que foi destacado pelo solicitante.
+  - **Modal de Detalhes & Gestão**: Caixa em destaque *"Referência Visual & Destaques"* exibindo botão de abertura em nova aba e bloco de citação com borda lateral na cor primária institucional (`#F2632D`), além de campo editável para a equipe de comunicação adicionar apontamentos técnicos.
+  - **Modal de Detalhes do Kanban (`TarefasKanban.tsx`)**: Integrado bloco de visualização das observações da referência para cartões originados de tickets.
+  - **Conversão para o Calendário Editorial**: Ao aprovar a solicitação e convertê-la em publicação de calendário (`onConvertToConteudo`), os destaques da referência são automaticamente propagados no bloco de observações da nova peça.
+
+---
+
 ### 2026-09-24 — `[COMUNICAÇÃO] & [BUGFIX TIMEZONE & DATAS DO CALENDÁRIO EDITORIAL]` 🔴 CRÍTICO
 
 **Correção de Desvio de Fuso Horário (UTC vs Horário de Brasília) no Calendário Editorial e Gestão de Comunicação**

@@ -91,7 +91,7 @@ function TarefasContent() {
         safeFetch(
           supabase
             .from('solicitacoes_comunicacao')
-            .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
+            .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, observacoes_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
             .order('created_at', { ascending: false })
         ),
       ]);

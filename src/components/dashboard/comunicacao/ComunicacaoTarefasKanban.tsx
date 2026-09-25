@@ -24,6 +24,7 @@ import {
   Trash2,
   Layers,
   GripVertical,
+  Bookmark,
 } from 'lucide-react';
 import { ConteudoItem } from './ComunicacaoCalendario';
 import { SolicitacaoComunicacaoItem } from './ComunicacaoTickets';
@@ -999,6 +1000,40 @@ export function ComunicacaoTarefasKanban({
                   </p>
                 </div>
               )}
+
+              {/* Referência Visual & Destaques (se for ticket/demanda de comunicação) */}
+              {selectedCardDetail.origem === 'ticket' &&
+                (selectedCardDetail.rawItem?.links_referencia || selectedCardDetail.rawItem?.observacoes_referencia) && (
+                  <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/80 border border-[var(--border-default)] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-[var(--color-primary)] flex items-center gap-1.5">
+                        <Bookmark className="w-3.5 h-3.5" />
+                        <span>Referência & Inspiração Visual</span>
+                      </span>
+                      {selectedCardDetail.rawItem?.links_referencia && (
+                        <a
+                          href={selectedCardDetail.rawItem.links_referencia}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--color-primary)] hover:underline"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>Abrir Link</span>
+                        </a>
+                      )}
+                    </div>
+                    {selectedCardDetail.rawItem?.observacoes_referencia && (
+                      <div className="p-2.5 rounded-lg bg-[var(--bg-elevated)] border-l-3 border-[var(--color-primary)] text-xs text-[var(--text-secondary)]">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)] block mb-0.5">
+                          O que o solicitante destacou:
+                        </span>
+                        <p className="italic leading-relaxed whitespace-pre-wrap text-[var(--text-primary)] font-medium">
+                          "{selectedCardDetail.rawItem.observacoes_referencia}"
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
               {/* ========================================================= */}
               {/* CHECKLIST DE ATIVIDADES DO ITEM */}

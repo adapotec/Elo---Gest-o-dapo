@@ -70,7 +70,7 @@ function TicketsContent() {
         safeFetch(
           supabase
             .from('solicitacoes_comunicacao')
-            .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
+            .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, observacoes_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
             .order('created_at', { ascending: false })
         ),
         safeFetch(
@@ -127,6 +127,7 @@ function TicketsContent() {
         if (ticket.prazo_desejado !== undefined) updatePayload.prazo_desejado = ticket.prazo_desejado;
         if (ticket.urgencia !== undefined) updatePayload.urgencia = ticket.urgencia;
         if (ticket.links_referencia !== undefined) updatePayload.links_referencia = ticket.links_referencia;
+        if (ticket.observacoes_referencia !== undefined) updatePayload.observacoes_referencia = ticket.observacoes_referencia;
         if (ticket.status !== undefined) updatePayload.status = ticket.status;
         if (ticket.resposta_comunicacao !== undefined) updatePayload.resposta_comunicacao = ticket.resposta_comunicacao;
         if (ticket.responsavel_comunicacao_id !== undefined) updatePayload.responsavel_comunicacao_id = ticket.responsavel_comunicacao_id;
@@ -159,6 +160,7 @@ function TicketsContent() {
           prazo_desejado: ticket.prazo_desejado || null,
           urgencia: ticket.urgencia || 'normal',
           links_referencia: ticket.links_referencia || null,
+          observacoes_referencia: ticket.observacoes_referencia || null,
           status: ticket.status || 'pendente',
           resposta_comunicacao: ticket.resposta_comunicacao || null,
           responsavel_comunicacao_id: ticket.responsavel_comunicacao_id || null,
@@ -180,7 +182,7 @@ function TicketsContent() {
         const { data, error } = await supabase
           .from('solicitacoes_comunicacao')
           .insert([payload])
-          .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
+          .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, observacoes_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
           .single();
 
         if (!error && data) {
@@ -215,7 +217,10 @@ function TicketsContent() {
       titulo: ticket.titulo,
       projeto_id: ticket.projeto_id || undefined,
       tipo_conteudo: tipoMap[ticket.tipo_material] || 'carrossel',
-      observacoes: ticket.descricao_detalhes || undefined,
+      observacoes: [
+        ticket.descricao_detalhes,
+        ticket.observacoes_referencia ? `[Destaques da Referência / Inspiração]:\n${ticket.observacoes_referencia}` : null,
+      ].filter(Boolean).join('\n\n') || undefined,
       roteiro_legenda: ticket.objetivo ? `Objetivo: ${ticket.objetivo}\nPúblico: ${ticket.publico_alvo || 'Geral'}` : undefined,
       data_publicacao: ticket.prazo_desejado ? new Date(ticket.prazo_desejado).toISOString() : new Date().toISOString(),
       categoria: 'avulso',

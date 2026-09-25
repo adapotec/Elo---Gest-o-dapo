@@ -18,6 +18,8 @@ import {
   X,
   FolderKanban,
   Flame,
+  Bookmark,
+  Link2,
 } from 'lucide-react';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
 
@@ -34,6 +36,7 @@ export interface SolicitacaoComunicacaoItem {
   prazo_desejado?: string | null;
   urgencia?: 'baixa' | 'normal' | 'alta' | 'urgente';
   links_referencia?: string | null;
+  observacoes_referencia?: string | null;
   status: 'pendente' | 'em_analise' | 'aprovado' | 'em_producao' | 'concluido' | 'recusado';
   resposta_comunicacao?: string | null;
   responsavel_comunicacao_id?: string | null;
@@ -131,12 +134,14 @@ export function ComunicacaoTickets({
   const [formPrazoDesejado, setFormPrazoDesejado] = useState('');
   const [formUrgencia, setFormUrgencia] = useState<'baixa' | 'normal' | 'alta' | 'urgente'>('normal');
   const [formLinksReferencia, setFormLinksReferencia] = useState('');
+  const [formObservacoesReferencia, setFormObservacoesReferencia] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Form states para Gerenciar Demanda (Equipe de Comunicação)
   const [gestaoStatus, setGestaoStatus] = useState<SolicitacaoComunicacaoItem['status']>('pendente');
   const [gestaoResposta, setGestaoResposta] = useState('');
   const [gestaoResponsavelId, setGestaoResponsavelId] = useState('');
+  const [gestaoObservacoesReferencia, setGestaoObservacoesReferencia] = useState('');
 
   const stats = useMemo(() => {
     return {
@@ -182,6 +187,7 @@ export function ComunicacaoTickets({
     setFormPrazoDesejado('');
     setFormUrgencia('normal');
     setFormLinksReferencia('');
+    setFormObservacoesReferencia('');
     setShowNewModal(true);
   };
 
@@ -190,6 +196,7 @@ export function ComunicacaoTickets({
     setGestaoStatus(ticket.status);
     setGestaoResposta(ticket.resposta_comunicacao || '');
     setGestaoResponsavelId(ticket.responsavel_comunicacao_id || '');
+    setGestaoObservacoesReferencia(ticket.observacoes_referencia || '');
   };
 
   const handleSubmitNew = async (e: React.FormEvent) => {
@@ -213,6 +220,7 @@ export function ComunicacaoTickets({
         prazo_desejado: formPrazoDesejado || null,
         urgencia: formUrgencia,
         links_referencia: formLinksReferencia.trim() || null,
+        observacoes_referencia: formObservacoesReferencia.trim() || null,
         status: 'pendente',
       });
       setShowNewModal(false);
@@ -232,6 +240,7 @@ export function ComunicacaoTickets({
         status: gestaoStatus,
         resposta_comunicacao: gestaoResposta.trim() || null,
         responsavel_comunicacao_id: gestaoResponsavelId || null,
+        observacoes_referencia: gestaoObservacoesReferencia.trim() || null,
       });
       setSelectedTicketDetail(null);
     } catch (err: any) {
@@ -581,6 +590,35 @@ export function ComunicacaoTickets({
                     )}
                   </div>
 
+                  {/* Referência e Destaque da Inspiração */}
+                  {(ticket.links_referencia || ticket.observacoes_referencia) && (
+                    <div className="p-2.5 rounded-xl bg-[var(--bg-secondary)]/70 border border-[var(--border-default)] space-y-1.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1">
+                          <Bookmark className="w-3 h-3" />
+                          <span>Referência & Inspiração</span>
+                        </span>
+                        {ticket.links_referencia && (
+                          <a
+                            href={ticket.links_referencia}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] font-bold text-[var(--color-primary)] hover:underline flex items-center gap-0.5"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Ver Link</span>
+                          </a>
+                        )}
+                      </div>
+                      {ticket.observacoes_referencia && (
+                        <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2 italic leading-snug">
+                          "{ticket.observacoes_referencia}"
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Metadados: Solicitante e Prazo */}
                   <div className="space-y-1.5 text-[11px] text-[var(--text-muted)] pt-1 border-t border-[var(--border-default)]">
                     <div className="flex items-center justify-between gap-2">
@@ -870,17 +908,85 @@ export function ComunicacaoTickets({
                 />
               </div>
 
-              <div>
-                <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                  Links de Referência / Fotos no Google Drive
-                </label>
+              {/* Bloco Completo de Referência & O que destacar */}
+              <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
+                    <Link2 className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <label className="font-bold text-[var(--text-primary)] text-xs block">
+                      Link de Referência / Inspiração Visual
+                    </label>
+                    <span className="text-[10px] text-[var(--text-muted)]">
+                      Post, vídeo curto, carrossel, pasta do Drive ou arte no Canva que servirá de referência
+                    </span>
+                  </div>
+                </div>
+
                 <input
                   type="url"
-                  placeholder="https://drive.google.com/..."
+                  placeholder="https://instagram.com/p/... ou drive.google.com/..."
                   value={formLinksReferencia}
                   onChange={(e) => setFormLinksReferencia(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium text-xs focus:border-[var(--color-primary)] focus:outline-none"
                 />
+
+                <div className="space-y-1.5 pt-1 border-t border-[var(--border-default)]/60">
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-[var(--text-secondary)] text-xs flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                      <span>O que você destaca nesta referência?</span>
+                    </label>
+                    <span className="text-[10px] text-[var(--text-muted)]">O que a equipe deve se inspirar</span>
+                  </div>
+
+                  {/* Sugestões rápidas de foco para inspirar o solicitante */}
+                  <div className="flex flex-wrap gap-1.5 py-0.5">
+                    {[
+                      'Paleta de cores',
+                      'Estilo da tipografia',
+                      'Diagramação dos cards',
+                      'Enquadramento das fotos',
+                      'Tom de voz e texto',
+                      'Ritmo e transições',
+                      'Formato antes e depois',
+                    ].map((tag) => {
+                      const isSelected = formObservacoesReferencia.toLowerCase().includes(tag.toLowerCase());
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              const regex = new RegExp(`(\\[${tag}\\]\\s*|${tag},?\\s*)`, 'gi');
+                              setFormObservacoesReferencia((prev) => prev.replace(regex, '').trim());
+                            } else {
+                              setFormObservacoesReferencia((prev) =>
+                                prev ? `${prev.trim()}, ${tag.toLowerCase()}` : `Destaque: ${tag}`
+                              );
+                            }
+                          }}
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] border-[var(--color-primary)]/40 font-bold'
+                              : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--color-primary)]/40'
+                          }`}
+                        >
+                          + {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <textarea
+                    rows={2}
+                    placeholder="Ex: Gostei muito da sequência de perguntas nos primeiros slides, da paleta de tons quentes e de como dividiram as informações em tópicos curtos..."
+                    value={formObservacoesReferencia}
+                    onChange={(e) => setFormObservacoesReferencia(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium text-xs resize-none focus:border-[var(--color-primary)] focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-[var(--border-default)]">
@@ -941,17 +1047,42 @@ export function ComunicacaoTickets({
                   <span>Prazo: {new Date(selectedTicketDetail.prazo_desejado).toLocaleDateString('pt-BR')}</span>
                 )}
               </div>
-              {selectedTicketDetail.links_referencia && (
-                <div className="pt-1">
-                  <a
-                    href={selectedTicketDetail.links_referencia}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[var(--color-primary)] font-bold hover:underline"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span>Ver Link de Referência</span>
-                  </a>
+              {/* Destaque Visual e Link da Referência */}
+              {(selectedTicketDetail.links_referencia || selectedTicketDetail.observacoes_referencia) && (
+                <div className="p-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-default)] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-[var(--text-primary)]">
+                      <Bookmark className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                      <span>Referência Visual & Destaques</span>
+                    </div>
+                    {selectedTicketDetail.links_referencia && (
+                      <a
+                        href={selectedTicketDetail.links_referencia}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all shadow-2xs"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Abrir Link de Referência</span>
+                      </a>
+                    )}
+                  </div>
+
+                  {selectedTicketDetail.observacoes_referencia ? (
+                    <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border-l-3 border-[var(--color-primary)] text-xs text-[var(--text-secondary)] space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        <span>O que foi destacado nesta referência:</span>
+                      </p>
+                      <p className="whitespace-pre-line leading-relaxed font-medium text-[var(--text-primary)]">
+                        {selectedTicketDetail.observacoes_referencia}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-[var(--text-muted)] italic">
+                      Nenhum destaque ou observação específica informada pelo solicitante.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -998,10 +1129,23 @@ export function ComunicacaoTickets({
                   Parecer / Resposta da Comunicação
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   placeholder="Ex: Aprovado! Arte agendada para produção. Link do arquivo entregue em..."
                   value={gestaoResposta}
                   onChange={(e) => setGestaoResposta(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-[var(--text-secondary)] block mb-1">
+                  Observações & Destaques da Referência (Editável)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Ajuste ou adicione notas sobre o que reproduzir da referência..."
+                  value={gestaoObservacoesReferencia}
+                  onChange={(e) => setGestaoObservacoesReferencia(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium resize-none"
                 />
               </div>
