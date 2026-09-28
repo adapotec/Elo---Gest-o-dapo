@@ -31,9 +31,96 @@ import {
   Share2,
   TrendingUp,
   ExternalLink,
+  Check,
+  Compass,
 } from 'lucide-react';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
 import { ConteudoItem } from './ComunicacaoCalendario';
+
+export interface ParsedTopic {
+  number?: string;
+  title: string;
+  content?: string;
+}
+
+export function parseStructuredTopics(rawText?: string | null): { isTags: boolean; topics: ParsedTopic[] } {
+  if (!rawText || !rawText.trim()) return { isTags: false, topics: [] };
+  const text = rawText.trim();
+
+  // Se o texto for curto, separado por vírgulas e sem quebras de linha (ex: "Prova Social, Pertencimento Comunitário, Reciprocidade")
+  if (!text.includes('\n') && text.includes(',') && !text.match(/\d+[\.\)]/)) {
+    const tags = text.split(',').map((t) => t.trim()).filter(Boolean);
+    return {
+      isTags: true,
+      topics: tags.map((t) => ({ title: t })),
+    };
+  }
+
+  // Verifica se o texto possui tópicos numerados: "1. Título: Descrição" ou "1. Título\nDescrição"
+  const numberedPattern = /(?:^|\n)\s*(\d+)[\.\)]\s*([^\n:]+)(?::\s*|\n)([\s\S]*?)(?=(?:\n\s*\d+[\.\)]|$))/g;
+  const matches = Array.from(text.matchAll(numberedPattern));
+
+  if (matches.length > 0) {
+    const topics: ParsedTopic[] = matches.map((m) => ({
+      number: m[1],
+      title: m[2].trim(),
+      content: m[3] ? m[3].trim() : undefined,
+    }));
+    return { isTags: false, topics };
+  }
+
+  // Verifica se o texto é estruturado em parágrafos temáticos (ex: "Área: Descrição...\n\nOutra Área: ...")
+  const rawParagraphs = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  const paragraphs: string[] = [];
+  for (let i = 0; i < rawParagraphs.length; i++) {
+    if (rawParagraphs[i].endsWith(':') && i + 1 < rawParagraphs.length) {
+      paragraphs.push(rawParagraphs[i] + ' ' + rawParagraphs[i + 1]);
+      i++;
+    } else {
+      paragraphs.push(rawParagraphs[i]);
+    }
+  }
+
+  if (paragraphs.length > 1) {
+    const topics: ParsedTopic[] = paragraphs.map((p, idx) => {
+      const colonIdx = p.indexOf(':');
+      if (colonIdx > 0 && colonIdx < 60 && !p.substring(0, colonIdx).includes('\n')) {
+        return {
+          number: String(idx + 1),
+          title: p.substring(0, colonIdx).trim(),
+          content: p.substring(colonIdx + 1).trim(),
+        };
+      }
+      return {
+        number: String(idx + 1),
+        title: `Tópico ${idx + 1}`,
+        content: p,
+      };
+    });
+    return { isTags: false, topics };
+  }
+
+  return {
+    isTags: false,
+    topics: [
+      {
+        title: 'Descrição',
+        content: text,
+      },
+    ],
+  };
+}
+
+export const CANAIS_PREDEFINIDOS = [
+  'Instagram Feed',
+  'Instagram Stories',
+  'Reels',
+  'WhatsApp',
+  'Site Oficial',
+  'Ação Presencial / Rua',
+  'E-mail / Newsletter',
+  'Imprensa / Mídia',
+];
 
 export interface CampanhaItem {
   id: string;
@@ -195,12 +282,27 @@ export function ComunicacaoCampanhas({
   // Bloco 6-10: Tático, Recursos & Métricas
   const [formGatilhos, setFormGatilhos] = useState('');
   const [formCanais, setFormCanais] = useState<string[]>(['Instagram Feed', 'Instagram Stories', 'Reels']);
+  const [customCanalInput, setCustomCanalInput] = useState('');
   const [formRecursos, setFormRecursos] = useState<string[]>([]);
   const [formIndAlcance, setFormIndAlcance] = useState('');
   const [formIndEngajamento, setFormIndEngajamento] = useState('');
   const [formIndConversoes, setFormIndConversoes] = useState('');
 
   const [saving, setSaving] = useState(false);
+
+  const handleToggleCanal = (canal: string) => {
+    setFormCanais((prev) =>
+      prev.includes(canal) ? prev.filter((c) => c !== canal) : [...prev, canal]
+    );
+  };
+
+  const handleAddCustomCanal = () => {
+    const trimmed = customCanalInput.trim();
+    if (trimmed && !formCanais.includes(trimmed)) {
+      setFormCanais((prev) => [...prev, trimmed]);
+      setCustomCanalInput('');
+    }
+  };
 
   // Atualizar dados da campanha selecionada se a lista mudar
   React.useEffect(() => {
@@ -246,6 +348,23 @@ export function ComunicacaoCampanhas({
     if (!selectedCampanha) return [];
     return conteudos.filter((cnt) => cnt.campanha_id === selectedCampanha.id);
   }, [conteudos, selectedCampanha]);
+
+  // Parsers de tópicos formatados para visualização no modal e no PDF
+  const parsedGatilhosModal = useMemo(() => {
+    return parseStructuredTopics(selectedCampanha?.gatilhos_persuasao);
+  }, [selectedCampanha?.gatilhos_persuasao]);
+
+  const parsedMetasSecundariasModal = useMemo(() => {
+    return parseStructuredTopics(selectedCampanha?.objetivos?.metas_secundarias);
+  }, [selectedCampanha?.objetivos?.metas_secundarias]);
+
+  const parsedGatilhosPdf = useMemo(() => {
+    return parseStructuredTopics(campanhaParaPdf?.gatilhos_persuasao);
+  }, [campanhaParaPdf?.gatilhos_persuasao]);
+
+  const parsedMetasSecundariasPdf = useMemo(() => {
+    return parseStructuredTopics(campanhaParaPdf?.objetivos?.metas_secundarias);
+  }, [campanhaParaPdf?.objetivos?.metas_secundarias]);
 
   const handleOpenNewModal = () => {
     setEditingId(null);
@@ -942,126 +1061,270 @@ export function ComunicacaoCampanhas({
               </div>
             </div>
 
-            {/* Grid dos 10 Blocos Estruturados */}
+            {/* Grid dos 10 Blocos Estruturados com Hierarquia Editorial */}
             <div className="space-y-4 text-xs">
               {/* 1. Resumo & Diagnóstico */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
                     1. Resumo da Campanha
                   </p>
-                  <p className="text-xs text-[var(--text-primary)] font-medium leading-relaxed">
+                  <p className="text-xs text-[var(--text-primary)] font-normal leading-relaxed whitespace-pre-line">
                     {selectedCampanha.resumo || 'Nenhum resumo informado.'}
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                    <Compass className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                     2. Diagnóstico &amp; Contexto
                   </p>
-                  <p className="text-xs text-[var(--text-primary)] font-medium leading-relaxed">
+                  <p className="text-xs text-[var(--text-primary)] font-normal leading-relaxed whitespace-pre-line">
                     {selectedCampanha.diagnostico_contexto || 'Nenhum contexto registrado.'}
                   </p>
                 </div>
               </div>
 
               {/* 3. Personas e Público-Alvo */}
-              <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
-                <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+              <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
                   3. Personas &amp; Público-Alvo
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+
+                {/* Dados Rápidos de Perfil */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
                   <div>
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Perfil &amp; Idade:</span>
-                    <span className="font-bold text-[var(--text-primary)]">{selectedCampanha.personas_publico?.perfil_idade || 'Geral'}</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block mb-0.5">Perfil &amp; Faixa Etária:</span>
+                    <span className="font-bold text-xs text-[var(--text-primary)]">
+                      {selectedCampanha.personas_publico?.perfil_idade || 'Geral'}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Tom de Voz:</span>
-                    <span className="font-bold text-[#93368F]">{selectedCampanha.personas_publico?.tom_marca || 'Acolhedor e Educativo'}</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block mb-0.5">Tom de Voz da Marca:</span>
+                    <span className="font-bold text-xs text-[#93368F] px-2 py-0.5 rounded-md bg-[#93368F]/10 inline-block">
+                      {selectedCampanha.personas_publico?.tom_marca || 'Acolhedor e Educativo'}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Hábitos e Valores:</span>
-                    <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.habitos_valores || 'Comunitário'}</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block mb-0.5">Hábitos &amp; Valores:</span>
+                    <span className="font-semibold text-xs text-[var(--text-primary)]">
+                      {selectedCampanha.personas_publico?.habitos_valores || 'Comunitário e Solidário'}
+                    </span>
                   </div>
-                  <div className="sm:col-span-2">
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Dores e Medos:</span>
-                    <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.dores_medos || 'Falta de oportunidades'}</span>
+                </div>
+
+                {/* Análise Aprofundada: Dores vs Desejos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-1.5">
+                    <span className="text-[10px] font-black uppercase text-amber-700 dark:text-amber-400 block tracking-wide">
+                      Dores, Medos &amp; Inseguranças
+                    </span>
+                    <p className="text-[11px] text-[var(--text-secondary)] font-normal leading-relaxed whitespace-pre-line">
+                      {selectedCampanha.personas_publico?.dores_medos || 'Não informado.'}
+                    </p>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Desejos:</span>
-                    <span className="font-medium text-[var(--text-primary)]">{selectedCampanha.personas_publico?.desejos || 'Desenvolvimento das crianças'}</span>
+                  <div className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-1.5">
+                    <span className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-400 block tracking-wide">
+                      Desejos, Sonhos &amp; Aspirações
+                    </span>
+                    <p className="text-[11px] text-[var(--text-secondary)] font-normal leading-relaxed whitespace-pre-line">
+                      {selectedCampanha.personas_publico?.desejos || 'Não informado.'}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* 4. Objetivos & 5. Estratégia Narrativa */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                {/* 4. Objetivos & Metas */}
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5" />
                     4. Objetivos &amp; Metas
                   </p>
-                  <div>
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Meta Principal:</span>
-                    <p className="font-bold text-[var(--text-primary)] text-sm">{selectedCampanha.objetivos?.meta_principal || 'Aumentar engajamento e captação'}</p>
+                  <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] block mb-0.5">Meta Principal:</span>
+                    <p className="font-bold text-[var(--text-primary)] text-sm leading-snug">
+                      {selectedCampanha.objetivos?.meta_principal || 'Aumentar engajamento e captação'}
+                    </p>
                   </div>
                   {selectedCampanha.objetivos?.metas_secundarias && (
-                    <div>
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">Metas Secundárias:</span>
-                      <p className="text-[var(--text-secondary)] font-medium">{selectedCampanha.objetivos.metas_secundarias}</p>
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] block">Metas Secundárias &amp; Desdobramentos:</span>
+                      <div className="space-y-2">
+                        {parsedMetasSecundariasModal.topics.map((top, idx) => (
+                          <div key={idx} className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs">
+                            <span className="font-bold text-[var(--color-primary)] block mb-0.5">
+                              {top.title}
+                            </span>
+                            {top.content && (
+                              <p className="text-[11px] text-[var(--text-secondary)] font-normal leading-relaxed whitespace-pre-line">
+                                {top.content}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                    5. Estratégia Narrativa
+                {/* 5. Estratégia Narrativa */}
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    5. Estratégia Narrativa &amp; Storytelling
                   </p>
-                  <div>
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">Transformação &amp; Protagonista:</span>
-                    <p className="text-[var(--text-primary)] font-medium">
-                      <strong>Protagonista:</strong> {selectedCampanha.estrategia_narrativa?.protagonista || 'Crianças e Famílias'}<br />
-                      <strong>Transformação:</strong> {selectedCampanha.estrategia_narrativa?.transformacao || 'Acesso à arte e educação'}
-                    </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                      <span className="text-[10px] font-bold text-[#1C9C82] block mb-0.5">Protagonista (Quem apoiamos):</span>
+                      <p className="text-xs font-semibold text-[var(--text-primary)]">
+                        {selectedCampanha.estrategia_narrativa?.protagonista || 'Crianças e Famílias'}
+                      </p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                      <span className="text-[10px] font-bold text-[#EF4444] block mb-0.5">Antagonista (O Desafio/Obstáculo):</span>
+                      <p className="text-xs font-semibold text-[var(--text-primary)]">
+                        {selectedCampanha.estrategia_narrativa?.antagonista || 'Vulnerabilidade Social'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] block">CTA Principal:</span>
-                    <p className="font-bold text-[#1C9C82]">{selectedCampanha.estrategia_narrativa?.cta_principal || 'Apoie o Instituto Ádapo'}</p>
+                  {selectedCampanha.estrategia_narrativa?.transformacao && (
+                    <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] block mb-0.5">A Transformação Almejada:</span>
+                      <p className="text-[11px] text-[var(--text-secondary)] font-medium leading-relaxed whitespace-pre-line">
+                        {selectedCampanha.estrategia_narrativa.transformacao}
+                      </p>
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block mb-0.5">
+                        CTA Principal (Ação Primária)
+                      </span>
+                      <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                        {selectedCampanha.estrategia_narrativa?.cta_principal || 'Apoie o Instituto Ádapo'}
+                      </p>
+                    </div>
+                    {selectedCampanha.estrategia_narrativa?.cta_secundario && (
+                      <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-[var(--text-muted)] block mb-0.5">
+                          CTA Secundário (Engajamento)
+                        </span>
+                        <p className="text-[11px] font-semibold text-[var(--text-primary)]">
+                          {selectedCampanha.estrategia_narrativa.cta_secundario}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* 6. Gatilhos, 7. Canais & 10. Indicadores */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                    6. Gatilhos Persuasivos
+              {/* 6. Estratégia de Persuasão & Gatilhos Mentais (LARGURA TOTAL EM TÓPICOS) */}
+              <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    6. Estratégia de Persuasão &amp; Gatilhos Mentais
                   </p>
-                  <p className="text-xs text-[var(--text-primary)] font-medium">
-                    {selectedCampanha.gatilhos_persuasao || 'Prova Social, Pertencimento'}
-                  </p>
+                  <span className="text-[10px] font-bold text-[var(--text-muted)] bg-[var(--bg-elevated)] px-2.5 py-0.5 rounded-full border border-[var(--border-default)]">
+                    {parsedGatilhosModal.isTags
+                      ? `${parsedGatilhosModal.topics.length} Gatilhos Chave`
+                      : `${parsedGatilhosModal.topics.length} Tópicos Estratégicos`}
+                  </span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                    7. Canais Utilizados
+                {parsedGatilhosModal.isTags ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {parsedGatilhosModal.topics.map((t, idx) => (
+                      <span
+                        key={idx}
+                        className="px-3 py-1.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs font-bold text-[var(--text-primary)] shadow-2xs flex items-center gap-1.5"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]" />
+                        {t.title}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                    {parsedGatilhosModal.topics.map((topic, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xs space-y-1.5 transition-all hover:border-[var(--color-primary)]/40"
+                      >
+                        <div className="flex items-start gap-2">
+                          {topic.number && (
+                            <span className="w-5 h-5 shrink-0 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] text-[10px] font-black flex items-center justify-center mt-0.5">
+                              {topic.number}
+                            </span>
+                          )}
+                          <h4 className="font-bold text-xs text-[var(--text-primary)] leading-snug">
+                            {topic.title}
+                          </h4>
+                        </div>
+                        {topic.content && (
+                          <p className="text-[11px] text-[var(--text-secondary)] font-normal leading-relaxed whitespace-pre-line pl-7">
+                            {topic.content}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 7. Canais & 10. Indicadores Esperados (2 Colunas Equilibradas) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 7. Canais Utilizados */}
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2.5">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5" />
+                    7. Canais &amp; Ferramentas de Distribuição
                   </p>
-                  <div className="flex flex-wrap gap-1">
-                    {(selectedCampanha.canais_ferramentas || ['Instagram', 'WhatsApp']).map((canal, idx) => (
-                      <span key={idx} className="px-2 py-0.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[10px] font-bold text-[var(--text-primary)]">
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {(selectedCampanha.canais_ferramentas && selectedCampanha.canais_ferramentas.length > 0
+                      ? selectedCampanha.canais_ferramentas
+                      : ['Instagram Feed', 'WhatsApp']
+                    ).map((canal, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2.5 py-1 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs font-semibold text-[var(--text-primary)] shadow-2xs"
+                      >
                         {canal}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
+                {/* 10. Indicadores e Metas Numéricas */}
+                <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2.5">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5" />
                     10. Indicadores Esperados
                   </p>
-                  <p className="text-xs text-[var(--text-primary)] font-medium">
-                    <strong>Alcance:</strong> {selectedCampanha.indicadores_esperados?.alcance_esperado || '5.000 pessoas'}<br />
-                    <strong>Doações/Metas:</strong> {selectedCampanha.indicadores_esperados?.conversoes_doacoes || 'Meta aberta'}
-                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                    <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                      <span className="text-[9px] font-bold text-[var(--text-muted)] block uppercase">Alcance Estimado</span>
+                      <span className="text-xs font-bold text-[var(--text-primary)]">
+                        {selectedCampanha.indicadores_esperados?.alcance_esperado || 'N/D'}
+                      </span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                      <span className="text-[9px] font-bold text-[var(--text-muted)] block uppercase">Doações / Metas</span>
+                      <span className="text-xs font-bold text-[#1C9C82]">
+                        {selectedCampanha.indicadores_esperados?.conversoes_doacoes || 'N/D'}
+                      </span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] col-span-2 sm:col-span-1">
+                      <span className="text-[9px] font-bold text-[var(--text-muted)] block uppercase">Engajamento</span>
+                      <span className="text-xs font-bold text-[var(--text-primary)]">
+                        {selectedCampanha.indicadores_esperados?.engajamento_esperado || 'Orgânico'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1426,29 +1689,105 @@ export function ComunicacaoCampanhas({
               {formStep === 3 && (
                 <div className="space-y-4 animate-in fade-in duration-150">
                   <div>
-                    <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                      6. Estratégia de Persuasão &amp; Gatilhos Mentais (Expansível)
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-[var(--text-secondary)] block text-xs">
+                        6. Estratégia de Persuasão &amp; Gatilhos Mentais (Expansível)
+                      </label>
+                      <span className="text-[10px] text-[var(--text-muted)] font-medium">
+                        Dica: use tópicos numerados (ex: 1. Nome: Explicação...)
+                      </span>
+                    </div>
                     <AutoResizeTextarea
-                      minRows={2}
-                      placeholder="Ex: Prova Social (depoimentos de voluntários), Reciprocidade, Pertencimento Comunitário..."
+                      minRows={4}
+                      placeholder={`1. Afinidade e Nostalgia:\nConecta o pedido de doação à memória afetiva do doador sobre suas brincadeiras de infância...\n\n2. Pertencimento Comunitário:\nO doador recebe o título de Guardião do Brincar, valorizando o território...\n\n3. Urgência:\nA arrecadação encerra antes do evento comunitário...`}
                       value={formGatilhos}
                       onChangeValue={setFormGatilhos}
                     />
                   </div>
 
-                  <div>
-                    <label className="font-semibold text-[var(--text-secondary)] block mb-1">
-                      7. Canais e Ferramentas de Divulgação
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Instagram Feed, Reels, Stories, WhatsApp Comunitário, Site Oficial"
-                      value={formCanais.join(', ')}
-                      onChange={(e) => setFormCanais(e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)]"
-                    />
-                    <p className="text-[10px] text-[var(--text-muted)] mt-1">Separe os canais por vírgula.</p>
+                  {/* 7. Canais e Ferramentas com Botões de Seleção Rápida */}
+                  <div className="p-3.5 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-xs text-[var(--color-primary)] block">
+                        7. Canais &amp; Ferramentas de Divulgação
+                      </label>
+                      <span className="text-[10px] text-[var(--text-muted)]">
+                        Clique para selecionar ou adicione outros
+                      </span>
+                    </div>
+
+                    {/* Botões de Seleção Pré-definidos */}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {CANAIS_PREDEFINIDOS.map((canal) => {
+                        const isSelected = formCanais.includes(canal);
+                        return (
+                          <button
+                            key={canal}
+                            type="button"
+                            onClick={() => handleToggleCanal(canal)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                              isSelected
+                                ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                                : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--text-primary)]'
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                            {canal}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Input para canal customizado */}
+                    <div className="flex items-center gap-2 pt-2">
+                      <input
+                        type="text"
+                        placeholder="Adicionar outro canal (ex: Podcast, Cartaz, Rádio Comunitária)..."
+                        value={customCanalInput}
+                        onChange={(e) => setCustomCanalInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomCanal();
+                          }
+                        }}
+                        className="flex-1 px-3 py-1.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleAddCustomCanal}
+                        disabled={!customCanalInput.trim()}
+                      >
+                        Adicionar
+                      </Button>
+                    </div>
+
+                    {/* Resumo dos canais atualmente selecionados */}
+                    {formCanais.length > 0 && (
+                      <div className="pt-2 border-t border-[var(--border-default)] flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-[var(--text-muted)] mr-1">
+                          Selecionados ({formCanais.length}):
+                        </span>
+                        {formCanais.map((c) => (
+                          <span
+                            key={c}
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[11px] font-medium text-[var(--text-primary)]"
+                          >
+                            {c}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleCanal(c)}
+                              className="text-[var(--text-muted)] hover:text-rose-500 cursor-pointer p-0.5"
+                              title={`Remover ${c}`}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
@@ -1461,7 +1800,7 @@ export function ComunicacaoCampanhas({
                           placeholder="Ex: 10.000 contas"
                           value={formIndAlcance}
                           onChange={(e) => setFormIndAlcance(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                          className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] text-xs"
                         />
                       </div>
                       <div>
@@ -1471,17 +1810,17 @@ export function ComunicacaoCampanhas({
                           placeholder="Ex: > 5.5%"
                           value={formIndEngajamento}
                           onChange={(e) => setFormIndEngajamento(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                          className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] text-xs"
                         />
                       </div>
                       <div>
                         <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Conversões / Doações</label>
                         <input
                           type="text"
-                          placeholder="Ex: 25 assinaturas"
+                          placeholder="Ex: 50 doações ou R$ 6.700"
                           value={formIndConversoes}
                           onChange={(e) => setFormIndConversoes(e.target.value)}
-                          className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)]"
+                          className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] text-xs"
                         />
                       </div>
                     </div>
@@ -1543,62 +1882,153 @@ export function ComunicacaoCampanhas({
             </div>
 
             {/* 1 e 2. Resumo & Diagnóstico */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4" style={{ pageBreakInside: 'avoid' }}>
               <div className="p-3 bg-slate-50 rounded border border-slate-200">
                 <h3 className="font-bold text-[11px] uppercase text-[#F2632D] mb-1">1. Resumo da Campanha</h3>
-                <p>{campanhaParaPdf.resumo || 'Sem resumo cadastrado.'}</p>
+                <p className="whitespace-pre-line text-[10px] text-slate-700 leading-relaxed">
+                  {campanhaParaPdf.resumo || 'Sem resumo cadastrado.'}
+                </p>
               </div>
               <div className="p-3 bg-slate-50 rounded border border-slate-200">
                 <h3 className="font-bold text-[11px] uppercase text-[#F2632D] mb-1">2. Diagnóstico &amp; Contexto</h3>
-                <p>{campanhaParaPdf.diagnostico_contexto || 'Sem diagnóstico registrado.'}</p>
+                <p className="whitespace-pre-line text-[10px] text-slate-700 leading-relaxed">
+                  {campanhaParaPdf.diagnostico_contexto || 'Sem diagnóstico registrado.'}
+                </p>
               </div>
             </div>
 
             {/* 3. Personas */}
-            <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-2">
+            <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-2" style={{ pageBreakInside: 'avoid' }}>
               <h3 className="font-bold text-[11px] uppercase text-[#F2632D]">3. Personas &amp; Público-Alvo</h3>
-              <div className="grid grid-cols-3 gap-2 text-[11px]">
+              <div className="grid grid-cols-3 gap-2 text-[10px] pb-1 border-b border-slate-200">
                 <div><strong>Faixa Etária:</strong> {campanhaParaPdf.personas_publico?.perfil_idade || 'Geral'}</div>
                 <div><strong>Tom de Voz:</strong> {campanhaParaPdf.personas_publico?.tom_marca || 'Acolhedor'}</div>
                 <div><strong>Valores:</strong> {campanhaParaPdf.personas_publico?.habitos_valores || 'Comunidade'}</div>
-                <div className="col-span-2"><strong>Dores/Medos:</strong> {campanhaParaPdf.personas_publico?.dores_medos || 'Falta de oportunidade'}</div>
-                <div><strong>Desejos:</strong> {campanhaParaPdf.personas_publico?.desejos || 'Ver impacto social'}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-[10px] pt-1">
+                <div>
+                  <strong className="text-amber-800 block mb-0.5">Dores, Medos &amp; Inseguranças:</strong>
+                  <p className="whitespace-pre-line text-slate-700 leading-relaxed">
+                    {campanhaParaPdf.personas_publico?.dores_medos || 'Não informado.'}
+                  </p>
+                </div>
+                <div>
+                  <strong className="text-emerald-800 block mb-0.5">Desejos &amp; Aspirações:</strong>
+                  <p className="whitespace-pre-line text-slate-700 leading-relaxed">
+                    {campanhaParaPdf.personas_publico?.desejos || 'Não informado.'}
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* 4 e 5. Objetivos e Narrativa */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4" style={{ pageBreakInside: 'avoid' }}>
               <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-1.5">
                 <h3 className="font-bold text-[11px] uppercase text-[#F2632D]">4. Objetivos &amp; Metas</h3>
-                <p><strong>Meta Principal:</strong> {campanhaParaPdf.objetivos?.meta_principal || 'N/D'}</p>
+                <div className="p-2 bg-white rounded border border-slate-200">
+                  <strong className="text-[10px] text-slate-600 block">Meta Principal:</strong>
+                  <p className="font-bold text-[11px] text-slate-900">{campanhaParaPdf.objetivos?.meta_principal || 'N/D'}</p>
+                </div>
                 {campanhaParaPdf.objetivos?.metas_secundarias && (
-                  <p><strong>Secundárias:</strong> {campanhaParaPdf.objetivos.metas_secundarias}</p>
+                  <div className="space-y-1 pt-1">
+                    <strong className="text-[10px] text-slate-600 block">Metas Secundárias:</strong>
+                    {parsedMetasSecundariasPdf.topics.map((top, idx) => (
+                      <div key={idx} className="p-1.5 bg-white rounded border border-slate-100 text-[10px]">
+                        <span className="font-bold text-[#F2632D] block">{top.title}</span>
+                        {top.content && <p className="whitespace-pre-line text-slate-700">{top.content}</p>}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
               <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-1.5">
                 <h3 className="font-bold text-[11px] uppercase text-[#F2632D]">5. Estratégia Narrativa</h3>
-                <p><strong>Protagonista:</strong> {campanhaParaPdf.estrategia_narrativa?.protagonista || 'Crianças'}</p>
-                <p><strong>Transformação:</strong> {campanhaParaPdf.estrategia_narrativa?.transformacao || 'Impacto social'}</p>
-                <p><strong>CTA Principal:</strong> {campanhaParaPdf.estrategia_narrativa?.cta_principal || 'Apoie o projeto'}</p>
+                <p className="text-[10px]"><strong>Protagonista:</strong> {campanhaParaPdf.estrategia_narrativa?.protagonista || 'Crianças'}</p>
+                <p className="text-[10px]"><strong>Antagonista:</strong> {campanhaParaPdf.estrategia_narrativa?.antagonista || 'Vulnerabilidade Social'}</p>
+                {campanhaParaPdf.estrategia_narrativa?.transformacao && (
+                  <div className="p-1.5 bg-white rounded border border-slate-100 text-[10px]">
+                    <strong>Transformação:</strong>
+                    <p className="whitespace-pre-line text-slate-700">{campanhaParaPdf.estrategia_narrativa.transformacao}</p>
+                  </div>
+                )}
+                <div className="p-2 bg-emerald-50 rounded border border-emerald-200 text-[10px]">
+                  <strong className="text-emerald-800 block">CTA Principal:</strong>
+                  <p className="font-bold text-emerald-900">{campanhaParaPdf.estrategia_narrativa?.cta_principal || 'Apoie o projeto'}</p>
+                </div>
+                {campanhaParaPdf.estrategia_narrativa?.cta_secundario && (
+                  <p className="text-[10px] text-slate-600"><strong>CTA Secundário:</strong> {campanhaParaPdf.estrategia_narrativa.cta_secundario}</p>
+                )}
               </div>
             </div>
 
-            {/* 6, 7, 10. Persuasão, Canais e Indicadores */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-3 bg-slate-50 rounded border border-slate-200">
-                <h3 className="font-bold text-[11px] uppercase text-[#F2632D] mb-1">6. Gatilhos Mentais</h3>
-                <p>{campanhaParaPdf.gatilhos_persuasao || 'Prova Social'}</p>
+            {/* 6. Estratégia de Persuasão & Gatilhos Mentais (LARGURA TOTAL FORMATADA) */}
+            <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-2" style={{ pageBreakInside: 'avoid' }}>
+              <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                <h3 className="font-bold text-[11px] uppercase text-[#F2632D]">6. Estratégia de Persuasão &amp; Gatilhos Mentais</h3>
+                <span className="text-[9px] font-bold text-slate-500">
+                  {parsedGatilhosPdf.isTags ? `${parsedGatilhosPdf.topics.length} Gatilhos` : `${parsedGatilhosPdf.topics.length} Tópicos Estratégicos`}
+                </span>
               </div>
-              <div className="p-3 bg-slate-50 rounded border border-slate-200">
-                <h3 className="font-bold text-[11px] uppercase text-[#F2632D] mb-1">7. Canais</h3>
-                <p>{(campanhaParaPdf.canais_ferramentas || []).join(', ') || 'Instagram, WhatsApp'}</p>
+
+              {parsedGatilhosPdf.isTags ? (
+                <div className="flex flex-wrap gap-1.5 text-[10px]">
+                  {parsedGatilhosPdf.topics.map((t, idx) => (
+                    <span key={idx} className="px-2 py-0.5 rounded bg-white border border-slate-200 font-bold text-slate-800">
+                      • {t.title}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  {parsedGatilhosPdf.topics.map((top, idx) => (
+                    <div key={idx} className="p-2 bg-white rounded border border-slate-200 space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        {top.number && (
+                          <span className="w-4 h-4 rounded bg-[#F2632D]/15 text-[#F2632D] text-[9px] font-black flex items-center justify-center shrink-0">
+                            {top.number}
+                          </span>
+                        )}
+                        <strong className="font-bold text-slate-900 text-[10.5px]">{top.title}</strong>
+                      </div>
+                      {top.content && (
+                        <p className="whitespace-pre-line text-slate-700 leading-relaxed pl-5 text-[9.5px]">
+                          {top.content}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 7 e 10. Canais e Indicadores Numéricos (2 Colunas Equilibradas) */}
+            <div className="grid grid-cols-2 gap-4" style={{ pageBreakInside: 'avoid' }}>
+              <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-1.5">
+                <h3 className="font-bold text-[11px] uppercase text-[#F2632D] mb-1">7. Canais &amp; Ferramentas de Distribuição</h3>
+                <div className="flex flex-wrap gap-1 text-[10px]">
+                  {(campanhaParaPdf.canais_ferramentas || []).map((canal, idx) => (
+                    <span key={idx} className="px-2 py-0.5 rounded bg-white border border-slate-200 font-semibold text-slate-800">
+                      {canal}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="p-3 bg-slate-50 rounded border border-slate-200">
-                <h3 className="font-bold text-[11px] uppercase text-[#F2632D] mb-1">10. Metas Numéricas</h3>
-                <p>
-                  Alcance: {campanhaParaPdf.indicadores_esperados?.alcance_esperado || 'N/D'}<br />
-                  Metas: {campanhaParaPdf.indicadores_esperados?.conversoes_doacoes || 'N/D'}
-                </p>
+              <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-1.5">
+                <h3 className="font-bold text-[11px] uppercase text-[#F2632D] mb-1">10. Indicadores e Metas Numéricas</h3>
+                <div className="grid grid-cols-3 gap-2 text-[10px]">
+                  <div className="p-1.5 bg-white rounded border border-slate-200">
+                    <span className="text-[9px] text-slate-500 block uppercase font-bold">Alcance</span>
+                    <span className="font-bold text-slate-900">{campanhaParaPdf.indicadores_esperados?.alcance_esperado || 'N/D'}</span>
+                  </div>
+                  <div className="p-1.5 bg-white rounded border border-slate-200">
+                    <span className="text-[9px] text-slate-500 block uppercase font-bold">Metas / Doações</span>
+                    <span className="font-bold text-emerald-700">{campanhaParaPdf.indicadores_esperados?.conversoes_doacoes || 'N/D'}</span>
+                  </div>
+                  <div className="p-1.5 bg-white rounded border border-slate-200">
+                    <span className="text-[9px] text-slate-500 block uppercase font-bold">Engajamento</span>
+                    <span className="font-bold text-slate-900">{campanhaParaPdf.indicadores_esperados?.engajamento_esperado || 'Orgânico'}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
