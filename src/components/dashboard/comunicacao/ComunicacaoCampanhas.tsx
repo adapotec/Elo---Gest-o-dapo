@@ -36,6 +36,8 @@ import {
 } from 'lucide-react';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
 import { ConteudoItem } from './ComunicacaoCalendario';
+import { TarefaAvulsaItem } from './ComunicacaoTarefasKanban';
+import { SolicitacaoComunicacaoItem, getTipoMaterialLabel } from './ComunicacaoTickets';
 
 export interface ParsedTopic {
   number?: string;
@@ -173,6 +175,8 @@ interface ProjetoSimples {
 interface ComunicacaoCampanhasProps {
   campanhas: CampanhaItem[];
   conteudos: ConteudoItem[];
+  tarefas?: TarefaAvulsaItem[];
+  tickets?: SolicitacaoComunicacaoItem[];
   projetos: ProjetoSimples[];
   voluntarios: Voluntario[];
   loading: boolean;
@@ -231,6 +235,8 @@ function AutoResizeTextarea({
 export function ComunicacaoCampanhas({
   campanhas,
   conteudos,
+  tarefas = [],
+  tickets = [],
   projetos,
   voluntarios,
   loading,
@@ -245,6 +251,7 @@ export function ComunicacaoCampanhas({
   const [showModal, setShowModal] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [campanhaParaPdf, setCampanhaParaPdf] = useState<CampanhaItem | null>(null);
+  const [secao8Tab, setSecao8Tab] = useState<'posts' | 'tarefas' | 'tickets'>('posts');
 
   // Estados do Formulário de 10 Blocos
   const [formStep, setFormStep] = useState<number>(1);
@@ -343,11 +350,26 @@ export function ComunicacaoCampanhas({
     });
   }, [campanhas, searchTerm, statusFilter, projetoFilter]);
 
-  // Peças de Conteúdo vinculadas à campanha selecionada (Bloco 8)
+  // Peças de Conteúdo vinculadas à campanha selecionada (Bloco 8 - vinculação direta ou por projeto associado)
   const postsDaCampanha = useMemo(() => {
     if (!selectedCampanha) return [];
-    return conteudos.filter((cnt) => cnt.campanha_id === selectedCampanha.id);
+    return conteudos.filter((cnt) =>
+      (cnt.campanha_id && cnt.campanha_id === selectedCampanha.id) ||
+      (selectedCampanha.projeto_id && cnt.projeto_id === selectedCampanha.projeto_id)
+    );
   }, [conteudos, selectedCampanha]);
+
+  // Tarefas do Quadro de Produção vinculadas ao projeto da campanha
+  const tarefasDaCampanha = useMemo(() => {
+    if (!selectedCampanha || !selectedCampanha.projeto_id) return [];
+    return tarefas.filter((t) => t.projeto_id === selectedCampanha.projeto_id);
+  }, [tarefas, selectedCampanha]);
+
+  // Demandas e Tickets de Comunicação vinculados ao projeto da campanha
+  const ticketsDaCampanha = useMemo(() => {
+    if (!selectedCampanha || !selectedCampanha.projeto_id) return [];
+    return tickets.filter((t) => t.projeto_id === selectedCampanha.projeto_id);
+  }, [tickets, selectedCampanha]);
 
   // Parsers de tópicos formatados para visualização no modal e no PDF
   const parsedGatilhosModal = useMemo(() => {
@@ -829,7 +851,11 @@ export function ComunicacaoCampanhas({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredCampanhas.map((camp) => {
                 const cor = camp.projetos_sociais?.cor_identificacao || '#F2632D';
-                const postsVinculados = conteudos.filter((cnt) => cnt.campanha_id === camp.id).length;
+                const postsVinculados = conteudos.filter(
+                  (cnt) => (cnt.campanha_id && cnt.campanha_id === camp.id) || (camp.projeto_id && cnt.projeto_id === camp.projeto_id)
+                ).length;
+                const tarefasVinculadas = (tarefas || []).filter((t) => camp.projeto_id && t.projeto_id === camp.projeto_id).length;
+                const ticketsVinculados = (tickets || []).filter((t) => camp.projeto_id && t.projeto_id === camp.projeto_id).length;
 
                 return (
                   <div
@@ -872,7 +898,7 @@ export function ComunicacaoCampanhas({
                       )}
                     </div>
 
-                    {/* Metadados: Meta Principal, Responsável & Posts Vinculados */}
+                    {/* Metadados: Meta Principal, Responsável & Produções Vinculadas */}
                     <div className="space-y-3 pt-3 border-t border-[var(--border-default)] text-xs">
                       {camp.objetivos?.meta_principal && (
                         <div className="p-2.5 rounded-xl bg-[var(--bg-secondary)]/60 border border-[var(--border-default)] text-[11px] space-y-0.5">
@@ -901,9 +927,21 @@ export function ComunicacaoCampanhas({
                           </span>
                         </div>
 
-                        <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-pink-500/10 text-pink-700 dark:text-pink-300 border border-pink-500/20">
-                          {postsVinculados} {postsVinculados === 1 ? 'post' : 'posts'}
-                        </span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-pink-500/10 text-pink-700 dark:text-pink-300 border border-pink-500/20">
+                            {postsVinculados} {postsVinculados === 1 ? 'post' : 'posts'}
+                          </span>
+                          {tarefasVinculadas > 0 && (
+                            <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                              {tarefasVinculadas} {tarefasVinculadas === 1 ? 'tarefa' : 'tarefas'}
+                            </span>
+                          )}
+                          {ticketsVinculados > 0 && (
+                            <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                              {ticketsVinculados} {ticketsVinculados === 1 ? 'demanda' : 'demandas'}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Botões de Ação do Card */}
@@ -1328,51 +1366,254 @@ export function ComunicacaoCampanhas({
                 </div>
               </div>
 
-              {/* 8. Calendário Editorial Vinculado a Esta Campanha */}
-              <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-primary)]">
-                    8. Calendário Editorial Vinculado ({postsDaCampanha.length} Peças)
-                  </p>
+              {/* 8. Produções & Calendário Integrado da Campanha */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-default)]">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                      <FolderKanban className="w-4 h-4" />
+                      8. Produções &amp; Calendário Integrado ({postsDaCampanha.length + tarefasDaCampanha.length + ticketsDaCampanha.length} Itens)
+                    </p>
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                      Peças de comunicação, tarefas operacionais e demandas vinculadas a este projeto
+                    </p>
+                  </div>
+
+                  {/* Seletor de Sub-Abas */}
+                  <div className="flex items-center gap-1 p-1 bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-xl self-start sm:self-auto overflow-x-auto">
+                    <button
+                      type="button"
+                      onClick={() => setSecao8Tab('posts')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                        secao8Tab === 'posts'
+                          ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                      }`}
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Calendário</span>
+                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-extrabold ${secao8Tab === 'posts' ? 'bg-white/25 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'}`}>
+                        {postsDaCampanha.length}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSecao8Tab('tarefas')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                        secao8Tab === 'tarefas'
+                          ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                      }`}
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>Tarefas Operacionais</span>
+                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-extrabold ${secao8Tab === 'tarefas' ? 'bg-white/25 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'}`}>
+                        {tarefasDaCampanha.length}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSecao8Tab('tickets')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                        secao8Tab === 'tickets'
+                          ? 'bg-[var(--color-primary)] text-white shadow-xs'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Demandas &amp; Tickets</span>
+                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-extrabold ${secao8Tab === 'tickets' ? 'bg-white/25 text-white' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'}`}>
+                        {ticketsDaCampanha.length}
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
-                {postsDaCampanha.length === 0 ? (
-                  <p className="text-xs text-[var(--text-muted)] italic">
-                    Nenhuma postagem vinculada a esta campanha ainda. No Calendário Editorial, atribua esta campanha ao criar um conteúdo.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
-                    {postsDaCampanha.map((p) => (
-                      <div
-                        key={p.id}
-                        className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center justify-between gap-2 shadow-2xs"
-                      >
-                        <div className="min-w-0 text-xs">
-                          <span className="font-bold text-[var(--text-primary)] block truncate">
-                            {p.titulo}
-                          </span>
-                          <span className="text-[10px] text-[var(--text-muted)]">
-                            {new Date(p.data_publicacao).toLocaleDateString('pt-BR')} • {p.tipo_conteudo.toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {p.link_publicacao && (
-                            <a
-                              href={p.link_publicacao}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="p-1 rounded bg-pink-500/10 text-pink-600 hover:bg-pink-500/20 transition-colors"
-                              title="Abrir postagem"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-                            {p.status}
-                          </span>
-                        </div>
+                {/* Sub-Aba 1: Peças do Calendário Editorial */}
+                {secao8Tab === 'posts' && (
+                  <div>
+                    {postsDaCampanha.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-default)] italic">
+                        Nenhuma postagem vinculada a esta campanha no calendário editorial até o momento.
                       </div>
-                    ))}
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {postsDaCampanha.map((p) => {
+                          const d = new Date(p.data_publicacao);
+                          const dtStr = `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}h`;
+
+                          return (
+                            <div
+                              key={p.id}
+                              className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xs space-y-2 flex flex-col justify-between"
+                            >
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                  <span className="px-2 py-0.5 rounded-md font-extrabold text-[9px] uppercase tracking-wider bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                                    {p.tipo_conteudo}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-[var(--text-muted)] font-mono">
+                                    {dtStr}
+                                  </span>
+                                </div>
+                                <h5 className="font-bold text-xs text-[var(--text-primary)] line-clamp-2">
+                                  {p.titulo}
+                                </h5>
+                                {p.descricao && (
+                                  <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2 italic">
+                                    &quot;{p.descricao}&quot;
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="pt-2 border-t border-[var(--border-default)] flex items-center justify-between text-[10px] text-[var(--text-muted)]">
+                                <span>{p.voluntarios?.nome_completo?.split(' ')[0] || 'Equipe Geral'}</span>
+                                <div className="flex items-center gap-1.5">
+                                  {p.link_publicacao && (
+                                    <a
+                                      href={p.link_publicacao}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="p-1 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors"
+                                      title="Abrir postagem publicada"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  )}
+                                  <span className="px-2 py-0.5 rounded-md font-bold text-[9px] uppercase bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                                    {p.status}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Sub-Aba 2: Tarefas Operacionais do Quadro Kanban */}
+                {secao8Tab === 'tarefas' && (
+                  <div>
+                    {tarefasDaCampanha.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-default)] italic">
+                        Nenhuma tarefa operacional vinculada a este projeto no quadro Kanban.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {tarefasDaCampanha.map((t) => (
+                          <div
+                            key={t.id}
+                            className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xs space-y-2 flex flex-col justify-between"
+                          >
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                <span className={`px-2 py-0.5 rounded-md font-extrabold text-[9px] uppercase tracking-wider border ${
+                                  t.prioridade === 'urgente'
+                                    ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20'
+                                    : t.prioridade === 'alta'
+                                    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
+                                    : 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20'
+                                }`}>
+                                  {t.prioridade}
+                                </span>
+                                {t.data_limite && (
+                                  <span className="text-[10px] font-bold text-[var(--text-muted)] font-mono flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+                                    {new Date(t.data_limite).toLocaleDateString('pt-BR')}
+                                  </span>
+                                )}
+                              </div>
+                              <h5 className="font-bold text-xs text-[var(--text-primary)] line-clamp-2">
+                                {t.titulo}
+                              </h5>
+                              {t.descricao && (
+                                <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2 italic">
+                                  {t.descricao}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="pt-2 border-t border-[var(--border-default)] flex items-center justify-between text-[10px] text-[var(--text-muted)]">
+                              <span>{t.voluntarios?.nome_completo?.split(' ')[0] || 'Sem responsável'}</span>
+                              <span className="px-2 py-0.5 rounded-md font-bold text-[9px] uppercase bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                                {t.status === 'a_fazer'
+                                  ? 'A Fazer'
+                                  : t.status === 'em_andamento'
+                                  ? 'Em Produção'
+                                  : t.status === 'revisao'
+                                  ? 'Revisão'
+                                  : 'Concluído'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Sub-Aba 3: Demandas e Tickets de Comunicação */}
+                {secao8Tab === 'tickets' && (
+                  <div>
+                    {ticketsDaCampanha.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-elevated)] rounded-xl border border-[var(--border-default)] italic">
+                        Nenhuma demanda ou ticket de comunicação solicitado para este projeto.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {ticketsDaCampanha.map((tick) => (
+                          <div
+                            key={tick.id}
+                            className="p-3.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xs space-y-2 flex flex-col justify-between"
+                          >
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                <span className="px-2 py-0.5 rounded-md font-bold text-[9px] bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                                  {getTipoMaterialLabel(tick.tipo_material)}
+                                </span>
+                                {tick.prazo_desejado && (
+                                  <span className="text-[10px] font-bold text-[var(--text-muted)] font-mono flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+                                    {new Date(tick.prazo_desejado).toLocaleDateString('pt-BR')}
+                                  </span>
+                                )}
+                              </div>
+                              <h5 className="font-bold text-xs text-[var(--text-primary)] line-clamp-2">
+                                {tick.titulo}
+                              </h5>
+                              {tick.descricao_detalhes && (
+                                <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2 italic">
+                                  {tick.descricao_detalhes}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="pt-2 border-t border-[var(--border-default)] flex items-center justify-between text-[10px] text-[var(--text-muted)]">
+                              <span className="truncate max-w-[120px]">
+                                Solicitante: {tick.solicitante_nome?.split(' ')[0] || tick.solicitante?.nome_completo?.split(' ')[0] || 'Equipe'}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-md font-bold text-[9px] uppercase bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                                {tick.status === 'pendente'
+                                  ? 'Pendente'
+                                  : tick.status === 'em_analise'
+                                  ? 'Em Análise'
+                                  : tick.status === 'aprovado'
+                                  ? 'Aprovado'
+                                  : tick.status === 'em_producao'
+                                  ? 'Em Produção'
+                                  : tick.status === 'concluido'
+                                  ? 'Concluído'
+                                  : 'Recusado'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -2032,83 +2273,216 @@ export function ComunicacaoCampanhas({
               </div>
             </div>
 
-            {/* ── 8. CALENDÁRIO EDITORIAL DA CAMPANHA (CRONOGRAMA DE PEÇAS) ── */}
+            {/* ── 8. CALENDÁRIO EDITORIAL & PRODUÇÕES DA CAMPANHA ── */}
             {(() => {
-              const postsCampanhaPdf = conteudos.filter((c) => c.campanha_id === campanhaParaPdf.id);
+              const postsCampanhaPdf = conteudos.filter(
+                (c) =>
+                  (c.campanha_id && c.campanha_id === campanhaParaPdf.id) ||
+                  (campanhaParaPdf.projeto_id && c.projeto_id === campanhaParaPdf.projeto_id)
+              );
+
+              const tarefasCampanhaPdf = (tarefas || []).filter(
+                (t) => campanhaParaPdf.projeto_id && t.projeto_id === campanhaParaPdf.projeto_id
+              );
+
+              const ticketsCampanhaPdf = (tickets || []).filter(
+                (t) => campanhaParaPdf.projeto_id && t.projeto_id === campanhaParaPdf.projeto_id
+              );
+
+              const totalItens = postsCampanhaPdf.length + tarefasCampanhaPdf.length + ticketsCampanhaPdf.length;
 
               return (
-                <div className="space-y-2 pt-2 border-t border-slate-200">
+                <div className="space-y-3 pt-2 border-t border-slate-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-[11px] uppercase tracking-wider text-[#F2632D]">
-                      8. Calendário Editorial da Campanha ({postsCampanhaPdf.length} {postsCampanhaPdf.length === 1 ? 'Peça' : 'Peças'})
-                    </h3>
+                    <div>
+                      <h3 className="font-bold text-[11px] uppercase tracking-wider text-[#F2632D]">
+                        8. Calendário Editorial &amp; Produções da Campanha ({totalItens} {totalItens === 1 ? 'Item' : 'Itens'})
+                      </h3>
+                      <p className="text-[9px] text-slate-500">
+                        {postsCampanhaPdf.length} {postsCampanhaPdf.length === 1 ? 'peça no calendário' : 'peças no calendário'} • {tarefasCampanhaPdf.length} {tarefasCampanhaPdf.length === 1 ? 'tarefa operacional' : 'tarefas operacionais'} • {ticketsCampanhaPdf.length} {ticketsCampanhaPdf.length === 1 ? 'demanda solicitada' : 'demandas solicitadas'}
+                      </p>
+                    </div>
                     <span className="text-[10px] text-slate-500 font-semibold">
                       Publicados: {postsCampanhaPdf.filter((c) => c.status === 'publicado').length} / {postsCampanhaPdf.length}
                     </span>
                   </div>
 
-                  {postsCampanhaPdf.length === 0 ? (
-                    <div className="p-3 bg-slate-50 rounded border border-slate-200 text-center text-slate-500 italic">
-                      Nenhuma postagem vinculada a esta campanha no calendário editorial até o momento.
-                    </div>
-                  ) : (
-                    <table className="w-full border-collapse border border-slate-300 text-[10px]">
-                      <thead>
-                        <tr className="bg-slate-100 text-slate-700">
-                          <th className="border border-slate-300 p-1.5 text-left w-24">Data / Hora</th>
-                          <th className="border border-slate-300 p-1.5 text-left w-16">Formato</th>
-                          <th className="border border-slate-300 p-1.5 text-left">Título da Peça &amp; Roteiro</th>
-                          <th className="border border-slate-300 p-1.5 text-left w-24">Responsável</th>
-                          <th className="border border-slate-300 p-1.5 text-center w-20">Status</th>
-                          <th className="border border-slate-300 p-1.5 text-left w-28">Link da Publicação</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {postsCampanhaPdf.map((p) => {
-                          const d = new Date(p.data_publicacao);
-                          const dtStr = `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}h`;
+                  {/* 8.1 Peças do Calendário Editorial */}
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-[10px] uppercase text-slate-700 flex items-center gap-1.5">
+                      8.1 Cronograma Editorial de Peças ({postsCampanhaPdf.length})
+                    </h4>
+                    {postsCampanhaPdf.length === 0 ? (
+                      <div className="p-2.5 bg-slate-50 rounded border border-slate-200 text-center text-slate-500 italic text-[10px]">
+                        Nenhuma postagem vinculada a esta campanha no calendário editorial até o momento.
+                      </div>
+                    ) : (
+                      <table className="w-full border-collapse border border-slate-300 text-[10px]">
+                        <thead>
+                          <tr className="bg-slate-100 text-slate-700">
+                            <th className="border border-slate-300 p-1.5 text-left w-24">Data / Hora</th>
+                            <th className="border border-slate-300 p-1.5 text-left w-16">Formato</th>
+                            <th className="border border-slate-300 p-1.5 text-left">Título da Peça &amp; Roteiro</th>
+                            <th className="border border-slate-300 p-1.5 text-left w-24">Responsável</th>
+                            <th className="border border-slate-300 p-1.5 text-center w-20">Status</th>
+                            <th className="border border-slate-300 p-1.5 text-left w-28">Link da Publicação</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {postsCampanhaPdf.map((p) => {
+                            const d = new Date(p.data_publicacao);
+                            const dtStr = `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}h`;
 
-                          return (
-                            <tr key={p.id} className="hover:bg-slate-50">
-                              <td className="border border-slate-300 p-1.5 font-bold font-mono">
-                                {dtStr}
-                              </td>
-                              <td className="border border-slate-300 p-1.5 uppercase font-semibold">
-                                {p.tipo_conteudo}
-                              </td>
+                            return (
+                              <tr key={p.id} className="hover:bg-slate-50">
+                                <td className="border border-slate-300 p-1.5 font-bold font-mono">
+                                  {dtStr}
+                                </td>
+                                <td className="border border-slate-300 p-1.5 uppercase font-semibold">
+                                  {p.tipo_conteudo}
+                                </td>
+                                <td className="border border-slate-300 p-1.5">
+                                  <p className="font-bold text-slate-900">{p.titulo}</p>
+                                  {p.descricao && (
+                                    <p className="text-[9px] text-slate-600 line-clamp-2 italic">
+                                      &quot;{p.descricao}&quot;
+                                    </p>
+                                  )}
+                                </td>
+                                <td className="border border-slate-300 p-1.5">
+                                  {p.voluntarios?.nome_completo || 'Equipe Geral'}
+                                </td>
+                                <td className="border border-slate-300 p-1.5 text-center font-bold">
+                                  {p.status.toUpperCase()}
+                                </td>
+                                <td className="border border-slate-300 p-1.5 truncate text-[9px]">
+                                  {p.link_publicacao ? (
+                                    <a
+                                      href={p.link_publicacao}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-blue-600 underline truncate block"
+                                    >
+                                      {p.link_publicacao}
+                                    </a>
+                                  ) : (
+                                    <span className="text-slate-400">Pendente</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+
+                  {/* 8.2 Tarefas Operacionais do Quadro de Produção */}
+                  {tarefasCampanhaPdf.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <h4 className="font-bold text-[10px] uppercase text-slate-700 flex items-center gap-1.5">
+                        8.2 Tarefas Operacionais do Quadro Kanban ({tarefasCampanhaPdf.length})
+                      </h4>
+                      <table className="w-full border-collapse border border-slate-300 text-[10px]">
+                        <thead>
+                          <tr className="bg-slate-100 text-slate-700">
+                            <th className="border border-slate-300 p-1.5 text-left">Tarefa / Entregável</th>
+                            <th className="border border-slate-300 p-1.5 text-left w-28">Responsável</th>
+                            <th className="border border-slate-300 p-1.5 text-left w-24">Prazo Limite</th>
+                            <th className="border border-slate-300 p-1.5 text-center w-20">Prioridade</th>
+                            <th className="border border-slate-300 p-1.5 text-center w-24">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tarefasCampanhaPdf.map((t) => (
+                            <tr key={t.id} className="hover:bg-slate-50">
                               <td className="border border-slate-300 p-1.5">
-                                <p className="font-bold text-slate-900">{p.titulo}</p>
-                                {p.descricao && (
-                                  <p className="text-[9px] text-slate-600 line-clamp-2 italic">
-                                    &quot;{p.descricao}&quot;
+                                <p className="font-bold text-slate-900">{t.titulo}</p>
+                                {t.descricao && (
+                                  <p className="text-[9px] text-slate-600 line-clamp-1 italic">
+                                    {t.descricao}
                                   </p>
                                 )}
                               </td>
                               <td className="border border-slate-300 p-1.5">
-                                {p.voluntarios?.nome_completo || 'Equipe Geral'}
+                                {t.voluntarios?.nome_completo || 'Sem responsável'}
                               </td>
-                              <td className="border border-slate-300 p-1.5 text-center font-bold">
-                                {p.status.toUpperCase()}
+                              <td className="border border-slate-300 p-1.5 font-mono">
+                                {t.data_limite ? new Date(t.data_limite).toLocaleDateString('pt-BR') : 'Sem prazo'}
                               </td>
-                              <td className="border border-slate-300 p-1.5 truncate text-[9px]">
-                                {p.link_publicacao ? (
-                                  <a
-                                    href={p.link_publicacao}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-blue-600 underline truncate block"
-                                  >
-                                    {p.link_publicacao}
-                                  </a>
-                                ) : (
-                                  <span className="text-slate-400">Pendente</span>
-                                )}
+                              <td className="border border-slate-300 p-1.5 text-center font-bold uppercase">
+                                {t.prioridade}
+                              </td>
+                              <td className="border border-slate-300 p-1.5 text-center font-bold uppercase">
+                                {t.status === 'a_fazer'
+                                  ? 'A Fazer'
+                                  : t.status === 'em_andamento'
+                                  ? 'Em Produção'
+                                  : t.status === 'revisao'
+                                  ? 'Revisão'
+                                  : 'Concluído'}
                               </td>
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* 8.3 Demandas & Solicitações (Tickets) */}
+                  {ticketsCampanhaPdf.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <h4 className="font-bold text-[10px] uppercase text-slate-700 flex items-center gap-1.5">
+                        8.3 Demandas &amp; Solicitações de Comunicação (Tickets) ({ticketsCampanhaPdf.length})
+                      </h4>
+                      <table className="w-full border-collapse border border-slate-300 text-[10px]">
+                        <thead>
+                          <tr className="bg-slate-100 text-slate-700">
+                            <th className="border border-slate-300 p-1.5 text-left">Demanda Solicitada</th>
+                            <th className="border border-slate-300 p-1.5 text-left w-28">Tipo Material</th>
+                            <th className="border border-slate-300 p-1.5 text-left w-28">Solicitante</th>
+                            <th className="border border-slate-300 p-1.5 text-center w-20">Urgência</th>
+                            <th className="border border-slate-300 p-1.5 text-center w-24">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ticketsCampanhaPdf.map((tick) => (
+                            <tr key={tick.id} className="hover:bg-slate-50">
+                              <td className="border border-slate-300 p-1.5">
+                                <p className="font-bold text-slate-900">{tick.titulo}</p>
+                                {tick.descricao_detalhes && (
+                                  <p className="text-[9px] text-slate-600 line-clamp-1 italic">
+                                    {tick.descricao_detalhes}
+                                  </p>
+                                )}
+                              </td>
+                              <td className="border border-slate-300 p-1.5">
+                                {getTipoMaterialLabel(tick.tipo_material)}
+                              </td>
+                              <td className="border border-slate-300 p-1.5">
+                                {tick.solicitante_nome || tick.solicitante?.nome_completo || 'Solicitante'}
+                              </td>
+                              <td className="border border-slate-300 p-1.5 text-center font-bold uppercase">
+                                {tick.urgencia || 'normal'}
+                              </td>
+                              <td className="border border-slate-300 p-1.5 text-center font-bold uppercase">
+                                {tick.status === 'pendente'
+                                  ? 'Pendente'
+                                  : tick.status === 'em_analise'
+                                  ? 'Em Análise'
+                                  : tick.status === 'aprovado'
+                                  ? 'Aprovado'
+                                  : tick.status === 'em_producao'
+                                  ? 'Em Produção'
+                                  : tick.status === 'concluido'
+                                  ? 'Concluído'
+                                  : 'Recusado'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               );

@@ -23,6 +23,8 @@ import {
   GaleriaItem,
 } from '@/components/dashboard/comunicacao/ComunicacaoGaleria';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
+import { TarefaAvulsaItem } from '@/components/dashboard/comunicacao/ComunicacaoTarefasKanban';
+import { SolicitacaoComunicacaoItem } from '@/components/dashboard/comunicacao/ComunicacaoTickets';
 import { parseDateTimeLocalToISO } from '@/lib/utils/dateTimeUtils';
 
 type GestaoTabKey = 'calendario' | 'campanhas' | 'galeria';
@@ -77,6 +79,8 @@ function GestaoContent() {
   const [conteudos, setConteudos] = useState<ConteudoItem[]>([]);
   const [campanhas, setCampanhas] = useState<CampanhaItem[]>([]);
   const [galeria, setGaleria] = useState<GaleriaItem[]>([]);
+  const [tarefas, setTarefas] = useState<TarefaAvulsaItem[]>([]);
+  const [tickets, setTickets] = useState<SolicitacaoComunicacaoItem[]>([]);
   const [projetos, setProjetos] = useState<{ id: string; nome: string; cor_identificacao?: string }[]>([]);
   const [voluntarios, setVoluntarios] = useState<Voluntario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,12 +103,16 @@ function GestaoContent() {
       const cachedCont = localStorage.getItem('elo_comunicacao_conteudos');
       const cachedCamp = localStorage.getItem('elo_comunicacao_campanhas');
       const cachedGal = localStorage.getItem('elo_comunicacao_galeria');
+      const cachedTar = localStorage.getItem('elo_comunicacao_tarefas');
+      const cachedTick = localStorage.getItem('elo_comunicacao_tickets');
 
       if (cachedProj) setProjetos(JSON.parse(cachedProj));
       if (cachedVol) setVoluntarios(JSON.parse(cachedVol));
       if (cachedCont) setConteudos(JSON.parse(cachedCont));
       if (cachedCamp) setCampanhas(JSON.parse(cachedCamp));
       if (cachedGal) setGaleria(JSON.parse(cachedGal));
+      if (cachedTar) setTarefas(JSON.parse(cachedTar));
+      if (cachedTick) setTickets(JSON.parse(cachedTick));
 
       if (cachedProj || cachedCont) {
         setLoading(false);
@@ -123,6 +131,35 @@ function GestaoContent() {
     loadInitialNetworkData();
   }, [tabParam, router]);
 
+  const loadTarefasAndTickets = async () => {
+    try {
+      const [respTar, respTick] = await Promise.all([
+        safeFetch(
+          supabase
+            .from('tarefas_comunicacao')
+            .select('id, titulo, descricao, status, prioridade, data_limite, etiquetas, checklist, projeto_id, responsavel_id, created_at, projetos_sociais(nome, cor_identificacao), voluntarios(nome_completo)')
+            .order('created_at', { ascending: false })
+        ),
+        safeFetch(
+          supabase
+            .from('solicitacoes_comunicacao')
+            .select('id, titulo, descricao_detalhes, status, urgencia, tipo_material, prazo_desejado, publico_alvo, objetivo, links_referencia, observacoes_referencia, resposta_comunicacao, checklist, solicitante_nome, projeto_id, solicitante_id, responsavel_comunicacao_id, conteudo_criado_id, created_at, projetos_sociais(nome, cor_identificacao), responsavel:voluntarios!responsavel_comunicacao_id(nome_completo), solicitante:voluntarios!solicitante_id(nome_completo)')
+            .order('created_at', { ascending: false })
+        ),
+      ]);
+      if (respTar?.data) {
+        setTarefas(respTar.data as TarefaAvulsaItem[]);
+        safeSetItem('elo_comunicacao_tarefas', respTar.data);
+      }
+      if (respTick?.data) {
+        setTickets(respTick.data as SolicitacaoComunicacaoItem[]);
+        safeSetItem('elo_comunicacao_tickets', respTick.data);
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar tarefas e tickets em gestão:', e);
+    }
+  };
+
   const loadInitialNetworkData = async () => {
     try {
       const [respProj, respVol] = await Promise.all([
@@ -138,6 +175,9 @@ function GestaoContent() {
         setVoluntarios(respVol.data as Voluntario[]);
         safeSetItem('elo_comunicacao_voluntarios', respVol.data);
       }
+
+      // Carrega tarefas e tickets em segundo plano para vincular à visualização de campanhas
+      loadTarefasAndTickets();
 
       if (activeTab === 'calendario') await loadConteudosOnly();
       else if (activeTab === 'campanhas') await loadCampanhasOnly();
@@ -171,7 +211,7 @@ function GestaoContent() {
       const resp = await safeFetch(
         supabase
           .from('conteudos_comunicacao')
-          .select('id, titulo, descricao, observacoes, roteiro_legenda, status, tipo_conteudo, categoria, data_publicacao, link_producao, link_publicacao, checklist, projeto_id, responsavel_id, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo)')
+          .select('id, titulo, descricao, observacoes, roteiro_legenda, status, tipo_conteudo, categoria, data_publicacao, link_producao, link_publicacao, checklist, projeto_id, campanha_id, responsavel_id, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo)')
           .order('data_publicacao', { ascending: true })
       );
       if (resp?.data && !resp.error) {
@@ -222,6 +262,7 @@ function GestaoContent() {
       loadConteudosOnly(),
       loadCampanhasOnly(),
       loadGaleriaOnly(),
+      loadTarefasAndTickets(),
     ]);
   };
 
@@ -298,7 +339,7 @@ function GestaoContent() {
         const { data, error } = await supabase
           .from('conteudos_comunicacao')
           .insert([payload])
-          .select('id, titulo, descricao, observacoes, roteiro_legenda, status, tipo_conteudo, categoria, data_publicacao, link_producao, link_publicacao, checklist, projeto_id, responsavel_id, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo)')
+          .select('id, titulo, descricao, observacoes, roteiro_legenda, status, tipo_conteudo, categoria, data_publicacao, link_producao, link_publicacao, checklist, projeto_id, campanha_id, responsavel_id, projetos_sociais(nome, cor_identificacao), campanhas_comunicacao(titulo), voluntarios(nome_completo)')
           .single();
 
         if (!error && data) {
@@ -550,6 +591,8 @@ function GestaoContent() {
             <ComunicacaoCampanhas
               campanhas={campanhas}
               conteudos={conteudos}
+              tarefas={tarefas}
+              tickets={tickets}
               projetos={projetos}
               voluntarios={voluntarios}
               loading={loading}
