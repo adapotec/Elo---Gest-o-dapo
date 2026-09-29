@@ -471,7 +471,7 @@ export function ComunicacaoTickets({
       </div>
 
       {/* ── 2. BARRA DE CONTROLE, FILTROS & AÇÃO DE ABERTURA ── */}
-      <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-3">
+      <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-3 card-contrast">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="relative flex-1 w-full min-w-[220px]">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
@@ -480,7 +480,7 @@ export function ComunicacaoTickets({
               placeholder="Buscar solicitação por título, solicitante ou objetivo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+              className="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
             />
           </div>
 
@@ -488,7 +488,7 @@ export function ComunicacaoTickets({
             <select
               value={projetoFilter}
               onChange={(e) => setProjetoFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold cursor-pointer shrink-0"
+              className="px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold cursor-pointer shrink-0 focus:outline-none focus:border-[var(--color-primary)]"
             >
               <option value="todos">Todos os Projetos</option>
               {projetos.map((p) => (
@@ -501,7 +501,7 @@ export function ComunicacaoTickets({
             <select
               value={urgenciaFilter}
               onChange={(e) => setUrgenciaFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold cursor-pointer shrink-0"
+              className="px-3 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold cursor-pointer shrink-0 focus:outline-none focus:border-[var(--color-primary)]"
             >
               <option value="todos">Todas Urgências</option>
               <option value="urgente">Urgente</option>
@@ -708,7 +708,7 @@ export function ComunicacaoTickets({
       {/* ── 4. MODAL: NOVA SOLICITAÇÃO DE MATERIAL (PARA VOLUNTÁRIOS) ── */}
       {showNewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="w-full max-w-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar card-contrast" role="dialog" aria-modal="true">
             <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-[var(--color-primary)]" />
@@ -739,7 +739,7 @@ export function ComunicacaoTickets({
                   placeholder="Ex: Divulgação da Oficina de Pintura / Crachás da Nova Turma"
                   value={formTitulo}
                   onChange={(e) => setFormTitulo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] font-medium"
                   required
                 />
               </div>
@@ -752,7 +752,7 @@ export function ComunicacaoTickets({
                   <select
                     value={formProjetoId}
                     onChange={(e) => setFormProjetoId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer focus:outline-none focus:border-[var(--color-primary)]"
                   >
                     <option value="">Institucional Geral (Ádapo)</option>
                     {projetos.map((p) => (
@@ -770,7 +770,7 @@ export function ComunicacaoTickets({
                   <select
                     value={formTipoMaterial}
                     onChange={(e) => setFormTipoMaterial(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer focus:outline-none focus:border-[var(--color-primary)]"
                   >
                     <optgroup label="Redes Sociais">
                       {TIPOS_MATERIAL.filter((t) => t.categoria === 'redes').map((t) => (
@@ -818,7 +818,7 @@ export function ComunicacaoTickets({
                         }
                       }
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer focus:outline-none focus:border-[var(--color-primary)]"
                     required
                   >
                     <option value="">Selecione o voluntário solicitante...</option>
@@ -836,7 +836,7 @@ export function ComunicacaoTickets({
                       placeholder="Digite o nome do solicitante externo"
                       value={formSolicitanteNome}
                       onChange={(e) => setFormSolicitanteNome(e.target.value)}
-                      className="w-full mt-2 px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium"
+                      className="w-full mt-2 px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium focus:outline-none focus:border-[var(--color-primary)]"
                       required
                     />
                   )}
@@ -850,7 +850,7 @@ export function ComunicacaoTickets({
                     type="date"
                     value={formPrazoDesejado}
                     onChange={(e) => setFormPrazoDesejado(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium focus:outline-none focus:border-[var(--color-primary)]"
                   />
                 </div>
               </div>
@@ -874,7 +874,7 @@ export function ComunicacaoTickets({
                             : urg === 'baixa'
                             ? 'bg-slate-700 text-white border-slate-700 shadow-xs'
                             : 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-xs'
-                          : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-default)]'
+                          : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
                       }`}
                     >
                       {urg}
@@ -892,7 +892,7 @@ export function ComunicacaoTickets({
                   placeholder="Ex: Voluntários ativos, doadores, comunidade do bairro..."
                   value={formPublicoAlvo}
                   onChange={(e) => setFormPublicoAlvo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium focus:outline-none focus:border-[var(--color-primary)]"
                 />
               </div>
 
@@ -905,12 +905,12 @@ export function ComunicacaoTickets({
                   placeholder="Descreva o que não pode faltar no material, textos obrigatórios, horários ou locais..."
                   value={formDescricao}
                   onChange={(e) => setFormDescricao(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium resize-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium resize-none focus:outline-none focus:border-[var(--color-primary)]"
                 />
               </div>
 
               {/* Bloco Completo de Referência & O que destacar */}
-              <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
+              <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
                     <Link2 className="w-3.5 h-3.5" />
@@ -930,7 +930,7 @@ export function ComunicacaoTickets({
                   placeholder="https://instagram.com/p/... ou drive.google.com/..."
                   value={formLinksReferencia}
                   onChange={(e) => setFormLinksReferencia(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium text-xs focus:border-[var(--color-primary)] focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium text-xs focus:border-[var(--color-primary)] focus:outline-none"
                 />
 
                 <div className="space-y-1.5 pt-1 border-t border-[var(--border-default)]/60">
@@ -968,10 +968,10 @@ export function ComunicacaoTickets({
                               );
                             }
                           }}
-                          className={`px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all cursor-pointer border ${
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer border ${
                             isSelected
-                              ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] border-[var(--color-primary)]/40 font-bold'
-                              : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--color-primary)]/40'
+                              ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] font-bold shadow-xs'
+                              : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--color-primary)] hover:text-[var(--text-primary)]'
                           }`}
                         >
                           + {tag}
@@ -985,7 +985,7 @@ export function ComunicacaoTickets({
                     placeholder="Ex: Gostei muito da sequência de perguntas nos primeiros slides, da paleta de tons quentes e de como dividiram as informações em tópicos curtos..."
                     value={formObservacoesReferencia}
                     onChange={(e) => setFormObservacoesReferencia(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium text-xs resize-none focus:border-[var(--color-primary)] focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium text-xs resize-none focus:border-[var(--color-primary)] focus:outline-none"
                   />
                 </div>
               </div>
@@ -1011,7 +1011,7 @@ export function ComunicacaoTickets({
       {/* ── 5. MODAL: DETALHES & RESPOSTA DA COMUNICAÇÃO (TRIAGEM) ── */}
       {selectedTicketDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="w-full max-w-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar card-contrast" role="dialog" aria-modal="true">
             <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
               <div className="flex items-center gap-2">
                 <FolderKanban className="w-5 h-5 text-[var(--color-primary)]" />
@@ -1050,7 +1050,7 @@ export function ComunicacaoTickets({
               </div>
               {/* Destaque Visual e Link da Referência */}
               {(selectedTicketDetail.links_referencia || selectedTicketDetail.observacoes_referencia) && (
-                <div className="p-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-default)] space-y-2">
+                <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 font-bold text-xs text-[var(--text-primary)]">
                       <Bookmark className="w-3.5 h-3.5 text-[var(--color-primary)]" />
@@ -1096,7 +1096,7 @@ export function ComunicacaoTickets({
                 <select
                   value={gestaoStatus}
                   onChange={(e) => setGestaoStatus(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold cursor-pointer focus:outline-none focus:border-[var(--color-primary)]"
                 >
                   <option value="pendente">Pendente</option>
                   <option value="em_analise">Em Análise</option>
@@ -1114,7 +1114,7 @@ export function ComunicacaoTickets({
                 <select
                   value={gestaoResponsavelId}
                   onChange={(e) => setGestaoResponsavelId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium cursor-pointer focus:outline-none focus:border-[var(--color-primary)]"
                 >
                   <option value="">Não atribuído</option>
                   {voluntarios.map((v) => (
@@ -1134,7 +1134,7 @@ export function ComunicacaoTickets({
                   placeholder="Ex: Aprovado! Arte agendada para produção. Link do arquivo entregue em..."
                   value={gestaoResposta}
                   onChange={(e) => setGestaoResposta(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium resize-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium resize-none focus:outline-none focus:border-[var(--color-primary)]"
                 />
               </div>
 
@@ -1147,7 +1147,7 @@ export function ComunicacaoTickets({
                   placeholder="Ajuste ou adicione notas sobre o que reproduzir da referência..."
                   value={gestaoObservacoesReferencia}
                   onChange={(e) => setGestaoObservacoesReferencia(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] font-medium resize-none"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium resize-none focus:outline-none focus:border-[var(--color-primary)]"
                 />
               </div>
 
