@@ -17,6 +17,7 @@ export interface ReuniaoEmbeddedMetadata {
   created_by?: string | null;
   created_by_name?: string;
   ressalvas?: RessalvaAta[];
+  resumo?: string;
 }
 
 const META_TAG_START = '<!--ELO_REUNIAO_META:';
@@ -45,6 +46,7 @@ export function prepareReuniaoForDB(reuniao: Partial<Reuniao>, existingMeta?: Re
     duracao_estimada_min: reuniao.duracao_estimada_min,
     modalidade: reuniao.modalidade,
     link_virtual: reuniao.link_virtual,
+    resumo: reuniao.resumo,
     projeto_id: reuniao.projeto_id,
     pautas_topicos: reuniao.pautas_topicos,
     deliberacoes: reuniao.deliberacoes,
@@ -75,9 +77,11 @@ export function prepareReuniaoForDB(reuniao: Partial<Reuniao>, existingMeta?: Re
   // Formatar local_reuniao de forma amigável para listagens
   let localFormatado = reuniao.local_reuniao || 'Sede do Instituto Ádapo';
   if (reuniao.modalidade === 'online') {
-    localFormatado = reuniao.link_virtual || 'Ambiente Virtual';
-  } else if (reuniao.modalidade === 'hibrida' && reuniao.link_virtual) {
-    localFormatado = `${localFormatado} • Online: ${reuniao.link_virtual}`;
+    localFormatado = 'Ambiente Virtual';
+  } else if (reuniao.modalidade === 'hibrida') {
+    if (localFormatado.startsWith('http')) {
+      localFormatado = 'Sede do Instituto Ádapo';
+    }
   }
 
   return {
@@ -134,6 +138,14 @@ export function parseReuniaoFromDB(raw: any, projetosMap?: Map<string, any>): Re
   const projId = meta.projeto_id || raw.projeto_id || null;
   const proj = projId && projetosMap ? projetosMap.get(projId) : undefined;
 
+  let localReuniao = raw.local_reuniao || 'Sede do Instituto Ádapo';
+  if (modalidade === 'online') {
+    if (!linkVirtual && (localReuniao.startsWith('http') || localReuniao.toLowerCase().includes('meet.google') || localReuniao.toLowerCase().includes('zoom'))) {
+      linkVirtual = localReuniao;
+    }
+    localReuniao = 'Ambiente Virtual';
+  }
+
   return {
     id: raw.id,
     titulo: raw.titulo || 'Reunião Institucional',
@@ -142,8 +154,9 @@ export function parseReuniaoFromDB(raw: any, projetosMap?: Map<string, any>): Re
     duracao_estimada_min: meta.duracao_estimada_min || raw.duracao_estimada_min || 60,
     tipo: raw.tipo || 'ordinaria',
     modalidade,
-    local_reuniao: raw.local_reuniao || 'Sede do Instituto Ádapo',
+    local_reuniao: localReuniao,
     link_virtual: linkVirtual || undefined,
+    resumo: meta.resumo || raw.resumo || undefined,
     pauta: pautaLimpa,
     pautas_topicos: Array.isArray(meta.pautas_topicos)
       ? meta.pautas_topicos

@@ -121,6 +121,7 @@ export function ModalNovaReuniao({
   const [tipo, setTipo] = useState<TipoReuniao>('ordinaria');
   const [modalidade, setModalidade] = useState<ModalidadeReuniao>('presencial');
   const [secretario, setSecretario] = useState(initialData?.secretario || '');
+  const [resumo, setResumo] = useState('');
 
   // Horários e Duração
   const [dataHoraInicio, setDataHoraInicio] = useState('');
@@ -232,6 +233,7 @@ export function ModalNovaReuniao({
           : []
       );
       setSecretario(initialData.secretario || '');
+      setResumo(initialData.resumo || '');
     } else {
       // Nova Reunião: define início na próxima hora cheia
       const now = new Date();
@@ -246,6 +248,7 @@ export function ModalNovaReuniao({
       setTipo('ordinaria');
       setModalidade('presencial');
       setSecretario('');
+      setResumo('');
       setDataHoraInicio(formatLocalDatetime(now));
       setDataHoraFim(formatLocalDatetime(fimDate));
       setDuracaoMinutos(durInicial);
@@ -564,6 +567,7 @@ export function ModalNovaReuniao({
           modalidade === 'online' ? 'Ambiente Virtual' : localReuniao.trim(),
         link_virtual:
           modalidade !== 'presencial' ? linkVirtual.trim() : undefined,
+        resumo: resumo.trim() || undefined,
         pauta: pautaTextoCompilada,
         pautas_topicos: pautasTopicos,
         participantes,
@@ -702,6 +706,39 @@ export function ModalNovaReuniao({
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Resumo Geral da Reunião / Edital de Convocação */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                  <span>Resumo Geral da Reunião / Edital de Convocação</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tipoFormatado = tipo.replace('_', ' ');
+                    setResumo(
+                      `A Diretoria do Instituto Ádapo convoca todos os membros, conselheiros e voluntários para participarem da Reunião ${tipoFormatado.toUpperCase()}, a ser realizada na data e horário supracitados, a fim de deliberar sobre a seguinte Ordem do Dia:`
+                    );
+                  }}
+                  className="text-[11px] font-semibold text-[var(--color-primary)] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Preencher texto padrão do Edital
+                </button>
+              </div>
+              <textarea
+                rows={3}
+                value={resumo}
+                onChange={(e) => setResumo(e.target.value)}
+                placeholder="Descreva o resumo geral, objetivos da reunião ou um texto customizado para o edital de convocação oficial..."
+                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] resize-y custom-scrollbar leading-relaxed"
+              />
+              <p className="text-[10px] text-[var(--text-muted)]">
+                Este resumo será exibido na ficha da reunião e substituirá o texto padrão no Edital de Convocação (PDF timbrado).
+              </p>
             </div>
           </div>
 

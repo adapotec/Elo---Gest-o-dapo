@@ -8,6 +8,75 @@ interface ReuniaoPrintTemplateProps {
   modo: 'convocacao' | 'ata';
 }
 
+function renderModalidadeLocal(reuniao: Reuniao) {
+  const linkRaw = (
+    reuniao.link_virtual ||
+    (reuniao.local_reuniao?.startsWith('http') || reuniao.local_reuniao?.toLowerCase().includes('meet.google')
+      ? reuniao.local_reuniao
+      : '')
+  ).trim();
+
+  const linkHref = linkRaw ? (linkRaw.startsWith('http') ? linkRaw : `https://${linkRaw}`) : '';
+
+  if (reuniao.modalidade === 'online') {
+    return (
+      <span className="text-slate-800">
+        <strong className="capitalize">Online</strong>
+        {linkRaw ? (
+          <>
+            <span>: </span>
+            <a
+              href={linkHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#F2632D] font-semibold underline underline-offset-2 break-all hover:text-[#d44d18]"
+            >
+              {linkRaw}
+            </a>
+          </>
+        ) : (
+          <span>: {reuniao.local_reuniao && !reuniao.local_reuniao.startsWith('http') ? reuniao.local_reuniao : 'Ambiente Virtual'}</span>
+        )}
+      </span>
+    );
+  }
+
+  if (reuniao.modalidade === 'hibrida') {
+    const localFisico =
+      reuniao.local_reuniao && !reuniao.local_reuniao.startsWith('http')
+        ? reuniao.local_reuniao
+        : 'Sede do Instituto Ádapo';
+
+    return (
+      <div className="space-y-0.5 text-slate-800">
+        <div>
+          <strong className="capitalize">Híbrida</strong>: {localFisico}
+        </div>
+        {linkRaw && (
+          <div className="text-[11px] pt-0.5">
+            <span className="text-slate-500 font-semibold">Link da Sala: </span>
+            <a
+              href={linkHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#F2632D] font-semibold underline underline-offset-2 break-all hover:text-[#d44d18]"
+            >
+              {linkRaw}
+            </a>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Presencial
+  return (
+    <span className="text-slate-800">
+      <strong className="capitalize">Presencial</strong>: {reuniao.local_reuniao || 'Sede do Instituto Ádapo'}
+    </span>
+  );
+}
+
 export function ReuniaoPrintTemplate({ reuniao, modo }: ReuniaoPrintTemplateProps) {
   const dataFormatada = new Date(reuniao.data_hora).toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -51,21 +120,26 @@ export function ReuniaoPrintTemplate({ reuniao, modo }: ReuniaoPrintTemplateProp
           </div>
           <div>
             <p className="text-slate-500 font-semibold">MODALIDADE & LOCAL</p>
-            <p className="font-medium text-slate-800 mt-0.5 capitalize">
-              {reuniao.modalidade}: {reuniao.local_reuniao}
-              {reuniao.link_virtual && ` (Link: ${reuniao.link_virtual})`}
-            </p>
+            <div className="font-medium mt-0.5">
+              {renderModalidadeLocal(reuniao)}
+            </div>
           </div>
         </div>
 
-        {/* Texto Formal de Convocação */}
+        {/* Texto Formal de Convocação / Resumo Geral */}
         <section className="space-y-2">
           <h4 className="font-bold text-xs uppercase text-[#F2632D] border-b border-[#F2632D]/30 pb-1 tracking-wider">
             Edital de Convocação
           </h4>
-          <p className="text-slate-700 text-justify">
-            A Diretoria do <strong>Instituto Ádapo</strong> convoca todos os membros, conselheiros e voluntários abaixo relacionados para participarem da <strong>Reunião {reuniao.tipo.toUpperCase()}</strong>, a ser realizada na data e horário supracitados, a fim de deliberar sobre a seguinte Ordem do Dia:
-          </p>
+          {reuniao.resumo ? (
+            <p className="text-slate-700 text-justify whitespace-pre-line leading-relaxed">
+              {reuniao.resumo}
+            </p>
+          ) : (
+            <p className="text-slate-700 text-justify leading-relaxed">
+              A Diretoria do <strong>Instituto Ádapo</strong> convoca todos os membros, conselheiros e voluntários abaixo relacionados para participarem da <strong>Reunião {reuniao.tipo.replace('_', ' ').toUpperCase()}</strong>, a ser realizada na data e horário supracitados, a fim de deliberar sobre a seguinte Ordem do Dia:
+            </p>
+          )}
         </section>
 
         {/* Rol de Pautas com Hierarquia Nobre e Nítida */}
@@ -171,10 +245,10 @@ export function ReuniaoPrintTemplate({ reuniao, modo }: ReuniaoPrintTemplateProp
           </p>
         </div>
         <div>
-          <p className="text-slate-500 font-semibold">LOCAL / MODALIDADE</p>
-          <p className="font-medium text-slate-800 mt-0.5">
-            {reuniao.local_reuniao || 'Sede do Instituto Ádapo'} ({reuniao.modalidade})
-          </p>
+          <p className="text-slate-500 font-semibold">MODALIDADE & LOCAL</p>
+          <div className="font-medium mt-0.5">
+            {renderModalidadeLocal(reuniao)}
+          </div>
         </div>
         <div className="col-span-2">
           <p className="text-slate-500 font-semibold">PRESENTES (QUÓRUM)</p>

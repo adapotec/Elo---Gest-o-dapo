@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Users,
   Printer,
+  FileText,
   FileCheck2,
   FolderKanban,
   ChevronDown,
@@ -144,6 +145,19 @@ export function ReuniaoPautaTab({ reuniao, onOpenConvocacaoPrint }: ReuniaoPauta
           </div>
         </div>
       </div>
+
+      {/* Resumo Geral da Reunião / Edital de Convocação */}
+      {reuniao.resumo && (
+        <div className="p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-1.5 shadow-xs">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            Resumo Geral / Edital de Convocação
+          </span>
+          <p className="text-xs text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">
+            {reuniao.resumo}
+          </p>
+        </div>
+      )}
 
       {/* Lista de Tópicos da Pauta com Redução de Carga Cognitiva */}
       <div className="space-y-3 pt-1">

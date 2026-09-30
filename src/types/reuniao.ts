@@ -54,6 +54,7 @@ export interface Reuniao {
   modalidade: ModalidadeReuniao;
   local_reuniao: string;
   link_virtual?: string;
+  resumo?: string;
   pauta: string;
   pautas_topicos: TopicoPauta[];
   ata: string;
