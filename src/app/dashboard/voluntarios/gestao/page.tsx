@@ -157,6 +157,7 @@ function GestaoPessoasContent() {
   const totalAtivos = voluntarios.filter((v) => v.status === 'ativo').length;
   const totalInativos = voluntarios.filter((v) => v.status === 'inativo').length;
   const totalOperacionais = voluntarios.filter((v) => v.tipo === 'operacional' && v.status === 'ativo').length;
+  const totalBrincantes = voluntarios.filter((v) => v.tipo === 'brincante' && v.status === 'ativo').length;
   const totalExternos = voluntarios.filter((v) => v.tipo === 'externo' && v.status === 'ativo').length;
 
   return (
@@ -306,6 +307,7 @@ function GestaoPessoasContent() {
                     >
                       <option value="todos">Todos os Tipos</option>
                       <option value="operacional">Operacional</option>
+                      <option value="brincante">Voluntário Brincante</option>
                       <option value="externo">Externo</option>
                     </select>
 
@@ -387,8 +389,20 @@ function GestaoPessoasContent() {
                             </td>
 
                             <td className="py-3.5 px-4">
-                              <Badge variant={v.tipo === 'operacional' ? 'purple' : 'neutral'}>
-                                {v.tipo === 'operacional' ? 'Equipe Operacional' : 'Apoio Externo'}
+                              <Badge
+                                variant={
+                                  v.tipo === 'brincante'
+                                    ? 'warning'
+                                    : v.tipo === 'operacional'
+                                    ? 'purple'
+                                    : 'neutral'
+                                }
+                              >
+                                {v.tipo === 'brincante'
+                                  ? 'Voluntário Brincante'
+                                  : v.tipo === 'operacional'
+                                  ? 'Equipe Operacional'
+                                  : 'Apoio Externo'}
                               </Badge>
                             </td>
 

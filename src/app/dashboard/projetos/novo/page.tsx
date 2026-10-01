@@ -151,11 +151,11 @@ export default function NovoProjetoPage() {
         });
       }
 
-      // Carregar voluntários da Equipe Operacional
+      // Carregar voluntários da Equipe Operacional e Brincantes
       const { data: volData } = await supabase
         .from('voluntarios')
         .select('id, nome_completo, cpf, email, telefone, area_atuacao, funcao')
-        .eq('tipo', 'operacional')
+        .in('tipo', ['operacional', 'brincante'])
         .eq('status', 'ativo');
 
       if (volData) {

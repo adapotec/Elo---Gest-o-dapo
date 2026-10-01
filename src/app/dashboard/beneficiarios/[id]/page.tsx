@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { createClient } from '@/lib/supabase/client';
+import { useUserRole } from '@/lib/hooks/useUserRole';
+import { AcessoRestritoBrincante } from '@/components/auth/AcessoRestritoBrincante';
 import {
   ArrowLeft,
   Save,
@@ -95,6 +97,7 @@ const PARENTESCO_OPTIONS = [
 export default function EditarBeneficiarioPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { isBrincante } = useUserRole();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,6 +107,20 @@ export default function EditarBeneficiarioPage({ params }: { params: Promise<{ i
   const [projetosDisponiveis, setProjetosDisponiveis] = useState<any[]>([]);
   const [showVinculoModal, setShowVinculoModal] = useState(false);
   const [selectedProjetoId, setSelectedProjetoId] = useState('');
+
+  if (isBrincante) {
+    return (
+      <div className="flex-1 flex flex-col min-w-0">
+        <Topbar
+          title="Prontuário do Beneficiário"
+          subtitle="Dados cadastrais e histórico do atendido"
+        />
+        <div className="p-4 sm:p-6 lg:p-8 flex-1 flex items-center justify-center">
+          <AcessoRestritoBrincante modulo="Beneficiários" />
+        </div>
+      </div>
+    );
+  }
 
   const [formData, setFormData] = useState({
     nome_completo: '',

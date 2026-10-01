@@ -2,17 +2,34 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Topbar } from '@/components/layout/Topbar';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { FieldInfo } from '@/components/ui/FieldInfo';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Save, Camera, User, Heart, ShieldAlert, MapPin, PhoneCall, Upload, Trash2, Link as LinkIcon } from 'lucide-react';
-import Link from 'next/link';
+import {
+  ArrowLeft,
+  Save,
+  User,
+  Heart,
+  ShieldAlert,
+  ShieldCheck,
+  MapPin,
+  PhoneCall,
+  Upload,
+  Trash2,
+  Link as LinkIcon,
+  Sparkles,
+  Info,
+  Clock,
+  Calendar,
+} from 'lucide-react';
 
 const TIPO_VOLUNTARIO_OPTIONS = [
   { value: 'operacional', label: 'Voluntário Operacional (Equipe Interna)' },
+  { value: 'brincante', label: 'Voluntário Brincante (Período de Experiência)' },
   { value: 'externo', label: 'Monitor Externo (Projeto Específico)' },
 ];
 
@@ -69,7 +86,6 @@ const UF_OPTIONS = [
   { value: 'TO', label: 'Tocantins' },
 ];
 
-// Utilitário para converter links do Google Drive em links diretos de imagem
 function formatDriveUrl(url: string): string {
   if (!url) return '';
   const match = url.match(/\/file\/d\/([^\/]+)/) || url.match(/id=([^&]+)/);
@@ -166,7 +182,7 @@ export default function NovoVoluntarioPage() {
     <div className="flex-1 flex flex-col min-w-0">
       <Topbar
         title="Novo Voluntário"
-        subtitle="Cadastre voluntários operacionais da equipe ou monitores externos do Instituto Ádapo"
+        subtitle="Cadastro institucional, enquadramento de equipe e controle de acesso no Instituto Ádapo"
         action={
           <Link href="/dashboard/voluntarios">
             <Button variant="secondary" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>
@@ -178,13 +194,14 @@ export default function NovoVoluntarioPage() {
 
       <div className="p-4 sm:p-6 lg:p-8 w-full max-w-4xl mx-auto space-y-6 flex-1 overflow-y-auto transition-all duration-300">
         {error && (
-          <div className="p-4 rounded-xl bg-[var(--color-danger-soft)] text-[var(--color-danger)] text-sm font-medium border border-[var(--color-danger)]/20">
-            {error}
+          <div className="p-4 rounded-2xl bg-[var(--color-danger-soft)] text-[var(--color-danger)] text-sm font-medium border border-[var(--color-danger)]/20 shadow-xs flex items-center gap-3">
+            <ShieldAlert className="w-5 h-5 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* TOPO: Imagem Institucional do Voluntário (Upload + Preview) */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* TOPO: Foto de Perfil Institucional */}
           <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex flex-col sm:flex-row items-center gap-6">
             <div className="relative group shrink-0">
               <div className="w-28 h-28 rounded-2xl bg-[var(--color-primary-soft)] border-2 border-[var(--color-primary)] flex items-center justify-center text-[var(--color-primary)] overflow-hidden shadow-md">
@@ -208,9 +225,8 @@ export default function NovoVoluntarioPage() {
                 Faça o upload da foto diretamente do seu computador ou cole um link (incluindo Google Drive).
               </p>
 
-              {/* Botões de Ação de Foto */}
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
-                <label className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer shadow-sm">
+                <label className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer shadow-sm">
                   <Upload className="w-4 h-4" />
                   <span>Escolher Foto do Computador</span>
                   <input
@@ -224,7 +240,7 @@ export default function NovoVoluntarioPage() {
                 <button
                   type="button"
                   onClick={() => setShowUrlInput(!showUrlInput)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border border-[var(--border-strong)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border border-[var(--border-strong)] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
                 >
                   <LinkIcon className="w-3.5 h-3.5" />
                   <span>{showUrlInput ? 'Ocultar Link' : 'Cole um Link / Drive'}</span>
@@ -234,7 +250,7 @@ export default function NovoVoluntarioPage() {
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, avatar_url: '' })}
-                    className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Remover Foto</span>
@@ -242,7 +258,6 @@ export default function NovoVoluntarioPage() {
                 )}
               </div>
 
-              {/* Campo para colar URL / Google Drive (Convertido automaticamente) */}
               {showUrlInput && (
                 <div className="pt-2">
                   <Input
@@ -259,18 +274,25 @@ export default function NovoVoluntarioPage() {
           </div>
 
           {/* SEÇÃO 1: Dados Pessoais & Atuação */}
-          <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-            <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-3">
-              <User className="w-5 h-5 text-[var(--color-primary)]" />
-              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
-                1. Informações Pessoais & Atuação
-              </h3>
+          <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
+            <div className="flex items-center gap-2.5 border-b border-[var(--border-default)] pb-3.5">
+              <div className="w-8 h-8 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center font-bold text-xs shrink-0">
+                <User className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                  1. Informações Pessoais & Atuação
+                </h3>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Identificação do membro, enquadramento operacional e credenciais de acesso
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <Input
-                  label="Nome Completo"
+                  label="Nome Completo *"
                   name="nome_completo"
                   value={formData.nome_completo}
                   onChange={handleChange}
@@ -280,7 +302,7 @@ export default function NovoVoluntarioPage() {
               </div>
 
               <Input
-                label="CPF"
+                label="CPF *"
                 name="cpf"
                 value={formData.cpf}
                 onChange={handleChange}
@@ -289,7 +311,7 @@ export default function NovoVoluntarioPage() {
               />
 
               <Input
-                label="Telefone / WhatsApp"
+                label="Telefone / WhatsApp *"
                 name="telefone"
                 value={formData.telefone}
                 onChange={handleChange}
@@ -299,7 +321,7 @@ export default function NovoVoluntarioPage() {
 
               <div className="md:col-span-2">
                 <Input
-                  label="E-mail Institucional / Pessoal"
+                  label="E-mail Institucional / Pessoal *"
                   type="email"
                   name="email"
                   value={formData.email}
@@ -309,10 +331,13 @@ export default function NovoVoluntarioPage() {
                 />
               </div>
 
-              <div>
+              {/* TIPO DE VOLUNTÁRIO COM DESTAQUE BRINCANTE */}
+              <div className="md:col-span-2">
                 <div className="flex items-center mb-1">
-                  <label className="text-sm font-medium text-[var(--text-secondary)]">Tipo de Voluntário *</label>
-                  <FieldInfo text="Operacional: atuação fixa contínua nas áreas administrativas. Monitor Externo: atuação temporária alocada a um projeto específico." />
+                  <label className="text-sm font-medium text-[var(--text-secondary)]">
+                    Tipo de Voluntário *
+                  </label>
+                  <FieldInfo text="Selecione o enquadramento do voluntário na organização. Voluntários Brincantes passam por período de experiência e possuem permissões restritas a dados de beneficiários e pedagogia." />
                 </div>
                 <Select
                   name="tipo"
@@ -320,6 +345,24 @@ export default function NovoVoluntarioPage() {
                   value={formData.tipo}
                   onChange={handleChange}
                 />
+
+                {/* BANNER INFORMATIVO PARA VOLUNTÁRIO BRINCANTE */}
+                {formData.tipo === 'brincante' && (
+                  <div className="mt-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3 text-xs text-amber-800 dark:text-amber-200 animate-in fade-in duration-200">
+                    <ShieldAlert className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold text-sm text-amber-900 dark:text-amber-100">
+                        Perfil Selecionado: Voluntário Brincante (Período de Experiência)
+                      </p>
+                      <p className="leading-relaxed opacity-90">
+                        O voluntário integrará a equipe de organização em período de teste. Ele constará automaticamente na <strong>Ciranda do Login</strong> para criar seu primeiro acesso e navegar nas ferramentas operacionais.
+                      </p>
+                      <p className="leading-relaxed font-semibold text-amber-900 dark:text-amber-200">
+                        Diretriz de Segurança e Governança: Por restrições de proteção aos dados dos alunos (LGPD), este usuário não terá acesso às áreas de Pedagogia e Beneficiários.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -344,24 +387,41 @@ export default function NovoVoluntarioPage() {
               />
 
               <Input
-                label="Data de Início"
+                label="Data de Início *"
                 type="date"
                 name="data_inicio"
                 value={formData.data_inicio}
                 onChange={handleChange}
                 required
               />
+
+              <Input
+                label="Data de Término Previsto (Opcional)"
+                type="date"
+                name="data_fim"
+                value={formData.data_fim}
+                onChange={handleChange}
+              />
             </div>
           </div>
 
           {/* SEÇÃO 2: Endereço & Contato de Emergência */}
-          <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-            <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-3">
-              <PhoneCall className="w-5 h-5 text-[var(--color-primary)]" />
-              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
-                2. Endereço Residencial & Contato de Emergência
-              </h3>
-              <FieldInfo text="Estes dados são essenciais para segurança operacional em viagens comunitárias, projetos de campo e localização dos voluntários da ONG." />
+          <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
+            <div className="flex items-center gap-2.5 border-b border-[var(--border-default)] pb-3.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold text-xs shrink-0">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                    2. Endereço Residencial & Contato de Emergência
+                  </h3>
+                  <FieldInfo text="Estes dados são essenciais para segurança operacional em viagens comunitárias, projetos de campo e localização dos voluntários da ONG." />
+                </div>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Localização e pessoas de referência em situações emergenciais
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -418,6 +478,7 @@ export default function NovoVoluntarioPage() {
 
             <div className="pt-4 border-t border-[var(--border-default)] space-y-3">
               <div className="flex items-center gap-2">
+                <PhoneCall className="w-4 h-4 text-[var(--color-primary)]" />
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-primary)]">
                   Contato Familiar de Emergência
                 </h4>
@@ -452,14 +513,23 @@ export default function NovoVoluntarioPage() {
             </div>
           </div>
 
-          {/* SEÇÃO 3: Saúde & Cuidados Médicos (Emergência) */}
-          <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
-            <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-3">
-              <Heart className="w-5 h-5 text-[var(--color-danger)]" />
-              <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
-                3. Saúde & Cuidados Médicos em Emergências
-              </h3>
-              <FieldInfo text="Informações confidenciais acessadas exclusivamente pela coordenação em situações de pronto atendimento médico durante mutirões, eventos ou projetos sociais externos." />
+          {/* SEÇÃO 3: Saúde & Cuidados Médicos */}
+          <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-5">
+            <div className="flex items-center gap-2.5 border-b border-[var(--border-default)] pb-3.5">
+              <div className="w-8 h-8 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center font-bold text-xs shrink-0">
+                <Heart className="w-4 h-4" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                    3. Saúde & Cuidados Médicos em Emergências
+                  </h3>
+                  <FieldInfo text="Informações confidenciais acessadas exclusivamente pela coordenação em situações de pronto atendimento médico durante mutirões, eventos ou projetos sociais externos." />
+                </div>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Informações clínicas confidenciais para primeiros socorros
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -486,7 +556,9 @@ export default function NovoVoluntarioPage() {
 
               <div className="md:col-span-2">
                 <div className="flex items-center mb-1">
-                  <label className="text-sm font-medium text-[var(--text-secondary)]">Alergias (Alimentos, Medicamentos, Insetos)</label>
+                  <label className="text-sm font-medium text-[var(--text-secondary)]">
+                    Alergias (Alimentos, Medicamentos, Insetos)
+                  </label>
                   <FieldInfo text="Alergias graves a medicamentos (ex: dipirona, penicilina) ou alimentos para garantir refeições seguras em mutirões da ONG." />
                 </div>
                 <Input
@@ -499,7 +571,9 @@ export default function NovoVoluntarioPage() {
 
               <div className="md:col-span-2">
                 <div className="flex items-center mb-1">
-                  <label className="text-sm font-medium text-[var(--text-secondary)]">Medicamentos de Uso Contínuo</label>
+                  <label className="text-sm font-medium text-[var(--text-secondary)]">
+                    Medicamentos de Uso Contínuo
+                  </label>
                   <FieldInfo text="Permite que a coordenação saiba quais medicamentos a pessoa necessita tomar durante atividades de longa duração." />
                 </div>
                 <Input
@@ -523,11 +597,11 @@ export default function NovoVoluntarioPage() {
               onChange={handleChange}
               rows={3}
               placeholder="Disponibilidade de horário, preferências de atividades, restrições corporais..."
-              className="w-full p-3.5 rounded-lg text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)]"
+              className="w-full p-3.5 rounded-xl text-xs sm:text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)] font-medium transition-all"
             />
           </div>
 
-          {/* Botões de Ação */}
+          {/* BARRA DE AÇÕES INFERIORES */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <Link href="/dashboard/voluntarios">
               <Button type="button" variant="secondary">

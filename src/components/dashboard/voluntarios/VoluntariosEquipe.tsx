@@ -42,7 +42,7 @@ export interface Voluntario {
   cpf: string;
   email: string;
   telefone: string;
-  tipo: 'operacional' | 'externo';
+  tipo: 'operacional' | 'externo' | 'brincante';
   area_atuacao: string | null;
   funcao: string | null;
   data_inicio: string;
@@ -96,13 +96,14 @@ export function VoluntariosEquipe({
     const ativos = voluntarios.filter((v) => v.status === 'ativo').length;
     const inativos = total - ativos;
     const operacionais = voluntarios.filter((v) => v.tipo === 'operacional').length;
+    const brincantes = voluntarios.filter((v) => v.tipo === 'brincante').length;
     const externos = voluntarios.filter((v) => v.tipo === 'externo').length;
 
     // Cálculo de Horas Trabalhadas
     const totalHoras = voluntarios.reduce((acc, v) => acc + (v.horas_acumuladas || 0), 0);
     const mediaHoras = ativos > 0 ? Math.round(totalHoras / ativos) : 0;
 
-    return { total, ativos, inativos, operacionais, externos, totalHoras, mediaHoras };
+    return { total, ativos, inativos, operacionais, brincantes, externos, totalHoras, mediaHoras };
   }, [voluntarios]);
 
   // Ranking Top 4 de Horas Trabalhadas
@@ -201,10 +202,22 @@ export function VoluntariosEquipe({
     {
       key: 'tipo',
       header: 'Enquadramento',
-      width: '160px',
+      width: '180px',
       render: (item) => (
-        <Badge variant={item.tipo === 'operacional' ? 'purple' : 'neutral'}>
-          {item.tipo === 'operacional' ? 'Equipe Operacional' : 'Monitor Externo'}
+        <Badge
+          variant={
+            item.tipo === 'brincante'
+              ? 'warning'
+              : item.tipo === 'operacional'
+              ? 'purple'
+              : 'neutral'
+          }
+        >
+          {item.tipo === 'brincante'
+            ? 'Voluntário Brincante'
+            : item.tipo === 'operacional'
+            ? 'Equipe Operacional'
+            : 'Monitor Externo'}
         </Badge>
       ),
     },
@@ -491,6 +504,7 @@ export function VoluntariosEquipe({
                 options={[
                   { value: 'todos', label: 'Todos os Tipos' },
                   { value: 'operacional', label: 'Operacional' },
+                  { value: 'brincante', label: 'Voluntário Brincante' },
                   { value: 'externo', label: 'Externo' },
                 ]}
                 value={tipoFilter}
@@ -570,7 +584,11 @@ export function VoluntariosEquipe({
           onClose={() => setSelectedVoluntario(null)}
           title={selectedVoluntario.nome_completo}
           subtitle={`CPF: ${selectedVoluntario.cpf} • ${
-            selectedVoluntario.tipo === 'operacional' ? 'Equipe Operacional' : 'Monitor Externo'
+            selectedVoluntario.tipo === 'brincante'
+              ? 'Voluntário Brincante (Período de Experiência)'
+              : selectedVoluntario.tipo === 'operacional'
+              ? 'Equipe Operacional'
+              : 'Monitor Externo'
           }`}
         >
           <div className="space-y-6">

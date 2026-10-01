@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { createClient } from '@/lib/supabase/client';
+import { useUserRole } from '@/lib/hooks/useUserRole';
+import { AcessoRestritoBrincante } from '@/components/auth/AcessoRestritoBrincante';
 import { ArrowLeft, Save, User, Users, MapPin, HeartHandshake } from 'lucide-react';
 import Link from 'next/link';
 
@@ -68,6 +70,7 @@ const PARENTESCO_OPTIONS = [
 
 export default function NovoBeneficiarioPage() {
   const router = useRouter();
+  const { isBrincante } = useUserRole();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -105,6 +108,20 @@ export default function NovoBeneficiarioPage() {
     status: 'ativo',
     observacoes: '',
   });
+
+  if (isBrincante) {
+    return (
+      <div className="flex-1 flex flex-col min-w-0">
+        <Topbar
+          title="Novo Beneficiário"
+          subtitle="Cadastro institucional de crianças e famílias atendidas"
+        />
+        <div className="p-4 sm:p-6 lg:p-8 flex-1 flex items-center justify-center">
+          <AcessoRestritoBrincante modulo="Beneficiários" />
+        </div>
+      </div>
+    );
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

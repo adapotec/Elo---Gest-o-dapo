@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { DetailPanel } from '@/components/ui/DetailPanel';
 import { Select } from '@/components/ui/Select';
 import { createClient } from '@/lib/supabase/client';
+import { useUserRole } from '@/lib/hooks/useUserRole';
+import { AcessoRestritoBrincante } from '@/components/auth/AcessoRestritoBrincante';
 import {
   Plus,
   Search,
@@ -54,8 +56,23 @@ interface Beneficiario {
 }
 
 export default function BeneficiariosPage() {
+  const { isBrincante } = useUserRole();
   const [beneficiarios, setBeneficiarios] = useState<Beneficiario[]>([]);
   const [loading, setLoading] = useState(true);
+
+  if (isBrincante) {
+    return (
+      <div className="flex-1 flex flex-col min-w-0">
+        <Topbar
+          title="Beneficiários & Famílias"
+          subtitle="Cadastro, prontuários e histórico dos atendidos"
+        />
+        <div className="p-4 sm:p-6 lg:p-8 flex-1 flex items-center justify-center">
+          <AcessoRestritoBrincante modulo="Beneficiários" />
+        </div>
+      </div>
+    );
+  }
   
   // Filtros
   const [search, setSearch] = useState('');

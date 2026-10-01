@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { FieldInfo } from '@/components/ui/FieldInfo';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Save, Trash2, CheckCircle, User, Heart, PhoneCall, Upload, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, CheckCircle, User, Heart, PhoneCall, Upload, Link as LinkIcon, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 
 const TIPO_VOLUNTARIO_OPTIONS = [
   { value: 'operacional', label: 'Voluntário Operacional (Equipe Interna)' },
+  { value: 'brincante', label: 'Voluntário Brincante (Período de Experiência)' },
   { value: 'externo', label: 'Monitor Externo (Projeto Específico)' },
 ];
 
@@ -348,13 +349,26 @@ export default function EditarVoluntarioPage({ params }: { params: Promise<{ id:
               <Input label="Telefone" name="telefone" value={formData.telefone} onChange={handleChange} required />
               <Input label="E-mail" name="email" value={formData.email} onChange={handleChange} required />
 
-              <Select
-                label="Tipo de Voluntário"
-                name="tipo"
-                options={TIPO_VOLUNTARIO_OPTIONS}
-                value={formData.tipo}
-                onChange={handleChange}
-              />
+              <div>
+                <Select
+                  label="Tipo de Voluntário"
+                  name="tipo"
+                  options={TIPO_VOLUNTARIO_OPTIONS}
+                  value={formData.tipo}
+                  onChange={handleChange}
+                />
+                {formData.tipo === 'brincante' && (
+                  <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-700 dark:text-amber-300">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Perfil em Período de Experiência</p>
+                      <p className="text-[11px] opacity-90 mt-0.5">
+                        Voluntários Brincantes têm acesso à Ciranda de Login e à navegação geral do sistema. Por governança e proteção de dados, o acesso às seções de <strong>Pedagogia</strong> e <strong>Beneficiários</strong> permanece restrito.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <Select
                 label="Área de Atuação"

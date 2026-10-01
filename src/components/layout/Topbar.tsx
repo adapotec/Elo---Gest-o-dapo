@@ -70,7 +70,7 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
             user.email
               ? supabase
                   .from('voluntarios')
-                  .select('avatar_url, funcao, area_atuacao')
+                  .select('avatar_url, funcao, area_atuacao, tipo')
                   .eq('email', user.email)
                   .maybeSingle()
               : Promise.resolve({ data: null }),
@@ -79,8 +79,15 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
           const profile = respProfile.data;
           const vol = respVol.data;
 
+          const isBrinc =
+            vol?.tipo === 'brincante' ||
+            profile?.role === 'brincante' ||
+            profile?.role === 'voluntario_brincante';
+
           let userAvatar = profile?.avatar_url || vol?.avatar_url || null;
-          let userFuncao = profile?.role || vol?.funcao || vol?.area_atuacao || 'voluntario_operacional';
+          let userFuncao = isBrinc
+            ? 'Voluntário Brincante'
+            : profile?.role || vol?.funcao || vol?.area_atuacao || 'voluntario_operacional';
 
           const resolvedProfile: UserProfile = {
             name: profile?.nome_completo || user.email?.split('@')[0] || 'Voluntário Ádapo',
@@ -91,8 +98,9 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
 
           setUserProfile(resolvedProfile);
           try {
-            sessionStorage.setItem('elo_user_profile_cache', JSON.stringify(resolvedProfile));
-            localStorage.setItem('elo_user_profile_cache', JSON.stringify(resolvedProfile));
+            const cachePayload = { ...resolvedProfile, tipo: vol?.tipo, isBrincante: isBrinc };
+            sessionStorage.setItem('elo_user_profile_cache', JSON.stringify(cachePayload));
+            localStorage.setItem('elo_user_profile_cache', JSON.stringify(cachePayload));
           } catch (e) {}
         }
       } catch (err) {

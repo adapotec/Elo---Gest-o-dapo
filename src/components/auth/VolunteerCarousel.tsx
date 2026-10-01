@@ -13,6 +13,7 @@ export interface VoluntarioItem {
   avatar_url?: string | null;
   status?: string;
   hasAccount?: boolean;
+  tipo?: string;
 }
 
 interface VolunteerCarouselProps {
@@ -241,8 +242,15 @@ export function VolunteerCarousel({
             className="px-3.5 py-1 rounded-full text-xs font-bold text-white shadow-xs truncate max-w-[280px]"
             style={{ backgroundColor: activeColor }}
           >
-            {activeVoluntario?.funcao || activeVoluntario?.area_atuacao || 'Equipe Ádapo'}
+            {activeVoluntario?.tipo === 'brincante'
+              ? 'Voluntário Brincante (Em Experiência)'
+              : activeVoluntario?.funcao || activeVoluntario?.area_atuacao || 'Equipe Ádapo'}
           </span>
+          {activeVoluntario?.tipo === 'brincante' && (
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+              Período de Experiência
+            </span>
+          )}
         </div>
       </div>
     </div>

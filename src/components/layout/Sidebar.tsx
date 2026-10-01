@@ -31,6 +31,8 @@ import {
   FileText,
 } from 'lucide-react';
 
+import { useUserRole } from '@/lib/hooks/useUserRole';
+
 interface MenuItemChild {
   name: string;
   href: string;
@@ -91,6 +93,7 @@ const navigationItems: MenuItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { isMobileOpen, closeMobileNav } = useMobileNav();
+  const { isBrincante } = useUserRole();
   const [showInfoPopover, setShowInfoPopover] = useState(false);
   
   // Estado de Hover Desktop estilo Instagram Web
@@ -102,9 +105,17 @@ export function Sidebar() {
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
+  // Filtra itens para Voluntários Brincantes (oculta Pedagogia e Beneficiários por segurança e LGPD)
+  const filteredNavigationItems = React.useMemo(() => {
+    if (!isBrincante) return navigationItems;
+    return navigationItems.filter(
+      (item) => item.name !== 'Pedagogia' && item.name !== 'Beneficiários'
+    );
+  }, [isBrincante]);
+
   // Inicializa e mantém os grupos abertos caso navegue em uma de suas sub-rotas
   useEffect(() => {
-    navigationItems.forEach((item) => {
+    filteredNavigationItems.forEach((item) => {
       if (item.children) {
         const isChildActive = item.children.some(
           (child) => pathname === child.href || pathname.startsWith(child.href)
@@ -114,7 +125,7 @@ export function Sidebar() {
         }
       }
     });
-  }, [pathname]);
+  }, [pathname, filteredNavigationItems]);
 
   const toggleGroup = (groupName: string) => {
     setOpenGroups((prev) => ({ ...prev, [groupName]: !prev[groupName] }));
@@ -123,7 +134,7 @@ export function Sidebar() {
   // Renderizador unificado da lista de navegação
   const renderNavLinks = (expandedMode: boolean, isMobile: boolean) => (
     <nav className="space-y-1">
-      {navigationItems.map((item) => {
+      {filteredNavigationItems.map((item) => {
         const Icon = item.icon;
 
         // Se for item agrupador com filhos

@@ -171,7 +171,7 @@ export default function LoginPage() {
         // 1. Busca voluntários ativos
         const { data: volData } = await supabase
           .from('voluntarios')
-          .select('id, nome_completo, email, funcao, area_atuacao, avatar_url, status')
+          .select('id, nome_completo, email, funcao, area_atuacao, avatar_url, status, tipo')
           .eq('status', 'ativo')
           .order('nome_completo', { ascending: true });
 
@@ -208,6 +208,7 @@ export default function LoginPage() {
               area_atuacao: v.area_atuacao,
               avatar_url: v.avatar_url,
               status: v.status,
+              tipo: v.tipo,
               hasAccount: hasAcc,
             };
           });

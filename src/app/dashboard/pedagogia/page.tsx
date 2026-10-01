@@ -11,6 +11,8 @@ import { PedagogiaDossie } from '@/components/dashboard/pedagogia/PedagogiaDossi
 import { PedagogiaSocioemocional } from '@/components/dashboard/pedagogia/PedagogiaSocioemocional';
 import { PedagogiaFrequencia } from '@/components/dashboard/pedagogia/PedagogiaFrequencia';
 import { PedagogiaFichaMonitoramento } from '@/components/dashboard/pedagogia/PedagogiaFichaMonitoramento';
+import { useUserRole } from '@/lib/hooks/useUserRole';
+import { AcessoRestritoBrincante } from '@/components/auth/AcessoRestritoBrincante';
 import {
   GraduationCap,
   FolderKanban,
@@ -48,6 +50,7 @@ const TABS: TabItem[] = [
 ];
 
 export default function PedagogiaPage() {
+  const { isBrincante } = useUserRole();
   const [activeTab, setActiveTab] = useState<TabKey>('planos_aula');
   const [projetos, setProjetos] = useState<ProjetoItem[]>([]);
   const [selectedProjetoId, setSelectedProjetoId] = useState<string>('');
@@ -58,6 +61,20 @@ export default function PedagogiaPage() {
   const [acoes, setAcoes] = useState<any[]>([]);
   const [metas, setMetas] = useState<any[]>([]);
   const [voluntarios, setVoluntarios] = useState<any[]>([]);
+
+  if (isBrincante) {
+    return (
+      <div className="flex-1 flex flex-col min-w-0">
+        <Topbar
+          title="Pedagogia & Desenvolvimento"
+          subtitle="Planejamento de aulas, dossiês e acompanhamento socioemocional dos projetos"
+        />
+        <div className="p-4 sm:p-6 lg:p-8 flex-1 flex items-center justify-center">
+          <AcessoRestritoBrincante modulo="Pedagogia" />
+        </div>
+      </div>
+    );
+  }
 
   // 1. Carregar lista de projetos sociais e voluntários em paralelo
   const carregarProjetos = async () => {
