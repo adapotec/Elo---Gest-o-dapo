@@ -809,12 +809,37 @@ export function ComunicacaoTickets({
                 </div>
 
                 {/* Ações do Card */}
-                <div className="pt-3 border-t border-[var(--border-default)] flex items-center justify-between gap-1.5 flex-wrap">
-                  <div className="flex items-center gap-1.5 flex-1 min-w-[140px]">
+                <div className="pt-3 border-t border-[var(--border-default)] space-y-2">
+                  {/* Ação Primária em Destaque: Aprovação ou Agendamento */}
+                  {isAguardando ? (
+                    <Button
+                      size="sm"
+                      onClick={() => handleOpenApprovalModal(ticket)}
+                      className="w-full justify-center text-xs font-bold bg-[var(--color-primary)] text-white hover:opacity-90 shadow-2xs py-2"
+                      title="Aprovar e enviar para o Quadro de Tarefas na coluna desejada"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Aprovar Demanda</span>
+                    </Button>
+                  ) : isRedeSocial && !ticket.conteudo_criado_id && ticket.status !== 'recusado' ? (
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="flex-1 justify-center text-xs font-bold"
+                      onClick={() => onConvertToConteudo(ticket)}
+                      className="w-full justify-center text-xs font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white border border-[var(--color-primary)]/30 shadow-2xs py-2"
+                      title="Converter esta solicitação aprovada em publicação no Calendário Editorial"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>Agendar no Calendário</span>
+                    </Button>
+                  ) : null}
+
+                  {/* Linha de Ações Secundárias: Ver/Triagem + Editar + Excluir */}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="flex-1 justify-center text-xs font-bold py-1.5"
                       onClick={() => handleOpenDetailModal(ticket)}
                     >
                       Ver & Responder
@@ -823,53 +848,27 @@ export function ComunicacaoTickets({
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="px-2.5 text-xs font-bold"
+                      className="px-3 text-xs font-bold py-1.5 shrink-0"
                       onClick={() => handleOpenEditModal(ticket)}
                       title="Editar todos os dados desta solicitação (projeto, título, prazo, referências)"
                     >
                       <Edit3 className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
-                      <span className="hidden sm:inline">Editar</span>
+                      <span>Editar</span>
                     </Button>
-                  </div>
 
-                  {/* Botão de Aprovação Rápida (para tickets pendentes/em análise) */}
-                  {isAguardando && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleOpenApprovalModal(ticket)}
-                      className="text-xs font-bold bg-[var(--color-primary)] text-white hover:opacity-90 shadow-2xs"
-                      title="Aprovar e enviar para o Quadro de Tarefas na coluna desejada"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Aprovar Demanda</span>
-                    </Button>
-                  )}
-
-                  {/* Se for rede social e aprovado/em produção, permite agendar no calendário */}
-                  {isRedeSocial && !ticket.conteudo_criado_id && ticket.status !== 'recusado' && !isAguardando && (
                     <button
                       type="button"
-                      onClick={() => onConvertToConteudo(ticket)}
-                      className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white border border-[var(--color-primary)]/30 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
-                      title="Converter esta solicitação em uma publicação no Calendário Editorial"
+                      onClick={() => {
+                        if (confirm(`Deseja excluir a solicitação "${ticket.titulo}"?`)) {
+                          onDeleteTicket(ticket.id);
+                        }
+                      }}
+                      className="p-2 rounded-xl text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 transition-colors border border-transparent hover:border-rose-500/20 shrink-0 cursor-pointer"
+                      title="Excluir ticket"
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">+ Calendário</span>
+                      <Trash2 className="w-4 h-4" />
                     </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm(`Deseja excluir a solicitação "${ticket.titulo}"?`)) {
-                        onDeleteTicket(ticket.id);
-                      }
-                    }}
-                    className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 transition-colors ml-auto"
-                    title="Excluir ticket"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  </div>
                 </div>
               </Card>
             );
