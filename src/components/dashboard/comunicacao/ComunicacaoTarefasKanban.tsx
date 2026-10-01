@@ -181,9 +181,14 @@ export function ComunicacaoTarefasKanban({
 
     // B. Demandas e Solicitações de Materiais
     tickets.forEach((t) => {
+      // Regra de Fluxo: Somente tickets aprovados pelo responsável entram no Quadro de Tarefas
+      if (t.status === 'pendente' || t.status === 'em_analise' || t.status === 'recusado') {
+        return;
+      }
+
       let coluna: KanbanCard['coluna'] = 'a_fazer';
-      if (t.status === 'em_producao' || t.status === 'aprovado') coluna = 'em_producao';
-      else if (t.status === 'em_analise') coluna = 'em_revisao';
+      if (t.status === 'aprovado') coluna = 'a_fazer';
+      else if (t.status === 'em_producao') coluna = 'em_producao';
       else if (t.status === 'concluido') coluna = 'concluido';
 
       cards.push({
@@ -320,9 +325,9 @@ export function ComunicacaoTarefasKanban({
       await onUpdateConteudoStatus(cardId, statusMap[novaColuna]);
     } else if (origem === 'ticket') {
       const statusMap: Record<KanbanCard['coluna'], SolicitacaoComunicacaoItem['status']> = {
-        a_fazer: 'pendente',
+        a_fazer: 'aprovado',
         em_producao: 'em_producao',
-        em_revisao: 'em_analise',
+        em_revisao: 'em_producao',
         concluido: 'concluido',
       };
       await onUpdateTicketStatus(cardId, statusMap[novaColuna]);

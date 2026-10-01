@@ -20,6 +20,11 @@ import {
   Flame,
   Bookmark,
   Link2,
+  Edit3,
+  Layers,
+  ArrowRight,
+  ShieldCheck,
+  Check,
 } from 'lucide-react';
 import { Voluntario } from '@/components/dashboard/voluntarios/VoluntariosEquipe';
 
@@ -104,6 +109,8 @@ export const getTipoMaterialLabel = (tipo?: string | null): string => {
   return tipo.replace('_', ' ');
 };
 
+export type TicketTab = 'todas' | 'aguardando' | 'aprovado' | 'em_producao' | 'concluido' | 'recusado';
+
 export function ComunicacaoTickets({
   tickets,
   projetos,
@@ -116,14 +123,17 @@ export function ComunicacaoTickets({
   initialOpenNew = false,
 }: ComunicacaoTicketsProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('todos');
+  const [activeTab, setActiveTab] = useState<TicketTab>('todas');
   const [projetoFilter, setProjetoFilter] = useState<string>('todos');
   const [urgenciaFilter, setUrgenciaFilter] = useState<string>('todos');
 
+  // Controle de Modais
   const [showNewModal, setShowNewModal] = useState(initialOpenNew);
+  const [editingTicket, setEditingTicket] = useState<SolicitacaoComunicacaoItem | null>(null);
   const [selectedTicketDetail, setSelectedTicketDetail] = useState<SolicitacaoComunicacaoItem | null>(null);
+  const [approvingTicket, setApprovingTicket] = useState<SolicitacaoComunicacaoItem | null>(null);
 
-  // Form states para Nova Solicitação
+  // Form states para Criação & Edição Completa da Demanda
   const [formTitulo, setFormTitulo] = useState('');
   const [formProjetoId, setFormProjetoId] = useState('');
   const [formSolicitanteNome, setFormSolicitanteNome] = useState('');
@@ -138,18 +148,26 @@ export function ComunicacaoTickets({
   const [formObservacoesReferencia, setFormObservacoesReferencia] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Form states para Gerenciar Demanda (Equipe de Comunicação)
+  // Form states para Aprovação Rápida para o Quadro de Tarefas
+  const [approvalDestino, setApprovalDestino] = useState<'a_fazer' | 'em_producao'>('a_fazer');
+  const [approvalResponsavelId, setApprovalResponsavelId] = useState('');
+  const [approvalResposta, setApprovalResposta] = useState('');
+  const [approving, setApproving] = useState(false);
+
+  // Form states para Gerenciar Demanda (Triagem Geral)
   const [gestaoStatus, setGestaoStatus] = useState<SolicitacaoComunicacaoItem['status']>('pendente');
   const [gestaoResposta, setGestaoResposta] = useState('');
   const [gestaoResponsavelId, setGestaoResponsavelId] = useState('');
   const [gestaoObservacoesReferencia, setGestaoObservacoesReferencia] = useState('');
 
-  const stats = useMemo(() => {
+  const tabCounts = useMemo(() => {
     return {
-      total: tickets.length,
-      pendentes: tickets.filter((t) => t.status === 'pendente' || t.status === 'em_analise').length,
-      emProducao: tickets.filter((t) => t.status === 'em_producao' || t.status === 'aprovado').length,
-      concluidos: tickets.filter((t) => t.status === 'concluido').length,
+      todas: tickets.length,
+      aguardando: tickets.filter((t) => t.status === 'pendente' || t.status === 'em_analise').length,
+      aprovado: tickets.filter((t) => t.status === 'aprovado').length,
+      em_producao: tickets.filter((t) => t.status === 'em_producao').length,
+      concluido: tickets.filter((t) => t.status === 'concluido').length,
+      recusado: tickets.filter((t) => t.status === 'recusado').length,
     };
   }, [tickets]);
 
@@ -160,23 +178,28 @@ export function ComunicacaoTickets({
         (item.solicitante_nome && item.solicitante_nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.descricao_detalhes && item.descricao_detalhes.toLowerCase().includes(searchTerm.toLowerCase()));
 
-      const matchStatus =
-        statusFilter === 'todos'
-          ? true
-          : statusFilter === 'pendentes_geral'
-          ? item.status === 'pendente' || item.status === 'em_analise'
-          : statusFilter === 'producao_geral'
-          ? item.status === 'em_producao' || item.status === 'aprovado'
-          : item.status === statusFilter;
+      let matchTab = true;
+      if (activeTab === 'aguardando') {
+        matchTab = item.status === 'pendente' || item.status === 'em_analise';
+      } else if (activeTab === 'aprovado') {
+        matchTab = item.status === 'aprovado';
+      } else if (activeTab === 'em_producao') {
+        matchTab = item.status === 'em_producao';
+      } else if (activeTab === 'concluido') {
+        matchTab = item.status === 'concluido';
+      } else if (activeTab === 'recusado') {
+        matchTab = item.status === 'recusado';
+      }
 
       const matchProj = projetoFilter === 'todos' || item.projeto_id === projetoFilter;
       const matchUrgencia = urgenciaFilter === 'todos' || item.urgencia === urgenciaFilter;
 
-      return matchSearch && matchStatus && matchProj && matchUrgencia;
+      return matchSearch && matchTab && matchProj && matchUrgencia;
     });
-  }, [tickets, searchTerm, statusFilter, projetoFilter, urgenciaFilter]);
+  }, [tickets, searchTerm, activeTab, projetoFilter, urgenciaFilter]);
 
   const handleOpenNewModal = () => {
+    setEditingTicket(null);
     setFormTitulo('');
     setFormProjetoId('');
     setFormSolicitanteNome('');
@@ -192,6 +215,62 @@ export function ComunicacaoTickets({
     setShowNewModal(true);
   };
 
+  const handleOpenEditModal = (ticket: SolicitacaoComunicacaoItem) => {
+    setEditingTicket(ticket);
+    setFormTitulo(ticket.titulo || '');
+    setFormProjetoId(ticket.projeto_id || '');
+    setFormTipoMaterial(ticket.tipo_material || 'carrossel');
+    setFormPublicoAlvo(ticket.publico_alvo || '');
+    setFormObjetivo(ticket.objetivo || '');
+    setFormDescricao(ticket.descricao_detalhes || '');
+    setFormPrazoDesejado(ticket.prazo_desejado ? ticket.prazo_desejado.split('T')[0] : '');
+    setFormUrgencia(ticket.urgencia || 'normal');
+    setFormLinksReferencia(ticket.links_referencia || '');
+    setFormObservacoesReferencia(ticket.observacoes_referencia || '');
+
+    if (ticket.solicitante_id) {
+      setFormSolicitanteId(ticket.solicitante_id);
+      setFormSolicitanteNome(ticket.solicitante_nome || '');
+    } else if (ticket.solicitante_nome) {
+      setFormSolicitanteId('outro_externo');
+      setFormSolicitanteNome(ticket.solicitante_nome);
+    } else {
+      setFormSolicitanteId('');
+      setFormSolicitanteNome('');
+    }
+
+    if (selectedTicketDetail) {
+      setSelectedTicketDetail(null);
+    }
+    setShowNewModal(true);
+  };
+
+  const handleOpenApprovalModal = (ticket: SolicitacaoComunicacaoItem) => {
+    setApprovingTicket(ticket);
+    setApprovalDestino('a_fazer');
+    setApprovalResponsavelId(ticket.responsavel_comunicacao_id || '');
+    setApprovalResposta(ticket.resposta_comunicacao || 'Demanda aprovada pela comunicação.');
+  };
+
+  const handleConfirmApproval = async () => {
+    if (!approvingTicket) return;
+    setApproving(true);
+    try {
+      const newStatus = approvalDestino === 'a_fazer' ? 'aprovado' : 'em_producao';
+      await onSaveTicket({
+        id: approvingTicket.id,
+        status: newStatus,
+        responsavel_comunicacao_id: approvalResponsavelId || null,
+        resposta_comunicacao: approvalResposta.trim() || null,
+      });
+      setApprovingTicket(null);
+    } catch (err: any) {
+      alert('Erro ao aprovar solicitação: ' + err.message);
+    } finally {
+      setApproving(false);
+    }
+  };
+
   const handleOpenDetailModal = (ticket: SolicitacaoComunicacaoItem) => {
     setSelectedTicketDetail(ticket);
     setGestaoStatus(ticket.status);
@@ -200,7 +279,7 @@ export function ComunicacaoTickets({
     setGestaoObservacoesReferencia(ticket.observacoes_referencia || '');
   };
 
-  const handleSubmitNew = async (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitulo.trim()) {
       alert('Por favor, informe o título ou nome da demanda.');
@@ -209,24 +288,43 @@ export function ComunicacaoTickets({
 
     setSaving(true);
     try {
-      await onSaveTicket({
-        titulo: formTitulo.trim(),
-        projeto_id: formProjetoId || null,
-        solicitante_nome: formSolicitanteNome.trim() || null,
-        solicitante_id: formSolicitanteId || null,
-        tipo_material: formTipoMaterial,
-        publico_alvo: formPublicoAlvo.trim() || null,
-        objetivo: formObjetivo.trim() || null,
-        descricao_detalhes: formDescricao.trim() || null,
-        prazo_desejado: formPrazoDesejado || null,
-        urgencia: formUrgencia,
-        links_referencia: formLinksReferencia.trim() || null,
-        observacoes_referencia: formObservacoesReferencia.trim() || null,
-        status: 'pendente',
-      });
+      if (editingTicket) {
+        await onSaveTicket({
+          id: editingTicket.id,
+          titulo: formTitulo.trim(),
+          projeto_id: formProjetoId || null,
+          solicitante_nome: formSolicitanteNome.trim() || null,
+          solicitante_id: formSolicitanteId === 'outro_externo' ? null : (formSolicitanteId || null),
+          tipo_material: formTipoMaterial,
+          publico_alvo: formPublicoAlvo.trim() || null,
+          objetivo: formObjetivo.trim() || null,
+          descricao_detalhes: formDescricao.trim() || null,
+          prazo_desejado: formPrazoDesejado || null,
+          urgencia: formUrgencia,
+          links_referencia: formLinksReferencia.trim() || null,
+          observacoes_referencia: formObservacoesReferencia.trim() || null,
+        });
+      } else {
+        await onSaveTicket({
+          titulo: formTitulo.trim(),
+          projeto_id: formProjetoId || null,
+          solicitante_nome: formSolicitanteNome.trim() || null,
+          solicitante_id: formSolicitanteId === 'outro_externo' ? null : (formSolicitanteId || null),
+          tipo_material: formTipoMaterial,
+          publico_alvo: formPublicoAlvo.trim() || null,
+          objetivo: formObjetivo.trim() || null,
+          descricao_detalhes: formDescricao.trim() || null,
+          prazo_desejado: formPrazoDesejado || null,
+          urgencia: formUrgencia,
+          links_referencia: formLinksReferencia.trim() || null,
+          observacoes_referencia: formObservacoesReferencia.trim() || null,
+          status: 'pendente',
+        });
+      }
       setShowNewModal(false);
+      setEditingTicket(null);
     } catch (err: any) {
-      alert('Erro ao enviar solicitação: ' + err.message);
+      alert('Erro ao salvar solicitação: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -255,7 +353,7 @@ export function ComunicacaoTickets({
     switch (urgencia) {
       case 'urgente':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 shadow-2xs animate-pulse">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 shadow-2xs">
             <Flame className="w-3 h-3 text-rose-600" />
             <span>Urgente</span>
           </span>
@@ -299,7 +397,7 @@ export function ComunicacaoTickets({
       case 'aprovado':
         return (
           <span className="px-2.5 py-1 rounded-xl text-xs font-extrabold bg-teal-500/15 text-teal-800 dark:text-teal-200 border border-teal-500/30">
-            Aprovado
+            Aprovado (A Fazer)
           </span>
         );
       case 'em_producao':
@@ -327,20 +425,20 @@ export function ComunicacaoTickets({
 
   return (
     <div className="space-y-5">
-      {/* ── 1. MICRO-KPIS COM PADRÃO DE ALTO CONTRASTE UNIFICADO ── */}
+      {/* ── 1. MICRO-KPIS COM CONTROLE DIRETO DE FILTROS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <button
           type="button"
-          onClick={() => setStatusFilter('todos')}
+          onClick={() => setActiveTab('todas')}
           className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 bg-[var(--bg-elevated)] ${
-            statusFilter === 'todos'
+            activeTab === 'todas'
               ? 'border-2 border-[var(--color-primary)] shadow-md ring-2 ring-offset-1 ring-[var(--color-primary)]/25'
               : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]/50'
           }`}
         >
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-              statusFilter === 'todos'
+              activeTab === 'todas'
                 ? 'bg-[var(--color-primary)] text-white shadow-xs'
                 : 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]'
             }`}
@@ -352,30 +450,30 @@ export function ComunicacaoTickets({
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
                 Total de Demandas
               </p>
-              {statusFilter === 'todos' && (
+              {activeTab === 'todas' && (
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
                   Ativo
                 </span>
               )}
             </div>
             <p className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
-              {stats.total}
+              {tabCounts.todas}
             </p>
           </div>
         </button>
 
         <button
           type="button"
-          onClick={() => setStatusFilter(statusFilter === 'pendentes_geral' ? 'todos' : 'pendentes_geral')}
+          onClick={() => setActiveTab('aguardando')}
           className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 bg-[var(--bg-elevated)] ${
-            statusFilter === 'pendentes_geral'
+            activeTab === 'aguardando'
               ? 'border-2 border-amber-500 shadow-md ring-2 ring-offset-1 ring-amber-500/25'
               : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-amber-500/50'
           }`}
         >
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-              statusFilter === 'pendentes_geral'
+              activeTab === 'aguardando'
                 ? 'bg-amber-500 text-white shadow-xs'
                 : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
             }`}
@@ -385,32 +483,32 @@ export function ComunicacaoTickets({
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-                Pendentes / Triagem
+                Aguardando Aprovação
               </p>
-              {statusFilter === 'pendentes_geral' && (
+              {activeTab === 'aguardando' && (
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-amber-500/15 text-amber-800 dark:text-amber-200">
                   Ativo
                 </span>
               )}
             </div>
             <p className="text-lg sm:text-xl font-display font-extrabold text-amber-600 dark:text-amber-400">
-              {stats.pendentes}
+              {tabCounts.aguardando}
             </p>
           </div>
         </button>
 
         <button
           type="button"
-          onClick={() => setStatusFilter(statusFilter === 'producao_geral' ? 'todos' : 'producao_geral')}
+          onClick={() => setActiveTab('em_producao')}
           className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 bg-[var(--bg-elevated)] ${
-            statusFilter === 'producao_geral'
+            activeTab === 'em_producao'
               ? 'border-2 border-blue-500 shadow-md ring-2 ring-offset-1 ring-blue-500/25'
               : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-blue-500/50'
           }`}
         >
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-              statusFilter === 'producao_geral'
+              activeTab === 'em_producao'
                 ? 'bg-blue-500 text-white shadow-xs'
                 : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
             }`}
@@ -420,32 +518,32 @@ export function ComunicacaoTickets({
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-                Em Produção
+                Em Produção (Quadro)
               </p>
-              {statusFilter === 'producao_geral' && (
+              {activeTab === 'em_producao' && (
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-blue-500/15 text-blue-800 dark:text-blue-200">
                   Ativo
                 </span>
               )}
             </div>
             <p className="text-lg sm:text-xl font-display font-extrabold text-blue-600 dark:text-blue-400">
-              {stats.emProducao}
+              {tabCounts.em_producao}
             </p>
           </div>
         </button>
 
         <button
           type="button"
-          onClick={() => setStatusFilter(statusFilter === 'concluido' ? 'todos' : 'concluido')}
+          onClick={() => setActiveTab('concluido')}
           className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3 bg-[var(--bg-elevated)] ${
-            statusFilter === 'concluido'
+            activeTab === 'concluido'
               ? 'border-2 border-emerald-500 shadow-md ring-2 ring-offset-1 ring-emerald-500/25'
               : 'border-[var(--border-default)] shadow-[var(--shadow-card)] hover:border-emerald-500/50'
           }`}
         >
           <div
             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-              statusFilter === 'concluido'
+              activeTab === 'concluido'
                 ? 'bg-emerald-500 text-white shadow-xs'
                 : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
             }`}
@@ -457,20 +555,57 @@ export function ComunicacaoTickets({
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
                 Concluídos
               </p>
-              {statusFilter === 'concluido' && (
+              {activeTab === 'concluido' && (
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
                   Ativo
                 </span>
               )}
             </div>
             <p className="text-lg sm:text-xl font-display font-extrabold text-emerald-600 dark:text-emerald-400">
-              {stats.concluidos}
+              {tabCounts.concluido}
             </p>
           </div>
         </button>
       </div>
 
-      {/* ── 2. BARRA DE CONTROLE, FILTROS & AÇÃO DE ABERTURA ── */}
+      {/* ── 2. BARRA DE NAVEGAÇÃO EM ABAS (SEGMENTED PILLS COM CONTADORES) ── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 custom-scrollbar">
+        {[
+          { id: 'todas', label: 'Todas', count: tabCounts.todas, color: 'primary' },
+          { id: 'aguardando', label: 'Aguardando Aprovação', count: tabCounts.aguardando, color: 'amber' },
+          { id: 'aprovado', label: 'Aprovadas (A Fazer)', count: tabCounts.aprovado, color: 'teal' },
+          { id: 'em_producao', label: 'Em Produção', count: tabCounts.em_producao, color: 'blue' },
+          { id: 'concluido', label: 'Concluídas', count: tabCounts.concluido, color: 'emerald' },
+          { id: 'recusado', label: 'Recusadas', count: tabCounts.recusado, color: 'rose' },
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as TicketTab)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border ${
+                isActive
+                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm'
+                  : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--color-primary)]/50 hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                  isActive
+                    ? 'bg-white/20 text-white'
+                    : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── 3. BARRA DE FILTROS SECUNDÁRIOS & AÇÃO DE ABERTURA ── */}
       <div className="p-4 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-3 card-contrast">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="relative flex-1 w-full min-w-[220px]">
@@ -522,7 +657,7 @@ export function ComunicacaoTickets({
         </div>
       </div>
 
-      {/* ── 3. LISTA / GRADE DE SOLICITAÇÕES ── */}
+      {/* ── 4. LISTA / GRADE DE SOLICITAÇÕES ── */}
       {filteredTickets.length === 0 ? (
         <Card className="p-12 text-center text-[var(--text-muted)] space-y-3">
           <FileText className="w-12 h-12 mx-auto text-[var(--text-muted)] opacity-40" />
@@ -532,7 +667,7 @@ export function ComunicacaoTickets({
           <p className="max-w-md mx-auto text-xs">
             {tickets.length === 0
               ? 'Nenhum voluntário abriu solicitações de materiais ainda. Qualquer voluntário pode solicitar posts, faixas, crachás ou coberturas de comunicação!'
-              : 'Nenhuma solicitação corresponde aos filtros de busca atuais.'}
+              : 'Nenhuma solicitação corresponde aos filtros de busca e aba selecionada.'}
           </p>
           <Button size="sm" onClick={handleOpenNewModal}>
             Abrir Primeira Solicitação
@@ -542,9 +677,10 @@ export function ComunicacaoTickets({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredTickets.map((ticket) => {
             const cor = ticket.projetos_sociais?.cor_identificacao || '#F2632D';
-            const nomeProjeto = ticket.projetos_sociais?.nome || 'Institucional Ádapo';
+            const nomeProjeto = ticket.projetos_sociais?.nome || 'Institucional Geral (Ádapo)';
             const tipoObj = TIPOS_MATERIAL.find((t) => t.value === ticket.tipo_material);
             const isRedeSocial = !tipoObj || tipoObj.categoria === 'redes';
+            const isAguardando = ticket.status === 'pendente' || ticket.status === 'em_analise';
 
             return (
               <Card
@@ -570,17 +706,40 @@ export function ComunicacaoTickets({
                       <span className="truncate max-w-[140px]">{nomeProjeto}</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       {renderUrgenciaBadge(ticket.urgencia)}
                       {renderStatusBadge(ticket.status)}
                     </div>
                   </div>
 
-                  {/* Título e Tipo */}
+                  {/* Tag do Tipo e Título da Demanda */}
                   <div>
-                    <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)] inline-block mb-1">
-                      {getTipoMaterialLabel(ticket.tipo_material)}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider bg-[var(--bg-secondary)] text-[var(--text-muted)] border border-[var(--border-default)] inline-block">
+                        {getTipoMaterialLabel(ticket.tipo_material)}
+                      </span>
+
+                      {/* Tag informativa de presença no Quadro de Tarefas */}
+                      {ticket.status === 'aprovado' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/25">
+                          <FolderKanban className="w-3 h-3 text-teal-600" />
+                          <span>No Quadro: A Fazer</span>
+                        </span>
+                      )}
+                      {ticket.status === 'em_producao' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/25">
+                          <FolderKanban className="w-3 h-3" />
+                          <span>No Quadro: Em Produção</span>
+                        </span>
+                      )}
+                      {ticket.status === 'concluido' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>No Quadro: Concluído</span>
+                        </span>
+                      )}
+                    </div>
+
                     <h4 className="font-display font-bold text-sm text-[var(--text-primary)] leading-snug line-clamp-2">
                       {ticket.titulo}
                     </h4>
@@ -650,39 +809,52 @@ export function ComunicacaoTickets({
                 </div>
 
                 {/* Ações do Card */}
-                <div className="pt-3 border-t border-[var(--border-default)] flex items-center justify-between gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="flex-1 justify-center text-xs font-bold"
-                    onClick={() => handleOpenDetailModal(ticket)}
-                  >
-                    Ver & Responder
-                  </Button>
+                <div className="pt-3 border-t border-[var(--border-default)] flex items-center justify-between gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-1 min-w-[140px]">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="flex-1 justify-center text-xs font-bold"
+                      onClick={() => handleOpenDetailModal(ticket)}
+                    >
+                      Ver & Responder
+                    </Button>
 
-                  {/* Se for rede social e ainda não convertido, agenda no calendário */}
-                  {isRedeSocial && !ticket.conteudo_criado_id && ticket.status !== 'recusado' && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="px-2.5 text-xs font-bold"
+                      onClick={() => handleOpenEditModal(ticket)}
+                      title="Editar todos os dados desta solicitação (projeto, título, prazo, referências)"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+                      <span className="hidden sm:inline">Editar</span>
+                    </Button>
+                  </div>
+
+                  {/* Botão de Aprovação Rápida (para tickets pendentes/em análise) */}
+                  {isAguardando && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleOpenApprovalModal(ticket)}
+                      className="text-xs font-bold bg-[var(--color-primary)] text-white hover:opacity-90 shadow-2xs"
+                      title="Aprovar e enviar para o Quadro de Tarefas na coluna desejada"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Aprovar Demanda</span>
+                    </Button>
+                  )}
+
+                  {/* Se for rede social e aprovado/em produção, permite agendar no calendário */}
+                  {isRedeSocial && !ticket.conteudo_criado_id && ticket.status !== 'recusado' && !isAguardando && (
                     <button
                       type="button"
                       onClick={() => onConvertToConteudo(ticket)}
                       className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white border border-[var(--color-primary)]/30 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
-                      title="Converter esta solicitação aprovada em uma publicação no Calendário Editorial"
+                      title="Converter esta solicitação em uma publicação no Calendário Editorial"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">+ Calendário</span>
-                    </button>
-                  )}
-
-                  {/* Se for material físico/institucional e pendente/em análise, aprova direto para o Quadro de Tarefas */}
-                  {!isRedeSocial && (ticket.status === 'pendente' || ticket.status === 'em_analise') && (
-                    <button
-                      type="button"
-                      onClick={() => onSaveTicket({ id: ticket.id, status: 'em_producao' })}
-                      className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
-                      title="Aprovar e enviar demanda diretamente para o Quadro de Tarefas em Produção"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Aprovar Produção</span>
                     </button>
                   )}
 
@@ -693,7 +865,7 @@ export function ComunicacaoTickets({
                         onDeleteTicket(ticket.id);
                       }
                     }}
-                    className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 transition-colors"
+                    className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 transition-colors ml-auto"
                     title="Excluir ticket"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -705,31 +877,53 @@ export function ComunicacaoTickets({
         </div>
       )}
 
-      {/* ── 4. MODAL: NOVA SOLICITAÇÃO DE MATERIAL (PARA VOLUNTÁRIOS) ── */}
+      {/* ── 5. MODAL: NOVA SOLICITAÇÃO OU EDIÇÃO COMPLETA DA DEMANDA ── */}
       {showNewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar card-contrast" role="dialog" aria-modal="true">
             <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[var(--color-primary)]" />
+                {editingTicket ? (
+                  <Edit3 className="w-5 h-5 text-[var(--color-primary)]" />
+                ) : (
+                  <FileText className="w-5 h-5 text-[var(--color-primary)]" />
+                )}
                 <div>
                   <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
-                    Solicitar Material de Comunicação
+                    {editingTicket ? 'Editar Solicitação de Material' : 'Solicitar Material de Comunicação'}
                   </h3>
                   <p className="text-[11px] text-[var(--text-muted)]">
-                    Abra uma demanda para a equipe de marketing e comunicação
+                    {editingTicket
+                      ? 'Faça correções de projeto vinculado, prazos ou informações da demanda'
+                      : 'Abra uma demanda para a equipe de marketing e comunicação'}
                   </p>
                 </div>
               </div>
               <button
-                onClick={() => setShowNewModal(false)}
+                onClick={() => {
+                  setShowNewModal(false);
+                  setEditingTicket(null);
+                }}
                 className="p-1 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-muted)]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitNew} className="space-y-3.5 text-xs">
+            {/* Aviso quando o ticket já está no Quadro de Tarefas */}
+            {editingTicket && (editingTicket.status === 'aprovado' || editingTicket.status === 'em_producao' || editingTicket.status === 'concluido') && (
+              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/25 flex items-start gap-2.5 text-xs text-blue-800 dark:text-blue-200">
+                <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold">Demanda sincronizada com o Quadro de Tarefas</p>
+                  <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                    Esta solicitação já foi aprovada pela comunicação. Quaisquer correções feitas aqui (como projeto vinculado ou detalhes) atualizarão imediatamente o card no quadro.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitForm} className="space-y-3.5 text-xs">
               <div>
                 <label className="font-semibold text-[var(--text-secondary)] block mb-1">
                   Título da Demanda / Ação *
@@ -833,7 +1027,7 @@ export function ComunicacaoTickets({
                   {formSolicitanteId === 'outro_externo' && (
                     <input
                       type="text"
-                      placeholder="Digite o nome do solicitante externo"
+                      placeholder="Digite o nome do solicitante"
                       value={formSolicitanteNome}
                       onChange={(e) => setFormSolicitanteNome(e.target.value)}
                       className="w-full mt-2 px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium focus:outline-none focus:border-[var(--color-primary)]"
@@ -909,7 +1103,7 @@ export function ComunicacaoTickets({
                 />
               </div>
 
-              {/* Bloco Completo de Referência & O que destacar */}
+              {/* Bloco de Referência & Inspiração */}
               <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
@@ -942,7 +1136,6 @@ export function ComunicacaoTickets({
                     <span className="text-[10px] text-[var(--text-muted)]">O que a equipe deve se inspirar</span>
                   </div>
 
-                  {/* Sugestões rápidas de foco para inspirar o solicitante */}
                   <div className="flex flex-wrap gap-1.5 py-0.5">
                     {[
                       'Paleta de cores',
@@ -982,7 +1175,7 @@ export function ComunicacaoTickets({
 
                   <textarea
                     rows={2}
-                    placeholder="Ex: Gostei muito da sequência de perguntas nos primeiros slides, da paleta de tons quentes e de como dividiram as informações em tópicos curtos..."
+                    placeholder="Ex: Gostei muito da sequência de perguntas nos primeiros slides, da paleta de cores e da divisão em tópicos curtos..."
                     value={formObservacoesReferencia}
                     onChange={(e) => setFormObservacoesReferencia(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium text-xs resize-none focus:border-[var(--color-primary)] focus:outline-none"
@@ -995,12 +1188,19 @@ export function ComunicacaoTickets({
                   type="button"
                   variant="secondary"
                   size="sm"
-                  onClick={() => setShowNewModal(false)}
+                  onClick={() => {
+                    setShowNewModal(false);
+                    setEditingTicket(null);
+                  }}
                 >
                   Cancelar
                 </Button>
                 <Button type="submit" size="sm" disabled={saving}>
-                  {saving ? 'Enviando...' : 'Enviar Solicitação'}
+                  {saving
+                    ? 'Salvando...'
+                    : editingTicket
+                    ? 'Salvar Alterações'
+                    : 'Enviar Solicitação'}
                 </Button>
               </div>
             </form>
@@ -1008,7 +1208,159 @@ export function ComunicacaoTickets({
         </div>
       )}
 
-      {/* ── 5. MODAL: DETALHES & RESPOSTA DA COMUNICAÇÃO (TRIAGEM) ── */}
+      {/* ── 6. MODAL: APROVAÇÃO RÁPIDA & DIRECIONAMENTO AO QUADRO DE TAREFAS ── */}
+      {approvingTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar card-contrast" role="dialog" aria-modal="true">
+            <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-[var(--color-primary)]" />
+                <div>
+                  <h3 className="font-display font-bold text-base text-[var(--text-primary)]">
+                    Aprovar Demanda para o Quadro
+                  </h3>
+                  <p className="text-[11px] text-[var(--text-muted)]">
+                    Selecione a coluna de destino no Quadro de Tarefas e o voluntário responsável
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setApprovingTicket(null)}
+                className="p-1 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-muted)]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Resumo da Demanda sendo aprovada */}
+            <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-1.5 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-[var(--text-primary)] text-sm line-clamp-1">
+                  {approvingTicket.titulo}
+                </span>
+                {renderUrgenciaBadge(approvingTicket.urgencia)}
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] pt-1">
+                <span>
+                  Solicitado por: <strong>{approvingTicket.solicitante_nome || 'Voluntário'}</strong>
+                </span>
+                <span>
+                  Projeto: <strong>{approvingTicket.projetos_sociais?.nome || 'Institucional Geral'}</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* Seletor de Coluna de Destino no Kanban */}
+            <div className="space-y-2">
+              <label className="font-bold text-xs text-[var(--text-primary)] block">
+                Coluna de Destino no Quadro de Tarefas *
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setApprovalDestino('a_fazer')}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                    approvalDestino === 'a_fazer'
+                      ? 'border-2 border-teal-500 bg-teal-500/10 shadow-xs'
+                      : 'border-[var(--border-default)] bg-[var(--bg-secondary)] hover:border-teal-500/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-xs text-teal-800 dark:text-teal-200 flex items-center gap-1.5">
+                      <FolderKanban className="w-4 h-4 text-teal-600" />
+                      <span>A Fazer (Espera)</span>
+                    </span>
+                    {approvalDestino === 'a_fazer' && (
+                      <Check className="w-4 h-4 text-teal-600" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[var(--text-muted)] leading-snug">
+                    A demanda é aprovada e entra na fila aguardando início da produção.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setApprovalDestino('em_producao')}
+                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                    approvalDestino === 'em_producao'
+                      ? 'border-2 border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-xs'
+                      : 'border-[var(--border-default)] bg-[var(--bg-secondary)] hover:border-[var(--color-primary)]/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-xs text-[var(--color-primary)] flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4" />
+                      <span>Em Produção</span>
+                    </span>
+                    {approvalDestino === 'em_producao' && (
+                      <Check className="w-4 h-4 text-[var(--color-primary)]" />
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[var(--text-muted)] leading-snug">
+                    A demanda entra imediatamente na coluna de produção ativa da equipe.
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            {/* Seletor de Responsável da Comunicação */}
+            <div>
+              <label className="font-semibold text-[var(--text-secondary)] text-xs block mb-1">
+                Responsável na Equipe de Comunicação (opcional)
+              </label>
+              <select
+                value={approvalResponsavelId}
+                onChange={(e) => setApprovalResponsavelId(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] text-xs font-medium cursor-pointer focus:outline-none focus:border-[var(--color-primary)]"
+              >
+                <option value="">Não atribuído no momento</option>
+                {voluntarios.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.nome_completo} {v.area_atuacao ? `(${v.area_atuacao})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Parecer ou Mensagem ao Solicitante */}
+            <div>
+              <label className="font-semibold text-[var(--text-secondary)] text-xs block mb-1">
+                Parecer / Resposta para o Solicitante (opcional)
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Ex: Demanda aprovada pela comunicação! Estimativa de entrega até sexta-feira."
+                value={approvalResposta}
+                onChange={(e) => setApprovalResposta(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] font-medium text-xs resize-none focus:outline-none focus:border-[var(--color-primary)]"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-[var(--border-default)]">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setApprovingTicket(null)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={approving}
+                onClick={handleConfirmApproval}
+                className="bg-[var(--color-primary)] text-white hover:opacity-90"
+              >
+                {approving ? 'Aprovando...' : 'Confirmar Aprovação e Enviar ao Quadro'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 7. MODAL: DETALHES & TRIAGEM GERAL DA COMUNICAÇÃO ── */}
       {selectedTicketDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar card-contrast" role="dialog" aria-modal="true">
@@ -1024,12 +1376,24 @@ export function ComunicacaoTickets({
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedTicketDetail(null)}
-                className="p-1 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-muted)]"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="text-xs font-bold"
+                  onClick={() => handleOpenEditModal(selectedTicketDetail)}
+                  title="Editar dados completos da demanda"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Editar</span>
+                </Button>
+                <button
+                  onClick={() => setSelectedTicketDetail(null)}
+                  className="p-1 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-muted)]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/60 border border-[var(--border-default)] space-y-2 text-xs">
@@ -1048,6 +1412,7 @@ export function ComunicacaoTickets({
                   <span>Prazo: {new Date(selectedTicketDetail.prazo_desejado).toLocaleDateString('pt-BR')}</span>
                 )}
               </div>
+
               {/* Destaque Visual e Link da Referência */}
               {(selectedTicketDetail.links_referencia || selectedTicketDetail.observacoes_referencia) && (
                 <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-2">
@@ -1098,10 +1463,10 @@ export function ComunicacaoTickets({
                   onChange={(e) => setGestaoStatus(e.target.value as any)}
                   className="w-full px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] font-bold cursor-pointer focus:outline-none focus:border-[var(--color-primary)]"
                 >
-                  <option value="pendente">Pendente</option>
+                  <option value="pendente">Pendente (Aguardando Aprovação)</option>
                   <option value="em_analise">Em Análise</option>
-                  <option value="aprovado">Aprovado</option>
-                  <option value="em_producao">Em Produção</option>
+                  <option value="aprovado">Aprovado (No Quadro: A Fazer)</option>
+                  <option value="em_producao">Em Produção (No Quadro: Produção)</option>
                   <option value="concluido">Concluído</option>
                   <option value="recusado">Recusado</option>
                 </select>
@@ -1152,46 +1517,21 @@ export function ComunicacaoTickets({
               </div>
 
               <div className="pt-2 flex items-center justify-between border-t border-[var(--border-default)]">
-                {/* Botão de Ação Direta conforme o tipo de material */}
-                {!selectedTicketDetail.conteudo_criado_id && selectedTicketDetail.status !== 'recusado' && (
-                  (() => {
-                    const tipoObj = TIPOS_MATERIAL.find((t) => t.value === selectedTicketDetail.tipo_material);
-                    const isRede = !tipoObj || tipoObj.categoria === 'redes';
-
-                    if (isRede) {
-                      return (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          icon={<Sparkles className="w-4 h-4 text-[var(--color-primary)]" />}
-                          onClick={() => {
-                            const t = selectedTicketDetail;
-                            setSelectedTicketDetail(null);
-                            onConvertToConteudo(t);
-                          }}
-                        >
-                          Agendar no Calendário
-                        </Button>
-                      );
-                    } else {
-                      return (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          icon={<CheckCircle2 className="w-4 h-4 text-blue-600" />}
-                          onClick={async () => {
-                            const t = selectedTicketDetail;
-                            setSelectedTicketDetail(null);
-                            await onSaveTicket({ id: t.id, status: 'em_producao' });
-                          }}
-                        >
-                          Aprovar para Produção
-                        </Button>
-                      );
-                    }
-                  })()
+                {/* Se estiver pendente, atalho direto para aprovação */}
+                {(selectedTicketDetail.status === 'pendente' || selectedTicketDetail.status === 'em_analise') && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-[var(--color-primary)] text-white hover:opacity-90 font-bold"
+                    icon={<CheckCircle2 className="w-4 h-4" />}
+                    onClick={() => {
+                      const t = selectedTicketDetail;
+                      setSelectedTicketDetail(null);
+                      handleOpenApprovalModal(t);
+                    }}
+                  >
+                    Aprovar Demanda
+                  </Button>
                 )}
 
                 <div className="flex items-center gap-2 ml-auto">
@@ -1220,3 +1560,4 @@ export function ComunicacaoTickets({
     </div>
   );
 }
+
