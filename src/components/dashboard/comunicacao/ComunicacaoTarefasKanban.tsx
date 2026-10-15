@@ -26,6 +26,11 @@ import {
   GripVertical,
   Bookmark,
   ArrowUpDown,
+  Ban,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  AlertOctagon,
 } from 'lucide-react';
 import { ConteudoItem } from './ComunicacaoCalendario';
 import { SolicitacaoComunicacaoItem } from './ComunicacaoTickets';
@@ -47,13 +52,14 @@ export interface TarefaAvulsaItem {
   id: string;
   titulo: string;
   descricao?: string | null;
-  status: 'a_fazer' | 'em_andamento' | 'revisao' | 'concluido';
+  status: 'a_fazer' | 'em_andamento' | 'revisao' | 'concluido' | 'cancelado';
   prioridade: 'baixa' | 'normal' | 'alta' | 'urgente';
   projeto_id?: string | null;
   responsavel_id?: string | null;
   data_limite?: string | null;
   etiquetas?: string[];
   checklist?: ChecklistItem[] | null;
+  motivo_cancelamento?: string | null;
   created_at?: string;
   updated_at?: string;
   projetos_sociais?: { nome: string; cor_identificacao?: string } | null;
@@ -65,7 +71,7 @@ export interface KanbanCard {
   origem: 'conteudo' | 'ticket' | 'tarefa';
   titulo: string;
   descricao?: string | null;
-  coluna: 'a_fazer' | 'em_producao' | 'em_revisao' | 'concluido';
+  coluna: 'a_fazer' | 'em_producao' | 'em_revisao' | 'concluido' | 'cancelado';
   prioridade: 'baixa' | 'normal' | 'alta' | 'urgente';
   projetoNome?: string;
   projetoCor?: string;
@@ -74,6 +80,7 @@ export interface KanbanCard {
   dataLimite?: string | null;
   tipoRotulo: string;
   checklist?: ChecklistItem[] | null;
+  motivoCancelamento?: string | null;
   rawItem: any;
   createdAt?: string;
 }
@@ -95,8 +102,8 @@ interface ComunicacaoTarefasKanbanProps {
   onRefresh: () => void;
   onSaveTarefa: (tarefa: Partial<TarefaAvulsaItem>) => Promise<void>;
   onDeleteTarefa: (id: string) => Promise<void>;
-  onUpdateConteudoStatus: (id: string, status: ConteudoItem['status']) => Promise<void>;
-  onUpdateTicketStatus: (id: string, status: SolicitacaoComunicacaoItem['status']) => Promise<void>;
+  onUpdateConteudoStatus: (id: string, status: ConteudoItem['status'], motivoCancelamento?: string | null) => Promise<void>;
+  onUpdateTicketStatus: (id: string, status: SolicitacaoComunicacaoItem['status'], motivoCancelamento?: string | null) => Promise<void>;
   onUpdateChecklist?: (id: string, origem: 'conteudo' | 'ticket' | 'tarefa', checklist: ChecklistItem[]) => Promise<void>;
   onNavigateToTab?: (tab: 'calendario' | 'tickets' | 'campanhas' | 'galeria') => void;
 }
@@ -106,6 +113,7 @@ const COLUNAS = [
   { id: 'em_producao', titulo: 'Em Produção', badgeBg: 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800' },
   { id: 'em_revisao', titulo: 'Em Revisão', badgeBg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800' },
   { id: 'concluido', titulo: 'Concluído', badgeBg: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' },
+  { id: 'cancelado', titulo: 'Cancelado / Não Realizado', badgeBg: 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800' },
 ] as const;
 
 export function ComunicacaoTarefasKanban({
@@ -150,6 +158,37 @@ export function ComunicacaoTarefasKanban({
   const [selectedCardDetail, setSelectedCardDetail] = useState<KanbanCard | null>(null);
   const [newChecklistText, setNewChecklistText] = useState('');
 
+  // Estado da 5ª coluna: Cancelados / Não Realizados (recolhida por padrão para preservar espaço)
+  const [isCanceladosCollapsed, setIsCanceladosCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('elo_kanban_cancelados_collapsed');
+        return stored !== null ? JSON.parse(stored) : true;
+      } catch (e) {
+        return true;
+      }
+    }
+    return true;
+  });
+
+  const toggleCanceladosCollapsed = () => {
+    setIsCanceladosCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('elo_kanban_cancelados_collapsed', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  // Modal para confirmação e registro do motivo ao cancelar item
+  const [cardPendenteCancelamento, setCardPendenteCancelamento] = useState<{
+    id: string;
+    origem: KanbanCard['origem'];
+    titulo: string;
+  } | null>(null);
+  const [motivoCancelamentoInput, setMotivoCancelamentoInput] = useState('');
+
   // 1. Unificação dos 3 tipos de dados em cards para o Kanban
   const kanbanCards: KanbanCard[] = useMemo(() => {
     const cards: KanbanCard[] = [];
@@ -157,7 +196,8 @@ export function ComunicacaoTarefasKanban({
     // A. Produções do Calendário Editorial
     conteudos.forEach((c) => {
       let coluna: KanbanCard['coluna'] = 'a_fazer';
-      if (c.status === 'producao') coluna = 'em_producao';
+      if (c.status === 'cancelado') coluna = 'cancelado';
+      else if (c.status === 'producao') coluna = 'em_producao';
       else if (c.status === 'analise' || c.status === 'em_atraso') coluna = 'em_revisao';
       else if (c.status === 'publicado') coluna = 'concluido';
 
@@ -174,6 +214,7 @@ export function ComunicacaoTarefasKanban({
         dataLimite: c.data_publicacao,
         tipoRotulo: `Rede Social (${c.tipo_conteudo?.toUpperCase() || 'POST'})`,
         checklist: Array.isArray(c.checklist) ? (c.checklist as any) : [],
+        motivoCancelamento: (c as any).motivo_cancelamento || null,
         rawItem: c,
         createdAt: c.created_at,
       });
@@ -181,13 +222,14 @@ export function ComunicacaoTarefasKanban({
 
     // B. Demandas e Solicitações de Materiais
     tickets.forEach((t) => {
-      // Regra de Fluxo: Somente tickets aprovados pelo responsável entram no Quadro de Tarefas
-      if (t.status === 'pendente' || t.status === 'em_analise' || t.status === 'recusado') {
+      // Regra de Fluxo: Somente tickets com status operacional entram no Quadro de Tarefas
+      if (t.status === 'pendente' || t.status === 'em_analise') {
         return;
       }
 
       let coluna: KanbanCard['coluna'] = 'a_fazer';
-      if (t.status === 'aprovado') coluna = 'a_fazer';
+      if (t.status === 'recusado' || t.status === 'cancelado') coluna = 'cancelado';
+      else if (t.status === 'aprovado') coluna = 'a_fazer';
       else if (t.status === 'em_producao') coluna = 'em_producao';
       else if (t.status === 'concluido') coluna = 'concluido';
 
@@ -204,6 +246,7 @@ export function ComunicacaoTarefasKanban({
         dataLimite: t.prazo_desejado,
         tipoRotulo: `Demanda (${(t.tipo_material || 'material').replace('_', ' ').toUpperCase()})`,
         checklist: Array.isArray(t.checklist) ? (t.checklist as any) : [],
+        motivoCancelamento: (t as any).motivo_cancelamento || t.resposta_comunicacao || null,
         rawItem: t,
         createdAt: t.created_at,
       });
@@ -212,7 +255,8 @@ export function ComunicacaoTarefasKanban({
     // C. Tarefas Avulsas & Rotina Operacional
     tarefas.forEach((ta) => {
       let coluna: KanbanCard['coluna'] = 'a_fazer';
-      if (ta.status === 'em_andamento') coluna = 'em_producao';
+      if (ta.status === 'cancelado') coluna = 'cancelado';
+      else if (ta.status === 'em_andamento') coluna = 'em_producao';
       else if (ta.status === 'revisao') coluna = 'em_revisao';
       else if (ta.status === 'concluido') coluna = 'concluido';
 
@@ -229,6 +273,7 @@ export function ComunicacaoTarefasKanban({
         dataLimite: ta.data_limite,
         tipoRotulo: 'Tarefa Operacional',
         checklist: Array.isArray(ta.checklist) ? ta.checklist : [],
+        motivoCancelamento: ta.motivo_cancelamento || null,
         rawItem: ta,
         createdAt: ta.created_at,
       });
@@ -307,13 +352,30 @@ export function ComunicacaoTarefasKanban({
     return list;
   }, [filteredCards, ordenacao]);
 
+  const totalCancelados = useMemo(() => {
+    return kanbanCards.filter((c) => c.coluna === 'cancelado').length;
+  }, [kanbanCards]);
+
   // 3. Mover Card entre Colunas (Drag and Drop ou Botões)
   const handleMoverCardToCol = async (
     cardId: string,
     origem: KanbanCard['origem'],
-    novaColuna: KanbanCard['coluna']
+    novaColuna: KanbanCard['coluna'],
+    motivoCancelamento?: string | null
   ) => {
     if (!canEdit) return;
+
+    // Se estiver movendo para cancelado e ainda não tiver informado o motivo, abre o modal
+    if (novaColuna === 'cancelado' && motivoCancelamento === undefined) {
+      const card = kanbanCards.find((c) => c.id === cardId && c.origem === origem);
+      setCardPendenteCancelamento({
+        id: cardId,
+        origem,
+        titulo: card?.titulo || 'Cartão',
+      });
+      setMotivoCancelamentoInput('');
+      return;
+    }
 
     if (origem === 'conteudo') {
       const statusMap: Record<KanbanCard['coluna'], ConteudoItem['status']> = {
@@ -321,28 +383,43 @@ export function ComunicacaoTarefasKanban({
         em_producao: 'producao',
         em_revisao: 'analise',
         concluido: 'publicado',
+        cancelado: 'cancelado',
       };
-      await onUpdateConteudoStatus(cardId, statusMap[novaColuna]);
+      await onUpdateConteudoStatus(cardId, statusMap[novaColuna], motivoCancelamento);
     } else if (origem === 'ticket') {
       const statusMap: Record<KanbanCard['coluna'], SolicitacaoComunicacaoItem['status']> = {
         a_fazer: 'aprovado',
         em_producao: 'em_producao',
         em_revisao: 'em_producao',
         concluido: 'concluido',
+        cancelado: 'cancelado',
       };
-      await onUpdateTicketStatus(cardId, statusMap[novaColuna]);
+      await onUpdateTicketStatus(cardId, statusMap[novaColuna], motivoCancelamento);
     } else {
       const statusMap: Record<KanbanCard['coluna'], TarefaAvulsaItem['status']> = {
         a_fazer: 'a_fazer',
         em_producao: 'em_andamento',
         em_revisao: 'revisao',
         concluido: 'concluido',
+        cancelado: 'cancelado',
       };
-      await onSaveTarefa({ id: cardId, status: statusMap[novaColuna] });
+      await onSaveTarefa({
+        id: cardId,
+        status: statusMap[novaColuna],
+        motivo_cancelamento: motivoCancelamento ?? (novaColuna === 'cancelado' ? undefined : null),
+      });
     }
   };
 
   const handleMoverCard = async (card: KanbanCard, direcao: 'avancar' | 'recuar') => {
+    // Se estiver em cancelado, recuar o reativa para "a_fazer"
+    if (card.coluna === 'cancelado') {
+      if (direcao === 'recuar') {
+        await handleMoverCardToCol(card.id, card.origem, 'a_fazer', null);
+      }
+      return;
+    }
+
     const ordemColunas: KanbanCard['coluna'][] = ['a_fazer', 'em_producao', 'em_revisao', 'concluido'];
     const currentIndex = ordemColunas.indexOf(card.coluna);
     const targetIndex = direcao === 'avancar' ? currentIndex + 1 : currentIndex - 1;
@@ -540,7 +617,17 @@ export function ComunicacaoTarefasKanban({
         </div>
 
         {canEdit && (
-          <div className="flex items-center gap-2 self-end md:self-auto">
+          <div className="flex items-center gap-2 self-end md:self-auto flex-wrap">
+            <Button
+              size="sm"
+              variant={isCanceladosCollapsed ? 'secondary' : 'danger'}
+              icon={<Ban className="w-3.5 h-3.5" />}
+              onClick={toggleCanceladosCollapsed}
+              title={isCanceladosCollapsed ? 'Exibir coluna de tarefas canceladas' : 'Ocultar coluna de tarefas canceladas'}
+            >
+              {isCanceladosCollapsed ? `Cancelados (${totalCancelados})` : 'Recolher Cancelados'}
+            </Button>
+
             <Button
               size="sm"
               variant="primary"
@@ -553,12 +640,83 @@ export function ComunicacaoTarefasKanban({
         )}
       </div>
 
-      {/* QUADRO KANBAN (4 COLUNAS) COM ARRASTAR E SOLTAR (DRAG & DROP) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+      {/* QUADRO KANBAN COM ALTURA FIXA INTELIGENTE E ROLAGEM INTERNA EM CADA LISTA (ESTILO TRELLO/LINEAR) */}
+      <div className="flex gap-3.5 sm:gap-4 items-start overflow-x-auto pb-4 custom-scrollbar w-full min-h-[580px]">
         {COLUNAS.map((coluna) => {
           const cardsDaColuna = sortedFilteredCards.filter((c) => c.coluna === coluna.id);
           const isOver = dragOverColumn === coluna.id;
+          const isCanceladoCol = coluna.id === 'cancelado';
 
+          // RENDERIZAÇÃO DA 5ª COLUNA RECOLHIDA (MINIMIZADA)
+          if (isCanceladoCol && isCanceladosCollapsed) {
+            return (
+              <div
+                key={coluna.id}
+                onDragOver={(e) => {
+                  if (!canEdit) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (dragOverColumn !== 'cancelado') setDragOverColumn('cancelado');
+                }}
+                onDragLeave={(e) => {
+                  if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                  if (dragOverColumn === 'cancelado') setDragOverColumn(null);
+                }}
+                onDrop={async (e) => {
+                  if (!canEdit) return;
+                  e.preventDefault();
+                  setDragOverColumn(null);
+                  setDraggedCardId(null);
+                  try {
+                    const rawData = e.dataTransfer.getData('text/plain');
+                    if (!rawData) return;
+                    const { id, origem, coluna: fromCol } = JSON.parse(rawData);
+                    if (fromCol === 'cancelado') return;
+                    await handleMoverCardToCol(id, origem, 'cancelado');
+                  } catch (err) {
+                    console.error('Erro no drag and drop:', err);
+                  }
+                }}
+                onClick={toggleCanceladosCollapsed}
+                className={`flex flex-col items-center justify-between py-4 px-2 rounded-2xl border transition-all duration-200 h-[calc(100vh-270px)] min-h-[540px] max-h-[820px] w-14 shrink-0 cursor-pointer group bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100/60 dark:hover:bg-rose-950/40 shadow-xs ${
+                  isOver ? 'border-2 border-dashed border-rose-500 ring-4 ring-rose-500/20 scale-[1.02]' : ''
+                }`}
+                title="Clique para expandir tarefas canceladas ou não realizadas"
+              >
+                <div className="flex flex-col items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleCanceladosCollapsed();
+                    }}
+                    className="p-1 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-200/50 dark:hover:bg-rose-900/50 transition-colors"
+                    title="Expandir coluna de Cancelados"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <div className="p-1.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                    <Ban className="w-4 h-4" />
+                  </div>
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-200 dark:bg-rose-900/80 text-rose-800 dark:text-rose-200">
+                    {cardsDaColuna.length}
+                  </span>
+                </div>
+
+                <div className="flex-1 flex items-center justify-center py-6">
+                  <span className="writing-mode-vertical rotate-180 text-[11px] font-bold uppercase tracking-wider text-rose-700/80 dark:text-rose-300/80 group-hover:text-rose-900 dark:group-hover:text-rose-100 select-none">
+                    Cancelados ({cardsDaColuna.length})
+                  </span>
+                </div>
+
+                <div className="text-[10px] text-rose-600 dark:text-rose-400 font-bold text-center opacity-80 group-hover:opacity-100">
+                  Abrir
+                </div>
+              </div>
+            );
+          }
+
+          // RENDERIZAÇÃO PADRÃO DA COLUNA (ALTURA FIXA INTELIGENTE E ROLAGEM INDEPENDENTE)
           return (
             <div
               key={coluna.id}
@@ -591,53 +749,75 @@ export function ComunicacaoTarefasKanban({
                   console.error('Erro no drag and drop:', err);
                 }
               }}
-              className={`flex flex-col rounded-2xl border transition-all duration-200 min-h-[620px] p-3.5 space-y-3 ${
+              className={`flex flex-col rounded-2xl border transition-all duration-200 h-[calc(100vh-270px)] min-h-[540px] max-h-[820px] shadow-sm flex-1 min-w-[280px] sm:min-w-[300px] xl:max-w-none ${
+                isCanceladoCol
+                  ? 'bg-rose-50/25 dark:bg-rose-950/15 border-rose-200/80 dark:border-rose-900/40'
+                  : 'bg-white/95 dark:bg-slate-900/95 border-slate-200/90 dark:border-slate-800'
+              } ${
                 isOver
-                  ? 'border-2 border-dashed border-[var(--color-primary)] bg-[var(--color-primary-soft)]/30 ring-4 ring-[var(--color-primary)]/15 scale-[1.01]'
-                  : 'border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-md'
+                  ? isCanceladoCol
+                    ? 'border-2 border-dashed border-rose-500 bg-rose-500/10 ring-4 ring-rose-500/20 scale-[1.01]'
+                    : 'border-2 border-dashed border-[var(--color-primary)] bg-[var(--color-primary-soft)]/30 ring-4 ring-[var(--color-primary)]/15 scale-[1.01]'
+                  : ''
               }`}
             >
-              {/* Cabeçalho da Coluna */}
-              <div className="flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+              {/* Cabeçalho da Coluna (FIXO NO TOPO DA COLUNA) */}
+              <div className="shrink-0 flex items-center justify-between p-3.5 pb-2.5 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2 min-w-0">
+                  {isCanceladoCol && <Ban className="w-4 h-4 text-rose-500 shrink-0" />}
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider truncate">
                     {coluna.titulo}
                   </h3>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold border ${coluna.badgeBg}`}
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold border shrink-0 ${coluna.badgeBg}`}
                   >
                     {cardsDaColuna.length}
                   </span>
                 </div>
 
-                {canEdit && (
-                  <button
-                    type="button"
-                    title="Adicionar tarefa nesta coluna"
-                    onClick={() => {
-                      const statusMap: Record<string, TarefaAvulsaItem['status']> = {
-                        a_fazer: 'a_fazer',
-                        em_producao: 'em_andamento',
-                        em_revisao: 'revisao',
-                        concluido: 'concluido',
-                      };
-                      handleOpenNovaTarefa(statusMap[coluna.id]);
-                    }}
-                    className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                )}
+                <div className="flex items-center gap-1 shrink-0">
+                  {isCanceladoCol ? (
+                    <button
+                      type="button"
+                      title="Recolher coluna de Cancelados"
+                      onClick={toggleCanceladosCollapsed}
+                      className="p-1 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  ) : canEdit ? (
+                    <button
+                      type="button"
+                      title="Adicionar tarefa nesta coluna"
+                      onClick={() => {
+                        const statusMap: Record<string, TarefaAvulsaItem['status']> = {
+                          a_fazer: 'a_fazer',
+                          em_producao: 'em_andamento',
+                          em_revisao: 'revisao',
+                          concluido: 'concluido',
+                        };
+                        handleOpenNovaTarefa(statusMap[coluna.id]);
+                      }}
+                      className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
-              {/* Lista de Cartões da Coluna */}
-              <div className="space-y-2.5 flex-1 overflow-y-auto custom-scrollbar pr-0.5 min-h-[200px]">
+              {/* Lista de Cartões da Coluna (ROLAGEM INTERNA INDEPENDENTE) */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 pt-2 space-y-2.5 pr-1.5">
                 {cardsDaColuna.length === 0 ? (
                   <div className="h-36 flex flex-col items-center justify-center text-center p-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
                     <Layers className="w-5 h-5 text-slate-400 dark:text-slate-500 mb-1" />
-                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Nenhum item nesta etapa</span>
-                    <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Arraste um cartão para cá</span>
-                    {canEdit && (
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      {isCanceladoCol ? 'Nenhum item cancelado' : 'Nenhum item nesta etapa'}
+                    </span>
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                      {isCanceladoCol ? 'Itens cancelados aparecerão aqui' : 'Arraste um cartão para cá'}
+                    </span>
+                    {!isCanceladoCol && canEdit && (
                       <button
                         type="button"
                         onClick={() =>
@@ -685,25 +865,39 @@ export function ComunicacaoTarefasKanban({
                           setDraggedCardId(null);
                           setDragOverColumn(null);
                         }}
-                        className={`p-3.5 space-y-2.5 rounded-xl border transition-all shadow-xs group bg-white dark:bg-slate-800/90 border-slate-200/90 dark:border-slate-700/80 hover:border-[var(--color-primary)]/80 hover:shadow-md ${
-                          canEdit ? 'cursor-grab active:cursor-grabbing' : ''
-                        } ${isDragging ? 'opacity-40 scale-95 border-blue-500 ring-2 ring-blue-500/20' : ''}`}
+                        className={`p-3.5 space-y-2.5 rounded-xl border transition-all shadow-xs group ${
+                          isCanceladoCol
+                            ? 'bg-white/80 dark:bg-slate-800/80 border-rose-200/90 dark:border-rose-900/40 opacity-90'
+                            : 'bg-white dark:bg-slate-800/90 border-slate-200/90 dark:border-slate-700/80 hover:border-[var(--color-primary)]/80 hover:shadow-md'
+                        } ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${
+                          isDragging ? 'opacity-40 scale-95 border-blue-500 ring-2 ring-blue-500/20' : ''
+                        }`}
                       >
                         {/* Linha Superior: Origem & Prioridade */}
                         <div className="flex items-center justify-between gap-1.5 flex-wrap">
                           <span
                             className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                              isContent
+                              isCanceladoCol
+                                ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20'
+                                : isContent
                                 ? 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20'
                                 : isTicket
                                 ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20'
                                 : 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20'
                             }`}
                           >
-                            {isContent && <Share2 className="w-2.5 h-2.5 shrink-0" />}
-                            {isTicket && <Ticket className="w-2.5 h-2.5 shrink-0" />}
-                            {isTask && <CheckSquare className="w-2.5 h-2.5 shrink-0" />}
-                            <span className="truncate max-w-[120px]">{card.tipoRotulo}</span>
+                            {isCanceladoCol ? (
+                              <Ban className="w-2.5 h-2.5 shrink-0" />
+                            ) : (
+                              <>
+                                {isContent && <Share2 className="w-2.5 h-2.5 shrink-0" />}
+                                {isTicket && <Ticket className="w-2.5 h-2.5 shrink-0" />}
+                                {isTask && <CheckSquare className="w-2.5 h-2.5 shrink-0" />}
+                              </>
+                            )}
+                            <span className="truncate max-w-[120px]">
+                              {isCanceladoCol ? 'Cancelado / Não Realizado' : card.tipoRotulo}
+                            </span>
                           </span>
 
                           <div className="flex items-center gap-1">
@@ -717,13 +911,26 @@ export function ComunicacaoTarefasKanban({
                         {/* Título do Cartão */}
                         <h4
                           onClick={() => setSelectedCardDetail(card)}
-                          className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 hover:text-[var(--color-primary)] cursor-pointer line-clamp-2 leading-snug transition-colors"
+                          className={`font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 hover:text-[var(--color-primary)] cursor-pointer line-clamp-2 leading-snug transition-colors ${
+                            isCanceladoCol ? 'line-through text-slate-500 dark:text-slate-400' : ''
+                          }`}
                         >
                           {card.titulo}
                         </h4>
 
+                        {/* Motivo do Cancelamento em Destaque */}
+                        {isCanceladoCol && card.motivoCancelamento && (
+                          <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-800 dark:text-rose-200">
+                            <span className="font-bold flex items-center gap-1 text-[10px] uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-0.5">
+                              <AlertOctagon className="w-3 h-3 shrink-0" />
+                              Motivo informado:
+                            </span>
+                            <p className="italic line-clamp-2 font-medium">"{card.motivoCancelamento}"</p>
+                          </div>
+                        )}
+
                         {/* Indicador de Progresso de Checklist */}
-                        {chkTotal > 0 && (
+                        {chkTotal > 0 && !isCanceladoCol && (
                           <div className="pt-1">
                             <div className="flex items-center justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-300 mb-1">
                               <span className="flex items-center gap-1">
@@ -778,7 +985,7 @@ export function ComunicacaoTarefasKanban({
 
                         {/* Prazo e Ações Manuais de Movimentação */}
                         <div className="flex items-center justify-between pt-1 text-[11px]">
-                          {card.dataLimite ? (
+                          {card.dataLimite && !isCanceladoCol ? (
                             <div
                               className={`flex items-center gap-1 font-mono-data text-[10px] ${
                                 isPrazoVencido(card.dataLimite, card.coluna)
@@ -803,38 +1010,59 @@ export function ComunicacaoTarefasKanban({
                                 </span>
                               )}
                             </div>
+                          ) : isCanceladoCol ? (
+                            <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                              Item Cancelado
+                            </span>
                           ) : (
                             <span />
                           )}
 
                           {canEdit && (
                             <div className="flex items-center gap-1">
-                              {coluna.id !== 'a_fazer' && (
+                              {isCanceladoCol ? (
                                 <button
                                   type="button"
-                                  title="Mover para etapa anterior"
+                                  title="Reativar tarefa (mover de volta para A Fazer)"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleMoverCard(card, 'recuar');
+                                    handleMoverCardToCol(card.id, card.origem, 'a_fazer', null);
                                   }}
-                                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                  className="px-2 py-0.5 rounded-md text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all flex items-center gap-1 cursor-pointer"
                                 >
-                                  <ArrowLeft className="w-3 h-3" />
+                                  <RotateCcw className="w-3 h-3" />
+                                  <span>Reativar</span>
                                 </button>
-                              )}
+                              ) : (
+                                <>
+                                  {coluna.id !== 'a_fazer' && (
+                                    <button
+                                      type="button"
+                                      title="Mover para etapa anterior"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMoverCard(card, 'recuar');
+                                      }}
+                                      className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                    >
+                                      <ArrowLeft className="w-3 h-3" />
+                                    </button>
+                                  )}
 
-                              {coluna.id !== 'concluido' && (
-                                <button
-                                  type="button"
-                                  title="Avançar para próxima etapa"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleMoverCard(card, 'avancar');
-                                  }}
-                                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
-                                >
-                                  <ArrowRight className="w-3 h-3" />
-                                </button>
+                                  {coluna.id !== 'concluido' && (
+                                    <button
+                                      type="button"
+                                      title="Avançar para próxima etapa"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMoverCard(card, 'avancar');
+                                      }}
+                                      className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                    >
+                                      <ArrowRight className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </>
                               )}
                             </div>
                           )}
@@ -897,6 +1125,7 @@ export function ComunicacaoTarefasKanban({
                     <option value="em_andamento">Em Produção</option>
                     <option value="revisao">Em Revisão</option>
                     <option value="concluido">Concluído</option>
+                    <option value="cancelado">Cancelado / Não Realizado</option>
                   </select>
                 </div>
 
@@ -1092,6 +1321,25 @@ export function ComunicacaoTarefasKanban({
                   </div>
                 )}
               </div>
+
+              {/* Destaque para Tarefas Canceladas / Não Realizadas */}
+              {selectedCardDetail.coluna === 'cancelado' && (
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/25 space-y-1.5 text-xs text-rose-800 dark:text-rose-200 animate-in fade-in duration-150">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-700 dark:text-rose-300">
+                    <Ban className="w-4 h-4 shrink-0" />
+                    <span>Item Cancelado / Não Realizado</span>
+                  </div>
+                  {selectedCardDetail.motivoCancelamento ? (
+                    <p className="italic font-medium leading-relaxed pl-5">
+                      "{selectedCardDetail.motivoCancelamento}"
+                    </p>
+                  ) : (
+                    <p className="text-[11px] opacity-80 pl-5">
+                      Nenhum motivo específico registrado no momento do cancelamento.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {selectedCardDetail.descricao && (
                 <div>
@@ -1291,6 +1539,40 @@ export function ComunicacaoTarefasKanban({
                   </Button>
                 )}
 
+                {selectedCardDetail.coluna === 'cancelado' && canEdit && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={<RotateCcw className="w-3.5 h-3.5 text-emerald-600" />}
+                    onClick={async () => {
+                      const id = selectedCardDetail.id;
+                      const origem = selectedCardDetail.origem;
+                      setSelectedCardDetail(null);
+                      await handleMoverCardToCol(id, origem, 'a_fazer', null);
+                    }}
+                  >
+                    Reativar Tarefa
+                  </Button>
+                )}
+
+                {selectedCardDetail.coluna !== 'cancelado' && canEdit && (
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    icon={<Ban className="w-3.5 h-3.5" />}
+                    onClick={() => {
+                      const id = selectedCardDetail.id;
+                      const origem = selectedCardDetail.origem;
+                      const titulo = selectedCardDetail.titulo;
+                      setSelectedCardDetail(null);
+                      setCardPendenteCancelamento({ id, origem, titulo });
+                      setMotivoCancelamentoInput('');
+                    }}
+                  >
+                    Cancelar / Não Realizado
+                  </Button>
+                )}
+
                 <div className="flex items-center gap-2 ml-auto">
                   <Button
                     size="sm"
@@ -1301,6 +1583,80 @@ export function ComunicacaoTarefasKanban({
                   </Button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: CONFIRMAR CANCELAMENTO / REGISTRAR MOTIVO */}
+      {/* ========================================================================= */}
+      {cardPendenteCancelamento && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-default)]">
+              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                <Ban className="w-5 h-5 shrink-0" />
+                <h3 className="font-bold text-base text-[var(--text-primary)]">
+                  Cancelar Tarefa / Demanda
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCardPendenteCancelamento(null)}
+                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <p className="text-[var(--text-secondary)]">
+                Você está movendo este item para <strong>Cancelado / Não Realizado</strong>:
+              </p>
+              <p className="p-2.5 rounded-xl bg-[var(--bg-secondary)] text-xs font-semibold text-[var(--text-primary)] border border-[var(--border-default)] truncate">
+                {cardPendenteCancelamento.titulo}
+              </p>
+            </div>
+
+            <div className="space-y-1.5 text-xs">
+              <label className="font-semibold text-[var(--text-primary)] block">
+                Motivo ou Justificativa (Opcional):
+              </label>
+              <textarea
+                rows={3}
+                value={motivoCancelamentoInput}
+                onChange={(e) => setMotivoCancelamentoInput(e.target.value)}
+                placeholder="Ex: Cancelado por motivos de chuva, corte no orçamento, mudança de cronograma..."
+                className="w-full p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-rose-500 font-medium resize-none"
+              />
+              <span className="text-[11px] text-[var(--text-muted)] block">
+                O motivo ficará arquivado e você poderá reativar a tarefa futuramente se necessário.
+              </span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border-default)]">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setCardPendenteCancelamento(null)}
+              >
+                Voltar
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                onClick={async () => {
+                  const card = cardPendenteCancelamento;
+                  const motivo = motivoCancelamentoInput.trim() || null;
+                  setCardPendenteCancelamento(null);
+                  await handleMoverCardToCol(card.id, card.origem, 'cancelado', motivo);
+                }}
+              >
+                Confirmar Cancelamento
+              </Button>
             </div>
           </div>
         </div>

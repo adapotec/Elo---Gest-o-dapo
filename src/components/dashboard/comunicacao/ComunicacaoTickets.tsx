@@ -42,7 +42,8 @@ export interface SolicitacaoComunicacaoItem {
   urgencia?: 'baixa' | 'normal' | 'alta' | 'urgente';
   links_referencia?: string | null;
   observacoes_referencia?: string | null;
-  status: 'pendente' | 'em_analise' | 'aprovado' | 'em_producao' | 'concluido' | 'recusado';
+  status: 'pendente' | 'em_analise' | 'aprovado' | 'em_producao' | 'concluido' | 'recusado' | 'cancelado';
+  motivo_cancelamento?: string | null;
   resposta_comunicacao?: string | null;
   responsavel_comunicacao_id?: string | null;
   conteudo_criado_id?: string | null;

@@ -59,6 +59,7 @@ export interface ConteudoItem {
   campanha_id?: string | null;
   projeto_id?: string | null;
   status: 'nao_iniciado' | 'producao' | 'analise' | 'em_atraso' | 'publicado' | 'cancelado';
+  motivo_cancelamento?: string | null;
   responsavel_id?: string | null;
   categoria: 'engajamento' | 'informacao' | 'cta' | 'institucional' | 'avulso' | 'depoimento';
   link_producao?: string | null;
