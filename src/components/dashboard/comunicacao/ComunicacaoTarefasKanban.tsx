@@ -108,12 +108,31 @@ interface ComunicacaoTarefasKanbanProps {
   onNavigateToTab?: (tab: 'calendario' | 'tickets' | 'campanhas' | 'galeria') => void;
 }
 
-const COLUNAS = [
-  { id: 'a_fazer', titulo: 'A Fazer', badgeBg: 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700' },
-  { id: 'em_producao', titulo: 'Em Produção', badgeBg: 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800' },
-  { id: 'em_revisao', titulo: 'Em Revisão', badgeBg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800' },
-  { id: 'concluido', titulo: 'Concluído', badgeBg: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' },
-  { id: 'cancelado', titulo: 'Cancelado / Não Realizado', badgeBg: 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800' },
+const COLUNAS_ATIVAS = [
+  {
+    id: 'a_fazer',
+    titulo: 'A Fazer',
+    corBarra: 'border-t-slate-600 dark:border-t-slate-400',
+    badgeBg: 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700',
+  },
+  {
+    id: 'em_producao',
+    titulo: 'Em Produção',
+    corBarra: 'border-t-blue-600 dark:border-t-blue-500',
+    badgeBg: 'bg-blue-100 dark:bg-blue-950/80 text-blue-900 dark:text-blue-200 border-blue-300 dark:border-blue-800',
+  },
+  {
+    id: 'em_revisao',
+    titulo: 'Em Revisão',
+    corBarra: 'border-t-amber-500 dark:border-t-amber-400',
+    badgeBg: 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-800',
+  },
+  {
+    id: 'concluido',
+    titulo: 'Concluído',
+    corBarra: 'border-t-emerald-600 dark:border-t-emerald-500',
+    badgeBg: 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-200 border-emerald-300 dark:border-emerald-800',
+  },
 ] as const;
 
 export function ComunicacaoTarefasKanban({
@@ -158,28 +177,8 @@ export function ComunicacaoTarefasKanban({
   const [selectedCardDetail, setSelectedCardDetail] = useState<KanbanCard | null>(null);
   const [newChecklistText, setNewChecklistText] = useState('');
 
-  // Estado da 5ª coluna: Cancelados / Não Realizados (recolhida por padrão para preservar espaço)
-  const [isCanceladosCollapsed, setIsCanceladosCollapsed] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('elo_kanban_cancelados_collapsed');
-        return stored !== null ? JSON.parse(stored) : true;
-      } catch (e) {
-        return true;
-      }
-    }
-    return true;
-  });
-
-  const toggleCanceladosCollapsed = () => {
-    setIsCanceladosCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem('elo_kanban_cancelados_collapsed', JSON.stringify(next));
-      } catch (e) {}
-      return next;
-    });
-  };
+  // Alternador de Visões: 'quadro' (4 colunas na tela cheia) vs 'cancelados' (visão dedicada com motivos)
+  const [visaoAtiva, setVisaoAtiva] = useState<'quadro' | 'cancelados'>('quadro');
 
   // Modal para confirmação e registro do motivo ao cancelar item
   const [cardPendenteCancelamento, setCardPendenteCancelamento] = useState<{
@@ -354,6 +353,10 @@ export function ComunicacaoTarefasKanban({
 
   const totalCancelados = useMemo(() => {
     return kanbanCards.filter((c) => c.coluna === 'cancelado').length;
+  }, [kanbanCards]);
+
+  const totalAtivos = useMemo(() => {
+    return kanbanCards.filter((c) => c.coluna !== 'cancelado').length;
   }, [kanbanCards]);
 
   // 3. Mover Card entre Colunas (Drag and Drop ou Botões)
@@ -548,24 +551,81 @@ export function ComunicacaoTarefasKanban({
 
   return (
     <div className="space-y-4">
-      {/* Barra Superior de Filtros e Adição Rápida */}
-      <div className="p-3 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 flex-1 flex-wrap">
+      {/* Barra Superior Unificada: Alternador de Visões + Filtros + Ações */}
+      <div className="p-3.5 sm:p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xs space-y-3">
+        {/* Linha 1: Alternador de Visão (Tabs) e Botão Nova Tarefa */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setVisaoAtiva('quadro')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                visaoAtiva === 'quadro'
+                  ? 'bg-white dark:bg-slate-900 text-slate-950 dark:text-white shadow-xs border border-slate-200 dark:border-slate-700'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+              <span>Quadro de Produção</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600">
+                {totalAtivos}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setVisaoAtiva('cancelados')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                visaoAtiva === 'cancelados'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400'
+              }`}
+            >
+              <Ban className="w-3.5 h-3.5" />
+              <span>Cancelados & Não Realizados</span>
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                  visaoAtiva === 'cancelados'
+                    ? 'bg-rose-800 text-white'
+                    : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-200 border border-rose-300 dark:border-rose-800'
+                }`}
+              >
+                {totalCancelados}
+              </span>
+            </button>
+          </div>
+
+          {canEdit && (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<Plus className="w-3.5 h-3.5" />}
+                onClick={() => handleOpenNovaTarefa('a_fazer')}
+              >
+                Nova Tarefa
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Linha 2: Busca e Filtros com Alto Contraste */}
+        <div className="flex items-center gap-2.5 flex-wrap pt-1 border-t border-slate-200 dark:border-slate-800">
           <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
             <input
               type="text"
-              placeholder="Buscar no quadro de tarefas..."
+              placeholder="Buscar por título, descrição, voluntário ou projeto..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[var(--color-primary)] font-medium"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:border-slate-500 font-medium"
             />
           </div>
 
           <select
             value={origemFilter}
             onChange={(e: any) => setOrigemFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-medium cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 font-semibold cursor-pointer"
           >
             <option value="todos">Todas as Origens</option>
             <option value="tarefa">Apenas Tarefas Avulsas</option>
@@ -576,7 +636,7 @@ export function ComunicacaoTarefasKanban({
           <select
             value={projetoFilter}
             onChange={(e) => setProjetoFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-medium cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 font-semibold cursor-pointer"
           >
             <option value="todos">Todos os Projetos</option>
             {projetos.map((p) => (
@@ -589,7 +649,7 @@ export function ComunicacaoTarefasKanban({
           <select
             value={prioridadeFilter}
             onChange={(e) => setPrioridadeFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-200 font-medium cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 font-semibold cursor-pointer"
           >
             <option value="todos">Todas as Prioridades</option>
             <option value="urgente">Urgente</option>
@@ -598,14 +658,13 @@ export function ComunicacaoTarefasKanban({
             <option value="baixa">Baixa</option>
           </select>
 
-          {/* Seletor de Ordenação Dinâmica */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 text-xs">
+            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
             <select
               value={ordenacao}
               onChange={(e: any) => setOrdenacao(e.target.value)}
-              className="bg-transparent text-slate-800 dark:text-slate-200 font-medium cursor-pointer focus:outline-none"
-              title="Critério de ordenação dos cartões no Kanban"
+              className="bg-transparent text-slate-900 dark:text-slate-100 font-semibold cursor-pointer focus:outline-none"
+              title="Critério de ordenação dos cartões"
             >
               <option value="prazo_asc">Prazo: Mais próximo primeiro</option>
               <option value="prazo_desc">Prazo: Mais distante primeiro</option>
@@ -615,40 +674,55 @@ export function ComunicacaoTarefasKanban({
             </select>
           </div>
         </div>
-
-        {canEdit && (
-          <div className="flex items-center gap-2 self-end md:self-auto flex-wrap">
-            <Button
-              size="sm"
-              variant={isCanceladosCollapsed ? 'secondary' : 'danger'}
-              icon={<Ban className="w-3.5 h-3.5" />}
-              onClick={toggleCanceladosCollapsed}
-              title={isCanceladosCollapsed ? 'Exibir coluna de tarefas canceladas' : 'Ocultar coluna de tarefas canceladas'}
-            >
-              {isCanceladosCollapsed ? `Cancelados (${totalCancelados})` : 'Recolher Cancelados'}
-            </Button>
-
-            <Button
-              size="sm"
-              variant="primary"
-              icon={<Plus className="w-3.5 h-3.5" />}
-              onClick={() => handleOpenNovaTarefa('a_fazer')}
-            >
-              Nova Tarefa
-            </Button>
-          </div>
-        )}
       </div>
 
-      {/* QUADRO KANBAN COM ALTURA FIXA INTELIGENTE E ROLAGEM INTERNA EM CADA LISTA (ESTILO TRELLO/LINEAR) */}
-      <div className="flex gap-3.5 sm:gap-4 items-start overflow-x-auto pb-4 custom-scrollbar w-full min-h-[580px]">
-        {COLUNAS.map((coluna) => {
-          const cardsDaColuna = sortedFilteredCards.filter((c) => c.coluna === coluna.id);
-          const isOver = dragOverColumn === coluna.id;
-          const isCanceladoCol = coluna.id === 'cancelado';
+      {/* Zona de Drop Rápido para Cancelar ao Arrastar */}
+      {draggedCardId && (
+        <div
+          onDragOver={(e) => {
+            if (!canEdit) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (dragOverColumn !== 'cancelado') setDragOverColumn('cancelado');
+          }}
+          onDragLeave={(e) => {
+            if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+            if (dragOverColumn === 'cancelado') setDragOverColumn(null);
+          }}
+          onDrop={async (e) => {
+            if (!canEdit) return;
+            e.preventDefault();
+            setDragOverColumn(null);
+            setDraggedCardId(null);
+            try {
+              const rawData = e.dataTransfer.getData('text/plain');
+              if (!rawData) return;
+              const { id, origem } = JSON.parse(rawData);
+              await handleMoverCardToCol(id, origem, 'cancelado');
+            } catch (err) {
+              console.error('Erro no drag and drop:', err);
+            }
+          }}
+          className={`p-3.5 rounded-2xl border-2 border-dashed transition-all flex items-center justify-center gap-2 text-xs font-bold animate-in fade-in duration-150 ${
+            dragOverColumn === 'cancelado'
+              ? 'border-rose-600 bg-rose-500/20 text-rose-900 dark:text-rose-100 ring-4 ring-rose-500/20 scale-[1.01]'
+              : 'border-rose-400 dark:border-rose-800 bg-rose-50/70 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300'
+          }`}
+        >
+          <Ban className="w-4 h-4 shrink-0 text-rose-600" />
+          <span>Solte o cartão aqui para Cancelar ou registrar como Não Realizado</span>
+        </div>
+      )}
 
-          // RENDERIZAÇÃO DA 5ª COLUNA RECOLHIDA (MINIMIZADA)
-          if (isCanceladoCol && isCanceladosCollapsed) {
+      {/* ========================================================================= */}
+      {/* VISÃO 1: QUADRO ATIVO (4 COLUNAS NA TELA INTEIRA SEM ROLAGEM HORIZONTAL)  */}
+      {/* ========================================================================= */}
+      {visaoAtiva === 'quadro' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full h-[calc(100vh-310px)] min-h-[550px] max-h-[820px]">
+          {COLUNAS_ATIVAS.map((coluna) => {
+            const cardsDaColuna = sortedFilteredCards.filter((c) => c.coluna === coluna.id);
+            const isOver = dragOverColumn === coluna.id;
+
             return (
               <div
                 key={coluna.id}
@@ -656,11 +730,15 @@ export function ComunicacaoTarefasKanban({
                   if (!canEdit) return;
                   e.preventDefault();
                   e.dataTransfer.dropEffect = 'move';
-                  if (dragOverColumn !== 'cancelado') setDragOverColumn('cancelado');
+                  if (dragOverColumn !== coluna.id) {
+                    setDragOverColumn(coluna.id);
+                  }
                 }}
                 onDragLeave={(e) => {
                   if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-                  if (dragOverColumn === 'cancelado') setDragOverColumn(null);
+                  if (dragOverColumn === coluna.id) {
+                    setDragOverColumn(null);
+                  }
                 }}
                 onDrop={async (e) => {
                   if (!canEdit) return;
@@ -671,121 +749,34 @@ export function ComunicacaoTarefasKanban({
                     const rawData = e.dataTransfer.getData('text/plain');
                     if (!rawData) return;
                     const { id, origem, coluna: fromCol } = JSON.parse(rawData);
-                    if (fromCol === 'cancelado') return;
-                    await handleMoverCardToCol(id, origem, 'cancelado');
+                    if (fromCol === coluna.id) return;
+                    await handleMoverCardToCol(id, origem, coluna.id);
                   } catch (err) {
                     console.error('Erro no drag and drop:', err);
                   }
                 }}
-                onClick={toggleCanceladosCollapsed}
-                className={`flex flex-col items-center justify-between py-4 px-2 rounded-2xl border transition-all duration-200 h-[calc(100vh-270px)] min-h-[540px] max-h-[820px] w-14 shrink-0 cursor-pointer group bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100/60 dark:hover:bg-rose-950/40 shadow-xs ${
-                  isOver ? 'border-2 border-dashed border-rose-500 ring-4 ring-rose-500/20 scale-[1.02]' : ''
+                className={`flex flex-col h-full rounded-2xl border-2 transition-all duration-200 overflow-hidden shadow-xs border-t-4 ${
+                  coluna.corBarra
+                } ${
+                  isOver
+                    ? 'border-dashed border-[var(--color-primary)] bg-[var(--color-primary-soft)]/20 ring-4 ring-[var(--color-primary)]/15 scale-[1.01]'
+                    : 'border-slate-300 dark:border-slate-700/80 bg-slate-100/90 dark:bg-slate-900/95'
                 }`}
-                title="Clique para expandir tarefas canceladas ou não realizadas"
               >
-                <div className="flex flex-col items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleCanceladosCollapsed();
-                    }}
-                    className="p-1 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-200/50 dark:hover:bg-rose-900/50 transition-colors"
-                    title="Expandir coluna de Cancelados"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <div className="p-1.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
-                    <Ban className="w-4 h-4" />
-                  </div>
-                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-200 dark:bg-rose-900/80 text-rose-800 dark:text-rose-200">
-                    {cardsDaColuna.length}
-                  </span>
-                </div>
-
-                <div className="flex-1 flex items-center justify-center py-6">
-                  <span className="writing-mode-vertical rotate-180 text-[11px] font-bold uppercase tracking-wider text-rose-700/80 dark:text-rose-300/80 group-hover:text-rose-900 dark:group-hover:text-rose-100 select-none">
-                    Cancelados ({cardsDaColuna.length})
-                  </span>
-                </div>
-
-                <div className="text-[10px] text-rose-600 dark:text-rose-400 font-bold text-center opacity-80 group-hover:opacity-100">
-                  Abrir
-                </div>
-              </div>
-            );
-          }
-
-          // RENDERIZAÇÃO PADRÃO DA COLUNA (ALTURA FIXA INTELIGENTE E ROLAGEM INDEPENDENTE)
-          return (
-            <div
-              key={coluna.id}
-              onDragOver={(e) => {
-                if (!canEdit) return;
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                if (dragOverColumn !== coluna.id) {
-                  setDragOverColumn(coluna.id);
-                }
-              }}
-              onDragLeave={(e) => {
-                if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-                if (dragOverColumn === coluna.id) {
-                  setDragOverColumn(null);
-                }
-              }}
-              onDrop={async (e) => {
-                if (!canEdit) return;
-                e.preventDefault();
-                setDragOverColumn(null);
-                setDraggedCardId(null);
-                try {
-                  const rawData = e.dataTransfer.getData('text/plain');
-                  if (!rawData) return;
-                  const { id, origem, coluna: fromCol } = JSON.parse(rawData);
-                  if (fromCol === coluna.id) return;
-                  await handleMoverCardToCol(id, origem, coluna.id);
-                } catch (err) {
-                  console.error('Erro no drag and drop:', err);
-                }
-              }}
-              className={`flex flex-col rounded-2xl border transition-all duration-200 h-[calc(100vh-270px)] min-h-[540px] max-h-[820px] shadow-sm flex-1 min-w-[280px] sm:min-w-[300px] xl:max-w-none ${
-                isCanceladoCol
-                  ? 'bg-rose-50/25 dark:bg-rose-950/15 border-rose-200/80 dark:border-rose-900/40'
-                  : 'bg-white/95 dark:bg-slate-900/95 border-slate-200/90 dark:border-slate-800'
-              } ${
-                isOver
-                  ? isCanceladoCol
-                    ? 'border-2 border-dashed border-rose-500 bg-rose-500/10 ring-4 ring-rose-500/20 scale-[1.01]'
-                    : 'border-2 border-dashed border-[var(--color-primary)] bg-[var(--color-primary-soft)]/30 ring-4 ring-[var(--color-primary)]/15 scale-[1.01]'
-                  : ''
-              }`}
-            >
-              {/* Cabeçalho da Coluna (FIXO NO TOPO DA COLUNA) */}
-              <div className="shrink-0 flex items-center justify-between p-3.5 pb-2.5 border-b border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2 min-w-0">
-                  {isCanceladoCol && <Ban className="w-4 h-4 text-rose-500 shrink-0" />}
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider truncate">
-                    {coluna.titulo}
-                  </h3>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold border shrink-0 ${coluna.badgeBg}`}
-                  >
-                    {cardsDaColuna.length}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1 shrink-0">
-                  {isCanceladoCol ? (
-                    <button
-                      type="button"
-                      title="Recolher coluna de Cancelados"
-                      onClick={toggleCanceladosCollapsed}
-                      className="p-1 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all cursor-pointer"
+                {/* Cabeçalho Fixo da Coluna com Alto Contraste */}
+                <div className="shrink-0 flex items-center justify-between p-3.5 pb-2.5 border-b-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/90">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider truncate">
+                      {coluna.titulo}
+                    </h3>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold border shrink-0 ${coluna.badgeBg}`}
                     >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  ) : canEdit ? (
+                      {cardsDaColuna.length}
+                    </span>
+                  </div>
+
+                  {canEdit && (
                     <button
                       type="button"
                       title="Adicionar tarefa nesta coluna"
@@ -798,284 +789,408 @@ export function ComunicacaoTarefasKanban({
                         };
                         handleOpenNovaTarefa(statusMap[coluna.id]);
                       }}
-                      className="p-1 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                      className="p-1 rounded-lg text-slate-600 hover:text-slate-950 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
-                  ) : null}
+                  )}
                 </div>
-              </div>
 
-              {/* Lista de Cartões da Coluna (ROLAGEM INTERNA INDEPENDENTE) */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 pt-2 space-y-2.5 pr-1.5">
-                {cardsDaColuna.length === 0 ? (
-                  <div className="h-36 flex flex-col items-center justify-center text-center p-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
-                    <Layers className="w-5 h-5 text-slate-400 dark:text-slate-500 mb-1" />
-                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      {isCanceladoCol ? 'Nenhum item cancelado' : 'Nenhum item nesta etapa'}
-                    </span>
-                    <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                      {isCanceladoCol ? 'Itens cancelados aparecerão aqui' : 'Arraste um cartão para cá'}
-                    </span>
-                    {!isCanceladoCol && canEdit && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleOpenNovaTarefa(
-                            coluna.id === 'em_producao'
-                              ? 'em_andamento'
-                              : coluna.id === 'em_revisao'
-                              ? 'revisao'
-                              : coluna.id === 'concluido'
-                              ? 'concluido'
-                              : 'a_fazer'
-                          )
-                        }
-                        className="mt-2 text-xs font-bold text-[var(--color-primary)] hover:underline cursor-pointer"
-                      >
-                        + Criar cartão
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  cardsDaColuna.map((card) => {
-                    const isTask = card.origem === 'tarefa';
-                    const isContent = card.origem === 'conteudo';
-                    const isTicket = card.origem === 'ticket';
-                    const isDragging = draggedCardId === card.id;
+                {/* Lista de Cartões com Rolagem Interna Independente */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 pt-2.5 space-y-2.5 pr-2">
+                  {cardsDaColuna.length === 0 ? (
+                    <div className="h-36 flex flex-col items-center justify-center text-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-white/60 dark:bg-slate-800/40">
+                      <Layers className="w-5 h-5 text-slate-400 dark:text-slate-500 mb-1" />
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                        Nenhum item nesta etapa
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Arraste um cartão para cá
+                      </span>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const statusMap: Record<string, TarefaAvulsaItem['status']> = {
+                              a_fazer: 'a_fazer',
+                              em_producao: 'em_andamento',
+                              em_revisao: 'revisao',
+                              concluido: 'concluido',
+                            };
+                            handleOpenNovaTarefa(statusMap[coluna.id]);
+                          }}
+                          className="mt-2 text-xs font-bold text-[var(--color-primary)] hover:underline cursor-pointer"
+                        >
+                          + Criar cartão
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    cardsDaColuna.map((card) => {
+                      const isTask = card.origem === 'tarefa';
+                      const isContent = card.origem === 'conteudo';
+                      const isTicket = card.origem === 'ticket';
+                      const isDragging = draggedCardId === card.id;
 
-                    const chkTotal = card.checklist?.length || 0;
-                    const chkDone = card.checklist?.filter((i) => i.concluido).length || 0;
-                    const chkAllDone = chkTotal > 0 && chkDone === chkTotal;
+                      const chkTotal = card.checklist?.length || 0;
+                      const chkDone = card.checklist?.filter((i) => i.concluido).length || 0;
+                      const chkAllDone = chkTotal > 0 && chkDone === chkTotal;
 
-                    return (
-                      <div
-                        key={`${card.origem}-${card.id}`}
-                        draggable={canEdit}
-                        onDragStart={(e) => {
-                          if (!canEdit) return;
-                          setDraggedCardId(card.id);
-                          e.dataTransfer.setData(
-                            'text/plain',
-                            JSON.stringify({ id: card.id, origem: card.origem, coluna: card.coluna })
-                          );
-                          e.dataTransfer.effectAllowed = 'move';
-                        }}
-                        onDragEnd={() => {
-                          setDraggedCardId(null);
-                          setDragOverColumn(null);
-                        }}
-                        className={`p-3.5 space-y-2.5 rounded-xl border transition-all shadow-xs group ${
-                          isCanceladoCol
-                            ? 'bg-white/80 dark:bg-slate-800/80 border-rose-200/90 dark:border-rose-900/40 opacity-90'
-                            : 'bg-white dark:bg-slate-800/90 border-slate-200/90 dark:border-slate-700/80 hover:border-[var(--color-primary)]/80 hover:shadow-md'
-                        } ${canEdit ? 'cursor-grab active:cursor-grabbing' : ''} ${
-                          isDragging ? 'opacity-40 scale-95 border-blue-500 ring-2 ring-blue-500/20' : ''
-                        }`}
-                      >
-                        {/* Linha Superior: Origem & Prioridade */}
-                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                          <span
-                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                              isCanceladoCol
-                                ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20'
-                                : isContent
-                                ? 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20'
-                                : isTicket
-                                ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20'
-                                : 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20'
-                            }`}
-                          >
-                            {isCanceladoCol ? (
-                              <Ban className="w-2.5 h-2.5 shrink-0" />
-                            ) : (
-                              <>
-                                {isContent && <Share2 className="w-2.5 h-2.5 shrink-0" />}
-                                {isTicket && <Ticket className="w-2.5 h-2.5 shrink-0" />}
-                                {isTask && <CheckSquare className="w-2.5 h-2.5 shrink-0" />}
-                              </>
-                            )}
-                            <span className="truncate max-w-[120px]">
-                              {isCanceladoCol ? 'Cancelado / Não Realizado' : card.tipoRotulo}
-                            </span>
-                          </span>
-
-                          <div className="flex items-center gap-1">
-                            {renderPrioridadeBadge(card.prioridade)}
-                            {canEdit && (
-                              <GripVertical className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-slate-400" />
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Título do Cartão */}
-                        <h4
-                          onClick={() => setSelectedCardDetail(card)}
-                          className={`font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 hover:text-[var(--color-primary)] cursor-pointer line-clamp-2 leading-snug transition-colors ${
-                            isCanceladoCol ? 'line-through text-slate-500 dark:text-slate-400' : ''
+                      return (
+                        <div
+                          key={`${card.origem}-${card.id}`}
+                          draggable={canEdit}
+                          onDragStart={(e) => {
+                            if (!canEdit) return;
+                            setDraggedCardId(card.id);
+                            e.dataTransfer.setData(
+                              'text/plain',
+                              JSON.stringify({ id: card.id, origem: card.origem, coluna: card.coluna })
+                            );
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                          onDragEnd={() => {
+                            setDraggedCardId(null);
+                            setDragOverColumn(null);
+                          }}
+                          className={`p-3.5 space-y-2.5 rounded-xl border-2 transition-all shadow-xs group bg-white dark:bg-slate-800/95 border-slate-300/90 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 hover:shadow-md ${
+                            canEdit ? 'cursor-grab active:cursor-grabbing' : ''
+                          } ${
+                            isDragging ? 'opacity-40 scale-95 border-blue-500 ring-2 ring-blue-500/20' : ''
                           }`}
                         >
-                          {card.titulo}
-                        </h4>
-
-                        {/* Motivo do Cancelamento em Destaque */}
-                        {isCanceladoCol && card.motivoCancelamento && (
-                          <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-[11px] text-rose-800 dark:text-rose-200">
-                            <span className="font-bold flex items-center gap-1 text-[10px] uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-0.5">
-                              <AlertOctagon className="w-3 h-3 shrink-0" />
-                              Motivo informado:
-                            </span>
-                            <p className="italic line-clamp-2 font-medium">"{card.motivoCancelamento}"</p>
-                          </div>
-                        )}
-
-                        {/* Indicador de Progresso de Checklist */}
-                        {chkTotal > 0 && !isCanceladoCol && (
-                          <div className="pt-1">
-                            <div className="flex items-center justify-between text-[10px] font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                              <span className="flex items-center gap-1">
-                                <CheckSquare
-                                  className={`w-3 h-3 ${chkAllDone ? 'text-emerald-500' : 'text-slate-400'}`}
-                                />
-                                <span>{chkDone}/{chkTotal} checklist</span>
-                              </span>
-                              <span className={chkAllDone ? 'text-emerald-600 font-bold' : ''}>
-                                {Math.round((chkDone / chkTotal) * 100)}%
-                              </span>
-                            </div>
-                            <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-300 ${
-                                  chkAllDone ? 'bg-emerald-500' : 'bg-[var(--color-primary)]'
-                                }`}
-                                style={{ width: `${Math.round((chkDone / chkTotal) * 100)}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Projeto e Responsável */}
-                        <div className="flex items-center justify-between text-[11px] gap-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
-                          {card.projetoNome ? (
-                            <div className="flex items-center gap-1.5 truncate">
-                              <span
-                                className="w-2 h-2 rounded-full shrink-0"
-                                style={{ backgroundColor: card.projetoCor || '#F2632D' }}
-                              />
-                              <span className="text-slate-600 dark:text-slate-300 font-medium truncate max-w-[110px]">
-                                {card.projetoNome}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-slate-400 dark:text-slate-500 text-[10px]">Institucional</span>
-                          )}
-
-                          {card.responsavelNome ? (
-                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 truncate">
-                              <User className="w-3 h-3 text-slate-400 shrink-0" />
-                              <span className="truncate max-w-[90px]">{card.responsavelNome}</span>
-                            </div>
-                          ) : card.solicitanteNome ? (
-                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 truncate">
-                              <span className="text-slate-400 text-[10px]">Por:</span>
-                              <span className="truncate max-w-[90px]">{card.solicitanteNome}</span>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        {/* Prazo e Ações Manuais de Movimentação */}
-                        <div className="flex items-center justify-between pt-1 text-[11px]">
-                          {card.dataLimite && !isCanceladoCol ? (
-                            <div
-                              className={`flex items-center gap-1 font-mono-data text-[10px] ${
-                                isPrazoVencido(card.dataLimite, card.coluna)
-                                  ? 'text-rose-600 dark:text-rose-400 font-bold'
-                                  : 'text-slate-500 dark:text-slate-400'
+                          {/* Topo do Card: Origem, Prioridade e Handle de Arraste */}
+                          <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                            <span
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                isContent
+                                  ? 'bg-orange-100 text-orange-900 dark:bg-orange-950/80 dark:text-orange-200 border border-orange-300 dark:border-orange-700'
+                                  : isTicket
+                                  ? 'bg-blue-100 text-blue-900 dark:bg-blue-950/80 dark:text-blue-200 border border-blue-300 dark:border-blue-700'
+                                  : 'bg-teal-100 text-teal-900 dark:bg-teal-950/80 dark:text-teal-200 border border-teal-300 dark:border-teal-700'
                               }`}
-                              title={
-                                isPrazoVencido(card.dataLimite, card.coluna)
-                                  ? 'Atenção: Prazo de produção/publicação vencido!'
-                                  : 'Prazo estipulado'
-                              }
                             >
-                              {isPrazoVencido(card.dataLimite, card.coluna) ? (
-                                <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
-                              ) : (
-                                <Clock className="w-3 h-3 shrink-0" />
-                              )}
-                              <span>{formatDisplayDate(card.dataLimite)}</span>
-                              {isPrazoVencido(card.dataLimite, card.coluna) && (
-                                <span className="px-1 py-0.2 rounded text-[8px] uppercase tracking-wider bg-rose-500/15 text-rose-600 dark:text-rose-300 font-extrabold border border-rose-500/30">
-                                  Atrasado
-                                </span>
+                              {isContent && <Share2 className="w-2.5 h-2.5 shrink-0" />}
+                              {isTicket && <Ticket className="w-2.5 h-2.5 shrink-0" />}
+                              {isTask && <CheckSquare className="w-2.5 h-2.5 shrink-0" />}
+                              <span className="truncate max-w-[120px]">{card.tipoRotulo}</span>
+                            </span>
+
+                            <div className="flex items-center gap-1">
+                              {renderPrioridadeBadge(card.prioridade)}
+                              {canEdit && (
+                                <GripVertical className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600" />
                               )}
                             </div>
-                          ) : isCanceladoCol ? (
-                            <span className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
-                              Item Cancelado
-                            </span>
-                          ) : (
-                            <span />
+                          </div>
+
+                          {/* Título do Cartão com Alto Contraste */}
+                          <h4
+                            onClick={() => setSelectedCardDetail(card)}
+                            className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 hover:text-[var(--color-primary)] cursor-pointer line-clamp-2 leading-snug transition-colors"
+                          >
+                            {card.titulo}
+                          </h4>
+
+                          {/* Progresso de Checklist */}
+                          {chkTotal > 0 && (
+                            <div className="pt-1">
+                              <div className="flex items-center justify-between text-[10px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                <span className="flex items-center gap-1">
+                                  <CheckSquare
+                                    className={`w-3 h-3 ${chkAllDone ? 'text-emerald-600' : 'text-slate-500'}`}
+                                  />
+                                  <span>{chkDone}/{chkTotal} checklist</span>
+                                </span>
+                                <span className={chkAllDone ? 'text-emerald-700 dark:text-emerald-300 font-extrabold' : ''}>
+                                  {Math.round((chkDone / chkTotal) * 100)}%
+                                </span>
+                              </div>
+                              <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-300 ${
+                                    chkAllDone ? 'bg-emerald-600' : 'bg-[var(--color-primary)]'
+                                  }`}
+                                  style={{ width: `${Math.round((chkDone / chkTotal) * 100)}%` }}
+                                />
+                              </div>
+                            </div>
                           )}
 
-                          {canEdit && (
-                            <div className="flex items-center gap-1">
-                              {isCanceladoCol ? (
+                          {/* Projeto e Responsável */}
+                          <div className="flex items-center justify-between text-[11px] gap-2 pt-1 border-t border-slate-200 dark:border-slate-700">
+                            {card.projetoNome ? (
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
+                                  style={{ backgroundColor: card.projetoCor || '#F2632D' }}
+                                />
+                                <span className="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-[110px]">
+                                  {card.projetoNome}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-500 dark:text-slate-400 text-[10px] font-medium">Institucional</span>
+                            )}
+
+                            {card.responsavelNome ? (
+                              <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300 truncate font-medium">
+                                <User className="w-3 h-3 text-slate-500 shrink-0" />
+                                <span className="truncate max-w-[90px]">{card.responsavelNome}</span>
+                              </div>
+                            ) : card.solicitanteNome ? (
+                              <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300 truncate font-medium">
+                                <span className="text-slate-500 text-[10px]">Por:</span>
+                                <span className="truncate max-w-[90px]">{card.solicitanteNome}</span>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          {/* Rodapé: Prazo e Ações Rápidas (Mover & Cancelar) */}
+                          <div className="flex items-center justify-between pt-1 text-[11px] border-t border-slate-100 dark:border-slate-700/60">
+                            {card.dataLimite ? (
+                              <div
+                                className={`flex items-center gap-1 font-mono-data text-[10px] ${
+                                  isPrazoVencido(card.dataLimite, card.coluna)
+                                    ? 'text-rose-700 dark:text-rose-300 font-bold bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-300 dark:border-rose-800'
+                                    : 'text-slate-600 dark:text-slate-300 font-medium'
+                                }`}
+                                title={
+                                  isPrazoVencido(card.dataLimite, card.coluna)
+                                    ? 'Atenção: Prazo de produção/publicação vencido!'
+                                    : 'Prazo estipulado'
+                                }
+                              >
+                                {isPrazoVencido(card.dataLimite, card.coluna) ? (
+                                  <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+                                ) : (
+                                  <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+                                )}
+                                <span>{formatDisplayDate(card.dataLimite)}</span>
+                                {isPrazoVencido(card.dataLimite, card.coluna) && (
+                                  <span className="uppercase text-[8px] font-extrabold">
+                                    Vencido
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span />
+                            )}
+
+                            {canEdit && (
+                              <div className="flex items-center gap-1">
+                                {coluna.id !== 'a_fazer' && (
+                                  <button
+                                    type="button"
+                                    title="Mover para etapa anterior"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMoverCard(card, 'recuar');
+                                    }}
+                                    className="p-1 rounded-md text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                  >
+                                    <ArrowLeft className="w-3 h-3" />
+                                  </button>
+                                )}
+
+                                {/* Ação Rápida de Cancelar / Registrar Motivo */}
                                 <button
                                   type="button"
-                                  title="Reativar tarefa (mover de volta para A Fazer)"
+                                  title="Cancelar ou registrar como não realizado"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleMoverCardToCol(card.id, card.origem, 'a_fazer', null);
+                                    setCardPendenteCancelamento({
+                                      id: card.id,
+                                      origem: card.origem,
+                                      titulo: card.titulo,
+                                    });
+                                    setMotivoCancelamentoInput('');
                                   }}
-                                  className="px-2 py-0.5 rounded-md text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                                  className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
                                 >
-                                  <RotateCcw className="w-3 h-3" />
-                                  <span>Reativar</span>
+                                  <Ban className="w-3.5 h-3.5" />
                                 </button>
-                              ) : (
-                                <>
-                                  {coluna.id !== 'a_fazer' && (
-                                    <button
-                                      type="button"
-                                      title="Mover para etapa anterior"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleMoverCard(card, 'recuar');
-                                      }}
-                                      className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
-                                    >
-                                      <ArrowLeft className="w-3 h-3" />
-                                    </button>
-                                  )}
 
-                                  {coluna.id !== 'concluido' && (
-                                    <button
-                                      type="button"
-                                      title="Avançar para próxima etapa"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleMoverCard(card, 'avancar');
-                                      }}
-                                      className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
-                                    >
-                                      <ArrowRight className="w-3 h-3" />
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          )}
+                                {coluna.id !== 'concluido' && (
+                                  <button
+                                    type="button"
+                                    title="Avançar para próxima etapa"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMoverCard(card, 'avancar');
+                                    }}
+                                    className="p-1 rounded-md text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                                  >
+                                    <ArrowRight className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* VISÃO 2: CANCELADOS & NÃO REALIZADOS (VISÃO DEDICADA COM MOTIVO E REATIVAÇÃO) */}
+      {/* ========================================================================= */}
+      {visaoAtiva === 'cancelados' && (
+        <div className="space-y-4">
+          {/* Banner de Contexto de Cancelados */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border-2 border-rose-300 dark:border-rose-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 shrink-0">
+                <Ban className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-bold text-rose-950 dark:text-rose-100">
+                    Cancelados & Não Realizados
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-extrabold bg-rose-200 dark:bg-rose-900 text-rose-900 dark:text-rose-100 border border-rose-300 dark:border-rose-700">
+                    {totalCancelados} itens
+                  </span>
+                </div>
+                <p className="text-xs text-rose-900/80 dark:text-rose-300/80 mt-0.5 font-medium">
+                  Demandas, publicações e tarefas que foram suspensas ou não puderam ser realizadas, com justificativa arquivada.
+                </p>
               </div>
             </div>
-          );
-        })}
-      </div>
+
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setVisaoAtiva('quadro')}
+                icon={<ArrowLeft className="w-3.5 h-3.5" />}
+              >
+                Voltar ao Quadro de Produção
+              </Button>
+            </div>
+          </div>
+
+          {/* Grid de Cards Cancelados com Alto Contraste */}
+          {(() => {
+            const cardsCancelados = sortedFilteredCards.filter((c) => c.coluna === 'cancelado');
+
+            if (cardsCancelados.length === 0) {
+              return (
+                <div className="h-64 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-900">
+                  <Ban className="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2" />
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    Nenhum item cancelado ou não realizado
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
+                    {searchTerm || origemFilter !== 'todos' || projetoFilter !== 'todos' || prioridadeFilter !== 'todos'
+                      ? 'Nenhum item cancelado corresponde aos filtros selecionados.'
+                      : 'Todas as tarefas, produções e demandas estão ativas no fluxo de produção.'}
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto max-h-[calc(100vh-310px)] min-h-[540px] p-1 custom-scrollbar">
+                {cardsCancelados.map((card) => (
+                  <div
+                    key={`${card.origem}-${card.id}`}
+                    className="border-2 border-rose-300 dark:border-rose-900/60 bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm space-y-3 border-t-4 border-t-rose-600 hover:border-rose-400 dark:hover:border-rose-700 transition-all flex flex-col justify-between"
+                  >
+                    <div className="space-y-2.5">
+                      {/* Cabeçalho do Card */}
+                      <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-800 dark:text-rose-200 border border-rose-500/20">
+                          <Ban className="w-2.5 h-2.5 shrink-0" />
+                          <span>{card.tipoRotulo}</span>
+                        </span>
+                        {renderPrioridadeBadge(card.prioridade)}
+                      </div>
+
+                      {/* Título */}
+                      <h4
+                        onClick={() => setSelectedCardDetail(card)}
+                        className="font-bold text-sm text-slate-900 dark:text-slate-100 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer line-clamp-2 leading-snug"
+                      >
+                        {card.titulo}
+                      </h4>
+
+                      {/* Motivo do Cancelamento em Destaque Alto Contraste */}
+                      <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-xs text-rose-950 dark:text-rose-100 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-[11px] uppercase tracking-wider text-rose-700 dark:text-rose-300">
+                          <AlertOctagon className="w-3.5 h-3.5 shrink-0" />
+                          <span>Motivo Registrado</span>
+                        </div>
+                        <p className="italic font-semibold leading-relaxed">
+                          {card.motivoCancelamento ? `"${card.motivoCancelamento}"` : 'Nenhum motivo detalhado informado no cancelamento.'}
+                        </p>
+                      </div>
+
+                      {/* Projeto & Responsável */}
+                      <div className="flex items-center justify-between text-[11px] gap-2 pt-1 border-t border-slate-200 dark:border-slate-700">
+                        {card.projetoNome ? (
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
+                              style={{ backgroundColor: card.projetoCor || '#F2632D' }}
+                            />
+                            <span className="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-[120px]">
+                              {card.projetoNome}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 dark:text-slate-400 text-[10px] font-medium">Institucional</span>
+                        )}
+
+                        {card.responsavelNome ? (
+                          <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300 truncate font-medium">
+                            <User className="w-3 h-3 text-slate-500 shrink-0" />
+                            <span className="truncate max-w-[100px]">{card.responsavelNome}</span>
+                          </div>
+                        ) : card.solicitanteNome ? (
+                          <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300 truncate font-medium">
+                            <span className="text-slate-500 text-[10px]">Por:</span>
+                            <span className="truncate max-w-[100px]">{card.solicitanteNome}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Ações: Reativar Tarefa & Detalhes */}
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="w-full text-emerald-900 dark:text-emerald-100 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 border border-emerald-400 dark:border-emerald-700 font-bold cursor-pointer"
+                          icon={<RotateCcw className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />}
+                          onClick={() => handleMoverCardToCol(card.id, card.origem, 'a_fazer', null)}
+                        >
+                          Reativar Tarefa (Mover para A Fazer)
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full text-xs text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
+                        onClick={() => setSelectedCardDetail(card)}
+                      >
+                        Ver Detalhes do Card
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL: CRIAR / EDITAR TAREFA OPERACIONAL AVULSA */}
