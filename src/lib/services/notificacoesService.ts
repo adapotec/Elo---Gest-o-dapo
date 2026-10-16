@@ -1,10 +1,21 @@
 'use client';
 
+export type NotificacaoTipo =
+  | 'reuniao'
+  | 'projeto'
+  | 'sistema'
+  | 'aviso'
+  | 'tarefa'
+  | 'estoque'
+  | 'recesso'
+  | 'aniversario'
+  | 'acao';
+
 export interface Notificacao {
   id: string;
   titulo: string;
   mensagem: string;
-  tipo: 'reuniao' | 'projeto' | 'sistema' | 'aviso';
+  tipo: NotificacaoTipo;
   link?: string;
   lida: boolean;
   destinatario_nome?: string;
@@ -28,6 +39,45 @@ function cleanString(str?: string | null): string {
     .replace(/[^a-z0-9\s]/g, ' ') // substitui pontuações e parênteses por espaço
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Notificações operacionais iniciais caso o storage esteja vazio
+ */
+function getInitialSeedNotificacoes(): Notificacao[] {
+  const now = new Date();
+  const hojeStr = now.toISOString();
+  const ontem = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+  return [
+    {
+      id: 'seed-notif-1',
+      titulo: 'Boas-vindas ao Elo!',
+      mensagem: 'Sistema integrado do Instituto Ádapo. Acompanhe aqui comunicados, escalas, reuniões e alertas.',
+      tipo: 'aviso',
+      link: '/dashboard',
+      lida: false,
+      created_at: hojeStr,
+    },
+    {
+      id: 'seed-notif-2',
+      titulo: 'Cronograma de Oficinas Ativo',
+      mensagem: 'As ações dos projetos sociais estão sincronizadas. Verifique as próximas atividades da semana.',
+      tipo: 'acao',
+      link: '/dashboard/calendario',
+      lida: false,
+      created_at: hojeStr,
+    },
+    {
+      id: 'seed-notif-3',
+      titulo: 'Monitoramento de Estoque',
+      mensagem: 'Materiais pedagógicos e kits de acolhimento registrados no almoxarifado.',
+      tipo: 'estoque',
+      link: '/dashboard/estoque',
+      lida: true,
+      created_at: ontem,
+    },
+  ];
 }
 
 /**
@@ -72,18 +122,14 @@ export function isNotificationForUser(
   const nWords = nNome.split(/\s+/).filter(Boolean);
   const uWords = uNome.split(/\s+/).filter(Boolean);
 
-  // Se ambas têm pelo menos 2 partes (ex: "Kayro Costa")
   if (nWords.length >= 2 && uWords.length >= 2) {
-    // Primeiro nome e último sobrenome coincidem
     if (nWords[0] === uWords[0] && nWords[nWords.length - 1] === uWords[uWords.length - 1]) {
       return true;
     }
-    // Todas as palavras do nome do usuário estão presentes no destinatário
     if (uWords.every((w) => nWords.includes(w))) {
       return true;
     }
   } else if (nWords.length === 1 || uWords.length === 1) {
-    // Caso de primeiro nome único
     if (nWords[0] === uWords[0]) {
       return true;
     }
@@ -99,7 +145,11 @@ export function getNotificacoes(): Notificacao[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      const seed = getInitialSeedNotificacoes();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+      return seed;
+    }
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
@@ -136,7 +186,7 @@ export function getUnreadNotificacoesCount(
 function salvarETransmitir(lista: Notificacao[]) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lista.slice(0, 100))); // guarda até 100 mais recentes
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lista.slice(0, 100)));
     window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { lista } }));
   } catch (e) {
     console.error('Erro ao salvar notificações:', e);
@@ -173,7 +223,6 @@ export function dispararNotificacoesConvocacaoReuniao(params: {
   const novas: Notificacao[] = [];
 
   participantes.forEach((nome) => {
-    // Tenta encontrar o e-mail do voluntário caso esteja na base
     const volMatch = voluntarios.find(
       (v) => cleanString(v.nome_completo) === cleanString(nome)
     );
@@ -194,7 +243,6 @@ export function dispararNotificacoesConvocacaoReuniao(params: {
     novas.push(notificacao);
   });
 
-  // Colocar as novas no topo da lista
   salvarETransmitir([...novas, ...listaAtual]);
 }
 
@@ -244,6 +292,81 @@ export function dispararNotificacaoSecretarioDesignado(params: {
 }
 
 /**
+ * Dispara notificação de Tarefa de Comunicação atribuída ou atualizada
+ */
+export function dispararNotificacaoTarefa(params: {
+  tarefaTitulo: string;
+  responsavelNome?: string;
+  responsavelEmail?: string;
+  status: string;
+}) {
+  const { tarefaTitulo, responsavelNome, responsavelEmail, status } = params;
+  const listaAtual = getNotificacoes();
+
+  const notificacao: Notificacao = {
+    id: `notif-task-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+    titulo: `Tarefa de Comunicação: ${tarefaTitulo}`,
+    mensagem: responsavelNome
+      ? `${responsavelNome}, a tarefa "${tarefaTitulo}" foi atualizada para o status: ${status}.`
+      : `A tarefa "${tarefaTitulo}" está no status: ${status}.`,
+    tipo: 'tarefa',
+    link: '/dashboard/comunicacao/tarefas',
+    lida: false,
+    destinatario_nome: responsavelNome,
+    destinatario_email: responsavelEmail,
+    created_at: new Date().toISOString(),
+  };
+
+  salvarETransmitir([notificacao, ...listaAtual]);
+}
+
+/**
+ * Dispara notificação de Estoque de Materiais Crítico
+ */
+export function dispararNotificacaoEstoque(params: {
+  itemNome: string;
+  quantidade: number;
+}) {
+  const { itemNome, quantidade } = params;
+  const listaAtual = getNotificacoes();
+
+  const notificacao: Notificacao = {
+    id: `notif-est-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+    titulo: `Alerta de Estoque: ${itemNome}`,
+    mensagem: `O item "${itemNome}" está com nível crítico (${quantidade} unidades restantes). Providencie reposição.`,
+    tipo: 'estoque',
+    link: '/dashboard/estoque',
+    lida: false,
+    created_at: new Date().toISOString(),
+  };
+
+  salvarETransmitir([notificacao, ...listaAtual]);
+}
+
+/**
+ * Dispara notificação de Aniversário
+ */
+export function dispararNotificacaoAniversario(params: {
+  nome: string;
+  tipo: 'beneficiario' | 'voluntario';
+}) {
+  const { nome, tipo } = params;
+  const listaAtual = getNotificacoes();
+
+  const notificacao: Notificacao = {
+    id: `notif-aniv-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+    titulo: `Aniversariante: ${nome}! 🎉`,
+    mensagem: `Hoje é aniversário de ${nome} (${tipo === 'voluntario' ? 'Voluntário(a)' : 'Beneficiário(a)'}). Não esqueça de parabenizar!`,
+    tipo: 'aniversario',
+    link: '/dashboard',
+    lida: false,
+    created_at: new Date().toISOString(),
+  };
+
+  salvarETransmitir([notificacao, ...listaAtual]);
+}
+
+/**
  * Marca uma notificação individual como lida
  */
 export function marcarComoLida(id: string) {
@@ -277,13 +400,12 @@ export function limparNotificacoesDoUsuario(
   userEmail?: string | null
 ) {
   const lista = getNotificacoes();
-  // Mantém apenas as notificações que NÃO pertencem a este usuário
   const restantes = lista.filter((n) => !isNotificationForUser(n, userName, userEmail));
   salvarETransmitir(restantes);
 }
 
 /**
- * Remove todas as notificações do sistema (para administradores / reset geral)
+ * Remove todas as notificações do sistema
  */
 export function limparTodasNotificacoes() {
   salvarETransmitir([]);

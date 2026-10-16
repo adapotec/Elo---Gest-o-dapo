@@ -49,9 +49,9 @@ interface MenuItem {
 }
 
 const navigationItems: MenuItem[] = [
-  { name: 'Painel Inicial', href: '/dashboard', icon: LayoutDashboard, color: '#F9C859' },
-  { name: 'Projetos Sociais', href: '/dashboard/projetos', icon: FolderKanban, color: '#F7955F' },
-  { name: 'Calendário Geral', href: '/dashboard/calendario', icon: Calendar, color: '#E85D04' },
+  { name: 'Painel Inicial', href: '/dashboard', icon: LayoutDashboard, color: '#F2632D' },
+  { name: 'Projetos Sociais', href: '/dashboard/projetos', icon: FolderKanban, color: '#F2632D' },
+  { name: 'Calendário Geral', href: '/dashboard/calendario', icon: Calendar, color: '#F2632D' },
   { name: 'Pedagogia', href: '/dashboard/pedagogia', icon: GraduationCap, color: '#93368F' },
   { name: 'Beneficiários', href: '/dashboard/beneficiarios', icon: Users, color: '#93368F' },
   {
@@ -72,7 +72,7 @@ const navigationItems: MenuItem[] = [
     children: [
       { name: 'Controle de Parceiros', href: '/dashboard/parceiros', icon: Building2, color: '#1C9C82' },
       { name: 'Doações', href: '/dashboard/doacoes', icon: Gift, color: '#1C9C82' },
-      { name: 'Controle de Estoque', href: '/dashboard/estoque', icon: Package, color: '#8B4A2E' },
+      { name: 'Controle de Estoque', href: '/dashboard/estoque', icon: Package, color: '#D97706' },
     ],
   },
   {
@@ -82,12 +82,12 @@ const navigationItems: MenuItem[] = [
     children: [
       { name: 'Quadro de Tarefas', href: '/dashboard/comunicacao/tarefas', icon: LayoutGrid, color: '#EF4444' },
       { name: 'Gestão Comunicação', href: '/dashboard/comunicacao/gestao', icon: Calendar, color: '#F2632D' },
-      { name: 'Solicitações & Tickets', href: '/dashboard/comunicacao/tickets', icon: FileText, color: '#8B5CF6' },
-      { name: 'Indicadores', href: '/dashboard/comunicacao/indicadores', icon: BarChart3, color: '#3B82F6' },
+      { name: 'Solicitações & Tickets', href: '/dashboard/comunicacao/tickets', icon: FileText, color: '#0284C7' },
+      { name: 'Indicadores', href: '/dashboard/comunicacao/indicadores', icon: BarChart3, color: '#0284C7' },
     ],
   },
-  { name: 'Indicadores Sociais', href: '/dashboard/indicadores', icon: BarChart3, color: '#3B82F6' },
-  { name: 'Reuniões & Governança', href: '/dashboard/institucional', icon: Landmark, color: '#6D28D9' },
+  { name: 'Indicadores Sociais', href: '/dashboard/indicadores', icon: BarChart3, color: '#0284C7' },
+  { name: 'Reuniões & Governança', href: '/dashboard/institucional', icon: Landmark, color: '#0284C7' },
 ];
 
 export function Sidebar() {
@@ -104,6 +104,23 @@ export function Sidebar() {
   const isExpanded = isPinned || isHovered;
 
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  // Bloqueio de scroll do body e listener de Escape para fechar a gaveta mobile
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') closeMobileNav();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [isMobileOpen, closeMobileNav]);
 
   // Filtra itens para Voluntários Brincantes (oculta Pedagogia e Beneficiários por segurança e LGPD)
   const filteredNavigationItems = React.useMemo(() => {

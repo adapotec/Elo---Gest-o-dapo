@@ -11,7 +11,12 @@ import {
   Sparkles,
   ExternalLink,
   Clock,
-  CheckCircle2,
+  Megaphone,
+  Package,
+  HeartHandshake,
+  Cake,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 import {
   Notificacao,
@@ -49,13 +54,13 @@ export function NotificationDropdown({ currentUser }: NotificationDropdownProps)
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  const [filterTab, setFilterTab] = useState<'todas' | 'nao_lidas'>('todas');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const user = getActiveUser(currentUser);
     setNotificacoes(getNotificacoesForUser(user.name, user.email));
 
-    // Escutar atualizações
     const unsubscribe = onNotificacoesChange(() => {
       const u = getActiveUser(currentUser);
       setNotificacoes(getNotificacoesForUser(u.name, u.email));
@@ -79,6 +84,11 @@ export function NotificationDropdown({ currentUser }: NotificationDropdownProps)
 
   const unreadCount = notificacoes.filter((n) => !n.lida).length;
 
+  const filteredNotificacoes = notificacoes.filter((n) => {
+    if (filterTab === 'nao_lidas') return !n.lida;
+    return true;
+  });
+
   const handleClickNotification = (notif: Notificacao) => {
     marcarComoLida(notif.id);
     setIsOpen(false);
@@ -99,13 +109,51 @@ export function NotificationDropdown({ currentUser }: NotificationDropdownProps)
     setNotificacoes([]);
   };
 
+  const getNotificationIcon = (tipo: Notificacao['tipo']) => {
+    switch (tipo) {
+      case 'reuniao':
+        return { icon: Calendar, bg: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' };
+      case 'tarefa':
+        return { icon: Megaphone, bg: 'bg-[#F2632D]/15 text-[#F2632D]' };
+      case 'estoque':
+        return { icon: Package, bg: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' };
+      case 'recesso':
+        return { icon: HeartHandshake, bg: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' };
+      case 'aniversario':
+        return { icon: Cake, bg: 'bg-pink-500/15 text-pink-600 dark:text-pink-400' };
+      case 'acao':
+        return { icon: Sparkles, bg: 'bg-[#93368F]/15 text-[#93368F]' };
+      default:
+        return { icon: Info, bg: 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' };
+    }
+  };
+
+  const getActionLabel = (tipo: Notificacao['tipo']) => {
+    switch (tipo) {
+      case 'reuniao':
+        return 'Ver reunião';
+      case 'tarefa':
+        return 'Ver tarefa';
+      case 'estoque':
+        return 'Ver estoque';
+      case 'recesso':
+        return 'Ver escalas';
+      case 'aniversario':
+        return 'Ver painel';
+      case 'acao':
+        return 'Ver cronograma';
+      default:
+        return 'Acessar';
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Botão do Sino */}
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`p-2 rounded-xl transition-all relative shrink-0 cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center ${
+        className={`p-2 rounded-xl transition-all relative shrink-0 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation ${
           isOpen
             ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-xs'
             : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
@@ -115,7 +163,7 @@ export function NotificationDropdown({ currentUser }: NotificationDropdownProps)
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#F2632D] text-white text-[10px] font-bold absolute -top-1 -right-1 flex items-center justify-center shadow-xs animate-in zoom-in-50">
+          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--color-primary)] text-white text-[10px] font-bold absolute 0.5 top-0.5 -right-0.5 flex items-center justify-center shadow-xs animate-in zoom-in-50">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -123,62 +171,90 @@ export function NotificationDropdown({ currentUser }: NotificationDropdownProps)
 
       {/* Painel Flutuante de Notificações */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-32px)] rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[80vh]">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-24px)] rounded-3xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[85vh]">
           {/* Header do Dropdown */}
-          <div className="p-3.5 border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 flex items-center justify-between gap-2 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
-                Minhas Notificações
-              </span>
-              {unreadCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F2632D]/15 text-[#F2632D]">
-                  {unreadCount} nova{unreadCount > 1 ? 's' : ''}
+          <div className="p-3.5 border-b border-[var(--border-default)] bg-[var(--bg-secondary)]/50 space-y-2.5 shrink-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)]">
+                  Notificações
                 </span>
-              )}
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+                    {unreadCount} nova{unreadCount > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    className="p-1 rounded-lg text-[11px] font-medium text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--bg-secondary)] transition-colors flex items-center gap-1 cursor-pointer min-h-[36px] px-2 touch-manipulation"
+                    title="Marcar todas como lidas"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    <span>Lidas</span>
+                  </button>
+                )}
+
+                {notificacoes.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearHistory}
+                    className="p-1.5 rounded-lg text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors flex items-center justify-center cursor-pointer min-h-[36px] min-w-[36px] touch-manipulation"
+                    title="Limpar meu histórico"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  onClick={handleMarkAllRead}
-                  className="p-1 rounded-lg text-[11px] font-medium text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--bg-secondary)] transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Marcar todas como lidas"
-                >
-                  <CheckCheck className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Lidas</span>
-                </button>
-              )}
-
-              {notificacoes.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleClearHistory}
-                  className="p-1 rounded-lg text-[11px] font-medium text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Limpar meu histórico"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
+            {/* Abas de Filtragem Rápida */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
+              <button
+                type="button"
+                onClick={() => setFilterTab('todas')}
+                className={`flex-1 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  filterTab === 'todas'
+                    ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-2xs'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                Todas ({notificacoes.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('nao_lidas')}
+                className={`flex-1 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  filterTab === 'nao_lidas'
+                    ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-2xs'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                Não Lidas ({unreadCount})
+              </button>
             </div>
           </div>
 
           {/* Lista de Notificações */}
-          <div className="divide-y divide-[var(--border-default)] overflow-y-auto custom-scrollbar flex-1">
-            {notificacoes.length === 0 ? (
+          <div className="divide-y divide-[var(--border-default)] overflow-y-auto custom-scrollbar flex-1 min-h-[220px]">
+            {filteredNotificacoes.length === 0 ? (
               <div className="p-8 text-center space-y-2">
                 <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] text-[var(--text-muted)] flex items-center justify-center mx-auto">
                   <Bell className="w-5 h-5 opacity-40" />
                 </div>
-                <p className="text-xs font-medium text-[var(--text-primary)]">
-                  Nenhuma notificação para você
+                <p className="text-xs font-semibold text-[var(--text-primary)]">
+                  {filterTab === 'nao_lidas' ? 'Nenhuma notificação não lida' : 'Nenhuma notificação para você'}
                 </p>
                 <p className="text-[11px] text-[var(--text-muted)]">
-                  Você será notificado(a) aqui quando for convocado(a) para reuniões ou mencionado(a) em atividades.
+                  Você será alertado(a) aqui sobre reuniões, tarefas, estoque e acontecimentos da equipe.
                 </p>
               </div>
             ) : (
-              notificacoes.map((n) => {
+              filteredNotificacoes.map((n) => {
                 const dateObj = new Date(n.created_at);
                 const dataFormatada = dateObj.toLocaleDateString('pt-BR', {
                   day: '2-digit',
@@ -189,25 +265,21 @@ export function NotificationDropdown({ currentUser }: NotificationDropdownProps)
                   minute: '2-digit',
                 });
 
+                const { icon: IconComp, bg: iconStyle } = getNotificationIcon(n.tipo);
+
                 return (
                   <div
                     key={n.id}
                     onClick={() => handleClickNotification(n)}
-                    className={`p-3.5 transition-colors cursor-pointer flex items-start gap-3 relative group ${
+                    className={`p-3.5 transition-colors cursor-pointer flex items-start gap-3 relative group min-h-[56px] touch-manipulation ${
                       !n.lida
                         ? 'bg-[var(--color-primary-soft)]/20 hover:bg-[var(--color-primary-soft)]/30'
                         : 'hover:bg-[var(--bg-secondary)]/70'
                     }`}
                   >
-                    {/* Ícone Indicador */}
-                    <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-white ${
-                        n.tipo === 'reuniao'
-                          ? 'bg-[#2563EB]'
-                          : 'bg-[var(--color-primary)]'
-                      }`}
-                    >
-                      <Calendar className="w-4 h-4" />
+                    {/* Ícone Indicador Contextual */}
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${iconStyle}`}>
+                      <IconComp className="w-4 h-4" />
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-1">
@@ -222,7 +294,7 @@ export function NotificationDropdown({ currentUser }: NotificationDropdownProps)
                           {n.titulo}
                         </p>
                         {!n.lida && (
-                          <span className="w-2 h-2 rounded-full bg-[#F2632D] shrink-0" />
+                          <span className="w-2 h-2 rounded-full bg-[var(--color-primary)] shrink-0" />
                         )}
                       </div>
 
@@ -231,13 +303,13 @@ export function NotificationDropdown({ currentUser }: NotificationDropdownProps)
                       </p>
 
                       <div className="flex items-center justify-between pt-0.5 text-[10px] text-[var(--text-muted)]">
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 font-mono-data">
                           <Clock className="w-3 h-3" />
                           {dataFormatada} às {horaFormatada}
                         </span>
                         {n.link && (
                           <span className="font-semibold text-[var(--color-primary)] group-hover:underline flex items-center gap-0.5">
-                            Ver reunião
+                            {getActionLabel(n.tipo)}
                             <ExternalLink className="w-3 h-3" />
                           </span>
                         )}
@@ -250,15 +322,10 @@ export function NotificationDropdown({ currentUser }: NotificationDropdownProps)
           </div>
 
           {/* Footer do Dropdown */}
-          <div className="p-2 border-t border-[var(--border-default)] bg-[var(--bg-secondary)]/40 text-center shrink-0">
-            <Link
-              href="/dashboard/institucional"
-              onClick={() => setIsOpen(false)}
-              className="text-[11px] font-semibold text-[var(--color-primary)] hover:underline inline-flex items-center gap-1"
-            >
-              <span>Abrir Reuniões & Governança</span>
-              <ExternalLink className="w-3 h-3" />
-            </Link>
+          <div className="p-2.5 border-t border-[var(--border-default)] bg-[var(--bg-secondary)]/40 text-center shrink-0">
+            <span className="text-[10px] text-[var(--text-muted)] font-medium">
+              Central Integrada de Notificações • Elo Ádapo
+            </span>
           </div>
         </div>
       )}

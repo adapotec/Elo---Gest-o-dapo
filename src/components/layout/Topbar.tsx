@@ -7,18 +7,13 @@ import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from './ThemeToggle';
 import { useMobileNav } from './MobileNavContext';
 import { NotificationDropdown } from './NotificationDropdown';
+import { GlobalSearchModal } from './GlobalSearchModal';
 import {
   Search,
-  Bell,
-  Settings,
   User,
   ShieldCheck,
-  Sliders,
-  Landmark,
   LogOut,
   ChevronDown,
-  ExternalLink,
-  Sparkles,
   Menu,
 } from 'lucide-react';
 
@@ -42,14 +37,24 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
 
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const settingsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Atalho global Ctrl+K / Cmd+K para abrir busca rápida
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowSearchModal((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Cache em memória para transições instantâneas entre páginas (0ms)
   useEffect(() => {
-    // 1. Tenta recuperar do sessionStorage ou localStorage imediatamente
     try {
       const cached = sessionStorage.getItem('elo_user_profile_cache') || localStorage.getItem('elo_user_profile_cache');
       if (cached) {
@@ -110,14 +115,11 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
     loadProfile();
   }, []);
 
-  // Fechar menus ao clicar fora
+  // Fechar menu de perfil ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
         setShowProfileMenu(false);
-      }
-      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target as Node)) {
-        setShowSettingsMenu(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -148,7 +150,7 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
         <button
           type="button"
           onClick={toggleMobileNav}
-          className="md:hidden p-2 -ml-1 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="md:hidden p-2 -ml-1 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
           aria-label="Abrir menu de navegação lateral"
         >
           <Menu className="w-5 h-5" />
@@ -158,125 +160,62 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
           <img
             src="/logo/logo-adapo-completa-preta.svg"
             alt="Instituto Ádapo"
-            className="h-8 sm:h-9 md:h-10 w-auto object-contain shrink-0 dark:brightness-0 dark:invert transition-all hover:opacity-90"
+            className="h-7 sm:h-9 md:h-10 w-auto object-contain shrink-0 dark:brightness-0 dark:invert transition-all hover:opacity-90"
           />
         </Link>
 
-        <div className="min-w-0 hidden sm:block">
-          {title && (
-            <h2 className="font-display font-bold text-sm sm:text-base md:text-xl text-[var(--text-primary)] leading-tight truncate">
+        {title && (
+          <div className="min-w-0 flex flex-col justify-center">
+            <h2 className="font-display font-bold text-xs sm:text-base md:text-xl text-[var(--text-primary)] leading-tight truncate">
               {title}
             </h2>
-          )}
-          {subtitle && (
-            <p className="text-[11px] sm:text-xs text-[var(--text-muted)] leading-tight truncate mt-0.5 hidden md:block">
-              {subtitle}
-            </p>
-          )}
-        </div>
+            {subtitle && (
+              <p className="text-[11px] sm:text-xs text-[var(--text-muted)] leading-tight truncate mt-0.5 hidden md:block">
+                {subtitle}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* ── LADO DIREITO: BUSCA + AÇÕES + CONFIGURAÇÕES + PERFIL FIXOS ── */}
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 ml-auto">
-        {/* Campo de Busca Global */}
-        <div className="relative w-36 lg:w-48 hidden md:block">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-          <input
-            type="text"
-            placeholder="Buscar no sistema..."
-            className="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-          />
-        </div>
+      {/* ── LADO DIREITO: BUSCA GLOBAL + AÇÕES + NOTIFICAÇÕES + PERFIL CONSOLIDADO ── */}
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-auto">
+        {/* Botão de Busca Desktop com Atalho Ctrl+K */}
+        <button
+          type="button"
+          onClick={() => setShowSearchModal(true)}
+          className="hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs bg-[var(--bg-secondary)] hover:bg-[var(--bg-secondary)]/80 text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-[var(--border-default)] transition-colors cursor-pointer group"
+          title="Pesquisar no sistema (Ctrl+K)"
+        >
+          <Search className="w-3.5 h-3.5 text-[var(--text-muted)] group-hover:text-[var(--color-primary)] transition-colors" />
+          <span className="text-xs">Buscar no sistema...</span>
+          <kbd className="hidden lg:inline-block px-1.5 py-0.5 rounded text-[10px] font-mono bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-muted)] shadow-2xs">
+            Ctrl K
+          </kbd>
+        </button>
+
+        {/* Botão de Busca Mobile (Ícone de Lupa com Touch Target >= 44px) */}
+        <button
+          type="button"
+          onClick={() => setShowSearchModal(true)}
+          className="md:hidden p-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
+          aria-label="Abrir busca global no sistema"
+        >
+          <Search className="w-5 h-5" />
+        </button>
 
         {/* Ação Customizada da Página (se enviada) */}
         {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
 
-        {/* Notificações Interativas com Badges e Convocatórias */}
+        {/* Notificações Interativas */}
         <NotificationDropdown currentUser={userProfile} />
 
-        {/* ── MENU 1: CONFIGURAÇÕES DO SISTEMA (DROPDOWN) ── */}
-        <div className="relative" ref={settingsMenuRef}>
-          <button
-            type="button"
-            onClick={() => {
-              setShowSettingsMenu((prev) => !prev);
-              setShowProfileMenu(false);
-            }}
-            className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center min-h-[40px] min-w-[40px] ${
-              showSettingsMenu
-                ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-xs'
-                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-            title="Configurações e Personalização"
-            aria-label="Configurações do Sistema"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-
-          {showSettingsMenu && (
-            <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-32px)] rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="px-3 py-2 border-b border-[var(--border-default)] mb-1">
-                <p className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">
-                  Configurações do Elo
-                </p>
-                <p className="text-[11px] text-[var(--text-muted)]">Preferências, acessos e identidade</p>
-              </div>
-
-              <div className="space-y-1">
-                <Link
-                  href="/dashboard/perfil"
-                  onClick={() => setShowSettingsMenu(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
-                >
-                  <Sliders className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
-                  <div>
-                    <p className="font-semibold leading-tight">Personalização & Tema</p>
-                    <p className="text-[10px] text-[var(--text-muted)]">Cores, paletas e preferências</p>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/dashboard/usuarios"
-                  onClick={() => setShowSettingsMenu(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
-                >
-                  <ShieldCheck className="w-4 h-4 text-[#4A1B57] dark:text-[#93368F] shrink-0" />
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-semibold leading-tight">Usuários & Acessos</p>
-                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#4A1B57]/10 text-[#4A1B57] dark:text-purple-300">
-                        Admin
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-[var(--text-muted)]">Permissões e equipe interna</p>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/dashboard/institucional"
-                  onClick={() => setShowSettingsMenu(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
-                >
-                  <Landmark className="w-4 h-4 text-[#6D28D9] shrink-0" />
-                  <div>
-                    <p className="font-semibold leading-tight">Reuniões & Governança</p>
-                    <p className="text-[10px] text-[var(--text-muted)]">Reuniões, pautas, atas e projetos</p>
-                  </div>
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* ── MENU 2: PERFIL DO USUÁRIO & CONTA (DROPDOWN) ── */}
+        {/* ── MENU DE PERFIL & CONFIGURAÇÕES CONSOLIDADO ── */}
         <div className="relative" ref={profileMenuRef}>
           <button
             type="button"
-            onClick={() => {
-              setShowProfileMenu((prev) => !prev);
-              setShowSettingsMenu(false);
-            }}
-            className="flex items-center gap-2 p-1 pl-1.5 rounded-xl hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer border border-[var(--border-default)]/60"
+            onClick={() => setShowProfileMenu((prev) => !prev)}
+            className="flex items-center gap-2 p-1 pl-1.5 rounded-xl hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer border border-[var(--border-default)]/60 min-h-[44px] touch-manipulation"
             title={userProfile?.name ? `Perfil: ${userProfile.name}` : 'Meu Perfil'}
           >
             {userProfile?.avatarUrl ? (
@@ -326,23 +265,46 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
                     {userProfile?.email || 'voluntario@adapong.org'}
                   </p>
                   <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-                    {roleLabels[userProfile?.role || ''] || 'Voluntário'}
+                    {roleLabels[userProfile?.role || ''] || userProfile?.role || 'Voluntário'}
                   </span>
                 </div>
               </div>
 
-              {/* Ações do Perfil */}
+              {/* Opções Consolidadas: Perfil, Acessos e Configurações */}
               <div className="space-y-1">
                 <Link
                   href="/dashboard/perfil"
                   onClick={() => setShowProfileMenu(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors font-medium"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors font-medium min-h-[40px] touch-manipulation"
                 >
                   <User className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
-                  <span>Acessar Meu Perfil</span>
+                  <div>
+                    <p className="font-semibold leading-tight">Meu Perfil & Preferências</p>
+                    <p className="text-[10px] text-[var(--text-muted)]">Foto, dados e informações pessoais</p>
+                  </div>
                 </Link>
 
-                <div className="flex items-center justify-between px-3 py-1.5 rounded-xl text-xs text-[var(--text-secondary)]">
+                {/* Exibir Gestão de Usuários caso seja Administrador ou Coordenador */}
+                {(userProfile?.role === 'admin' || userProfile?.role === 'coordenador') && (
+                  <Link
+                    href="/dashboard/usuarios"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors font-medium min-h-[40px] touch-manipulation"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-[var(--color-secondary)] shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-semibold leading-tight">Usuários & Acessos</p>
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[var(--color-secondary-soft)] text-[var(--color-secondary)]">
+                          Admin
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-[var(--text-muted)]">Permissões e equipe interna</p>
+                    </div>
+                  </Link>
+                )}
+
+                <div className="flex items-center justify-between px-3 py-2 rounded-xl text-xs text-[var(--text-secondary)] min-h-[40px]">
                   <span>Modo de Exibição</span>
                   <ThemeToggle />
                 </div>
@@ -353,7 +315,7 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] transition-colors cursor-pointer min-h-[40px] touch-manipulation"
                 >
                   <LogOut className="w-4 h-4 shrink-0" />
                   <span>Sair do Sistema</span>
@@ -363,6 +325,13 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
           )}
         </div>
       </div>
+
+      {/* Modal de Busca Global */}
+      <GlobalSearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+      />
     </header>
   );
 }
+
