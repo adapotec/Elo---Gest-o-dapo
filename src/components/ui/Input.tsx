@@ -10,10 +10,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   helperText?: string;
   showPasswordToggle?: boolean;
+  icon?: React.ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, className, type, showPasswordToggle = true, ...props }, ref) => {
+  ({ label, error, helperText, className, type, icon, showPasswordToggle = true, ...props }, ref) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const isPassword = type === 'password';
     const effectiveType = isPassword && isPasswordVisible ? 'text' : type;
@@ -26,12 +27,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         <div className="relative w-full flex items-center">
+          {icon && (
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none flex items-center justify-center">
+              {icon}
+            </div>
+          )}
           <input
             ref={ref}
             type={effectiveType}
             className={twMerge(
               clsx(
-                'w-full px-3.5 py-2.5 rounded-xl text-base sm:text-sm bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)] transition-colors placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-soft)] disabled:opacity-50 disabled:bg-[var(--bg-secondary)]',
+                'w-full px-3.5 py-2.5 rounded-xl text-base sm:text-sm bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)] transition-colors placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-soft)] disabled:opacity-50 disabled:bg-[var(--bg-secondary)] min-h-[44px]',
+                icon && 'pl-10',
                 isPassword && showPasswordToggle && 'pr-11',
                 error && 'border-[var(--color-danger)] focus:border-[var(--color-danger)] focus:ring-[var(--color-danger-soft)]',
                 className

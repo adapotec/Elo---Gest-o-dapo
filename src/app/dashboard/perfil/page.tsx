@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import {
   User,
@@ -25,6 +26,7 @@ import {
   Link as LinkIcon,
   RefreshCw,
   Calendar,
+  Lock,
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -60,6 +62,53 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+/**
+ * Comprime e redimensiona imagens client-side via Canvas.
+ * Transforma fotos pesadas de smartphones (3MB - 10MB) em imagens leves de ~35KB (400x400px),
+ * eliminando riscos de estouro de cota (QuotaExceededError) no localStorage e acelerando a Topbar.
+ */
+function compressImage(file: File, maxDim = 400, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(event.target?.result as string);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressed);
+      };
+      img.onerror = () => reject(new Error('Erro ao decodificar imagem'));
+    };
+    reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+  });
+}
+
 export default function PerfilPage() {
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +117,10 @@ export default function PerfilPage() {
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [compressing, setCompressing] = useState(false);
+
+  // Aba móvel (otimização de scroll no celular)
+  const [activeTab, setActiveTab] = useState<'dados' | 'seguranca' | 'tema'>('dados');
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -156,20 +209,24 @@ export default function PerfilPage() {
     setTimeout(() => setToast(null), 4000);
   }
 
-  // Upload de foto local (arquivo)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload de foto local com compressão automática
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        showNotification('A imagem é muito grande. Escolha uma imagem de até 5MB.', 'error');
+      if (file.size > 8 * 1024 * 1024) {
+        showNotification('A imagem é muito grande. Escolha uma imagem de até 8MB.', 'error');
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarUrl(reader.result as string);
-        showNotification('Foto carregada. Clique em "Salvar Alterações" para confirmar.', 'success');
-      };
-      reader.readAsDataURL(file);
+      try {
+        setCompressing(true);
+        const compressedBase64 = await compressImage(file, 400, 0.85);
+        setAvatarUrl(compressedBase64);
+        showNotification('Foto otimizada com sucesso! Clique em "Salvar Alterações" para confirmar.', 'success');
+      } catch (err) {
+        showNotification('Erro ao processar imagem. Tente outro formato.', 'error');
+      } finally {
+        setCompressing(false);
+      }
     }
   };
 
@@ -202,7 +259,7 @@ export default function PerfilPage() {
 
       // 2. Sincronizar com a tabela voluntarios (se houver cadastro vinculado)
       if (email) {
-        await supabase
+        const { error: volError } = await supabase
           .from('voluntarios')
           .update({
             nome_completo: nomeCompleto,
@@ -212,6 +269,10 @@ export default function PerfilPage() {
             data_nascimento: dataNascimento || null,
           })
           .eq('email', email);
+
+        if (volError) {
+          console.warn('Aviso: Perfil voluntário secundário não sincronizado:', volError.message);
+        }
       }
 
       // 3. Atualizar Cache Global e notificar a Topbar instantaneamente (0ms)
@@ -283,7 +344,7 @@ export default function PerfilPage() {
     return (
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar title="Meu Perfil" subtitle="Carregando seus dados cadastrais..." />
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full flex-1 animate-pulse select-none">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full flex-1 animate-pulse">
           {/* Header Skeleton */}
           <div className="p-6 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center justify-between">
             <div className="space-y-2">
@@ -316,10 +377,6 @@ export default function PerfilPage() {
                     <div className="h-11 bg-[var(--border-default)]/40 rounded-xl" />
                     <div className="h-11 bg-[var(--border-default)]/40 rounded-xl" />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="h-11 bg-[var(--border-default)]/40 rounded-xl" />
-                    <div className="h-11 bg-[var(--border-default)]/40 rounded-xl" />
-                  </div>
                 </div>
               </div>
             </div>
@@ -332,11 +389,6 @@ export default function PerfilPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="h-16 bg-[var(--border-default)]/40 rounded-xl" />
                   <div className="h-16 bg-[var(--border-default)]/40 rounded-xl" />
-                </div>
-                <div className="space-y-2 pt-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-11 w-full bg-[var(--border-default)]/30 rounded-xl" />
-                  ))}
                 </div>
               </div>
             </div>
@@ -353,7 +405,16 @@ export default function PerfilPage() {
         subtitle="Dados cadastrais, segurança da conta e personalização do sistema"
       />
 
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full flex-1 overflow-y-auto select-none">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full flex-1 overflow-y-auto">
+        {/* Breadcrumb de Navegação */}
+        <nav aria-label="Navegação estrutural" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-medium">
+          <Link href="/dashboard" className="hover:text-[var(--color-primary)] transition-colors">
+            Início
+          </Link>
+          <span>/</span>
+          <span className="text-[var(--text-primary)] font-semibold">Meu Perfil</span>
+        </nav>
+
         {/* Cabeçalho Principal da Página */}
         <PageHeader
           title={nomeCompleto || 'Meu Perfil'}
@@ -362,9 +423,11 @@ export default function PerfilPage() {
           badge={<Badge variant="primary">{roleLabelMap[role] || role}</Badge>}
         />
 
-        {/* Toast Notification */}
+        {/* Toast Notification Acessível */}
         {toast && (
           <div
+            role="status"
+            aria-live="polite"
             className={`p-4 rounded-xl text-xs font-medium flex items-center justify-between shadow-sm transition-all ${
               toast.type === 'success'
                 ? 'bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/30'
@@ -382,245 +445,292 @@ export default function PerfilPage() {
           </div>
         )}
 
-        {/* Grid Principal: Forms na esquerda + Tema na direita */}
+        {/* Abas Móveis (Mobile-first para eliminar rolagem infinita) */}
+        <div className="flex lg:hidden items-center p-1 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('dados')}
+            className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all min-h-[44px] cursor-pointer touch-manipulation ${
+              activeTab === 'dados'
+                ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-xs border border-[var(--border-default)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <User className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+            Dados &amp; Foto
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('seguranca')}
+            className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all min-h-[44px] cursor-pointer touch-manipulation ${
+              activeTab === 'seguranca'
+                ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-xs border border-[var(--border-default)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <KeyRound className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+            Segurança
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('tema')}
+            className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all min-h-[44px] cursor-pointer touch-manipulation ${
+              activeTab === 'tema'
+                ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-xs border border-[var(--border-default)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <Palette className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+            Aparência
+          </button>
+        </div>
+
+        {/* Grid Principal: Desktop exibe tudo lado a lado; Mobile exibe aba ativa */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Coluna 1 & 2: Foto, Dados Pessoais & Senha */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className={`lg:col-span-2 space-y-6 ${activeTab === 'tema' ? 'hidden lg:block' : 'block'}`}>
             {/* Card de Foto de Perfil & Identidade */}
-            <Card className="p-6 space-y-5">
-              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
-                <div className="flex items-center gap-2">
-                  <Camera className="w-4 h-4 text-[var(--color-primary)]" />
-                  <h2 className="text-sm font-bold text-[var(--text-primary)]">Foto de Perfil &amp; Identidade</h2>
+            <div className={activeTab === 'seguranca' ? 'hidden lg:block' : 'block'}>
+              <Card className="p-6 space-y-5">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                  <div className="flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-[var(--color-primary)]" />
+                    <h2 className="text-sm font-bold text-[var(--text-primary)]">Foto de Perfil &amp; Identidade</h2>
+                  </div>
+                  <span className="text-[11px] text-[var(--text-muted)]">
+                    Visível na ciranda de login e no painel institucional
+                  </span>
                 </div>
-                <span className="text-[11px] text-[var(--text-muted)]">
-                  Visível na ciranda de login e no painel institucional
-                </span>
-              </div>
 
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                {/* Preview do Avatar */}
-                <div className="relative group shrink-0">
-                  <div className="w-28 h-28 rounded-2xl overflow-hidden border-2 border-[var(--border-default)] bg-[var(--bg-secondary)] flex items-center justify-center shadow-md">
-                    {avatarUrl ? (
-                      <img src={avatarUrl} alt={nomeCompleto} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-[var(--color-primary)] to-[var(--color-primary-hover)] text-white font-bold text-2xl shadow-inner">
-                        {getInitials(nomeCompleto)}
-                      </div>
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                  {/* Preview do Avatar */}
+                  <div className="relative group shrink-0">
+                    <div className="w-28 h-28 rounded-2xl overflow-hidden border-2 border-[var(--border-default)] bg-[var(--bg-secondary)] flex items-center justify-center shadow-md">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt={nomeCompleto} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-[var(--color-primary)] to-[var(--color-primary-hover)] text-white font-bold text-2xl shadow-inner">
+                          {getInitials(nomeCompleto)}
+                        </div>
+                      )}
+                    </div>
+
+                    {avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setAvatarUrl('')}
+                        className="absolute -top-2 -right-2 p-1.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white shadow-md transition-transform hover:scale-110 cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center touch-manipulation"
+                        title="Remover foto"
+                        aria-label="Remover foto"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </div>
 
-                  {avatarUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setAvatarUrl('')}
-                      className="absolute -top-2 -right-2 p-1.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white shadow-md transition-transform hover:scale-110 cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center touch-manipulation"
-                      title="Remover foto"
-                      aria-label="Remover foto"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Controles de Upload e Link */}
-                <div className="flex-1 space-y-3.5 w-full">
-                  <div>
-                    <label className="text-xs font-bold text-[var(--text-primary)] block mb-1">
-                      Enviar Foto do Computador ou Celular
-                    </label>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileUpload}
-                      accept="image/png, image/jpeg, image/webp"
-                      className="hidden"
-                      id="profile-upload"
-                    />
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        icon={<Upload className="w-4 h-4" />}
-                        onClick={() => fileInputRef.current?.click()}
-                        className="min-h-[44px]"
-                      >
-                        Escolher Imagem
-                      </Button>
-                      {avatarUrl && (
+                  {/* Controles de Upload com Compressão Automática */}
+                  <div className="flex-1 space-y-3.5 w-full">
+                    <div>
+                      <label className="text-xs font-bold text-[var(--text-primary)] block mb-1">
+                        Enviar Foto do Computador ou Celular
+                      </label>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        accept="image/png, image/jpeg, image/webp"
+                        className="hidden"
+                        id="profile-upload"
+                      />
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="secondary"
                           size="sm"
-                          icon={<Trash2 className="w-4 h-4 text-rose-500" />}
-                          onClick={() => setAvatarUrl('')}
+                          disabled={compressing}
+                          icon={<Upload className="w-4 h-4" />}
+                          onClick={() => fileInputRef.current?.click()}
                           className="min-h-[44px]"
                         >
-                          Remover Foto
+                          {compressing ? 'Otimizando...' : 'Escolher Imagem'}
                         </Button>
-                      )}
+                        {avatarUrl && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            icon={<Trash2 className="w-4 h-4 text-rose-500" />}
+                            onClick={() => setAvatarUrl('')}
+                            className="min-h-[44px]"
+                          >
+                            Remover Foto
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                        Formatos suportados: JPG, PNG ou WEBP. Imagens de celular são comprimidas automaticamente para 35KB.
+                      </p>
                     </div>
-                    <p className="text-[11px] text-[var(--text-muted)] mt-1">
-                      Formatos suportados: JPG, PNG ou WEBP (até 5MB).
-                    </p>
-                  </div>
 
-                  <div className="pt-2 border-t border-[var(--border-default)]">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">
-                      Ou Cole um Link Direto / Google Drive
-                    </label>
-                    <div className="relative">
-                      <LinkIcon className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-3.5 pointer-events-none" />
-                      <input
+                    <div className="pt-2 border-t border-[var(--border-default)]">
+                      <Input
+                        label="Ou Cole um Link Direto / Google Drive"
+                        icon={<LinkIcon className="w-4 h-4" />}
                         type="url"
                         placeholder="https://drive.google.com/file/d/... ou link de imagem"
                         value={avatarUrl}
                         onChange={handleDriveUrlChange}
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl text-base sm:text-sm bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)] placeholder:text-[var(--text-muted)] font-medium min-h-[44px]"
+                        helperText="Links do Drive são convertidos automaticamente para visualização direta."
                       />
                     </div>
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
 
-            {/* Dados Pessoais Form */}
-            <Card className="p-6 space-y-5">
-              <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-3">
-                <User className="w-4 h-4 text-[var(--color-primary)]" />
-                <h2 className="text-sm font-bold text-[var(--text-primary)]">Informações Pessoais &amp; Atuação</h2>
-              </div>
+            {/* Dados Pessoais Form (100% Componentes do Design System) */}
+            <div className={activeTab === 'seguranca' ? 'hidden lg:block' : 'block'}>
+              <Card className="p-6 space-y-5">
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-3">
+                  <User className="w-4 h-4 text-[var(--color-primary)]" />
+                  <h2 className="text-sm font-bold text-[var(--text-primary)]">Informações Pessoais &amp; Atuação</h2>
+                </div>
 
-              <form onSubmit={handleSaveProfile} className="space-y-4">
-                <Input
-                  label="Nome Completo"
-                  value={nomeCompleto}
-                  onChange={(e) => setNomeCompleto(e.target.value)}
-                  placeholder="Seu nome completo"
-                  required
-                />
+                <form onSubmit={handleSaveProfile} className="space-y-4">
+                  <Input
+                    label="Nome Completo"
+                    icon={<User className="w-4 h-4" />}
+                    value={nomeCompleto}
+                    onChange={(e) => setNomeCompleto(e.target.value)}
+                    placeholder="Seu nome completo"
+                    required
+                  />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)]">E-mail Institucional</label>
-                    <input
-                      type="text"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                    <Input
+                      label="E-mail Institucional"
+                      icon={<Mail className="w-4 h-4" />}
                       value={email}
                       disabled
-                      className="w-full px-3.5 py-2.5 rounded-lg text-base sm:text-sm bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)] opacity-90 cursor-not-allowed font-mono-data min-h-[44px]"
+                      helperText="Identificador gerenciado pela coordenação."
+                      className="font-mono-data opacity-90 cursor-not-allowed"
                     />
-                    <span className="text-[11px] text-[var(--text-muted)]">
-                      Identificador de login gerenciado pela coordenação.
-                    </span>
+
+                    <Input
+                      label="Telefone / WhatsApp"
+                      icon={<Phone className="w-4 h-4" />}
+                      value={telefone}
+                      onChange={(e) => setTelefone(e.target.value)}
+                      placeholder="(98) 98888-8888"
+                      helperText="Contato institucional da equipe."
+                      className="font-mono-data"
+                    />
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)]">Telefone / WhatsApp</label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-3.5 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={telefone}
-                        onChange={(e) => setTelefone(e.target.value)}
-                        placeholder="(98) 98888-8888"
-                        className="w-full pl-9 pr-3.5 py-2.5 rounded-lg text-base sm:text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)] font-mono-data min-h-[44px]"
-                      />
-                    </div>
-                    <span className="text-[11px] text-[var(--text-muted)]">
-                      Contato institucional da equipe.
-                    </span>
-                  </div>
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                    <Input
+                      label="Data de Nascimento"
+                      type="date"
+                      icon={<Calendar className="w-4 h-4" />}
+                      value={dataNascimento}
+                      onChange={(e) => setDataNascimento(e.target.value)}
+                      helperText="Mural de Aniversariantes do Instituto Ádapo."
+                      className="font-mono-data"
+                    />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] flex items-center justify-between">
-                      <span>Data de Nascimento</span>
-                      <span className="text-[10px] text-[var(--color-primary)] font-normal">Mural de Aniversariantes</span>
-                    </label>
-                    <div className="relative">
-                      <Calendar className="w-4 h-4 text-[var(--text-muted)] absolute left-3 top-3.5 pointer-events-none" />
-                      <input
-                        type="date"
-                        value={dataNascimento}
-                        onChange={(e) => setDataNascimento(e.target.value)}
-                        className="w-full pl-9 pr-3.5 py-2.5 rounded-lg text-base sm:text-sm bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)] font-mono-data min-h-[44px]"
-                      />
-                    </div>
-                    <span className="text-[11px] text-[var(--text-muted)]">
-                      Exibido para celebração com a equipe na Home do sistema.
-                    </span>
+                    <Input
+                      label="Área de Atuação"
+                      icon={<Briefcase className="w-4 h-4" />}
+                      value={areaAtuacao}
+                      onChange={(e) => setAreaAtuacao(e.target.value)}
+                      placeholder="Ex: Gestão, Pedagogia, Psicologia, TI..."
+                    />
                   </div>
 
-                  <Input
-                    label="Área de Atuação"
-                    value={areaAtuacao}
-                    onChange={(e) => setAreaAtuacao(e.target.value)}
-                    placeholder="Ex: Gestão, Pedagogia, Psicologia, TI..."
-                  />
-                </div>
-
-                {funcao && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)]">Função / Cargo</label>
-                    <input
-                      type="text"
+                  {funcao && (
+                    <Input
+                      label="Função / Cargo"
+                      icon={<Shield className="w-4 h-4" />}
                       value={funcao}
                       disabled
-                      className="w-full px-3.5 py-2.5 rounded-lg text-base sm:text-sm bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-default)] opacity-90 cursor-not-allowed font-medium min-h-[44px]"
+                      className="opacity-90 cursor-not-allowed"
                     />
-                  </div>
-                )}
+                  )}
 
-                <div className="pt-2 flex justify-end">
-                  <Button type="submit" disabled={savingProfile} icon={<Save className="w-4 h-4" />} className="w-full sm:w-auto min-h-[44px]">
-                    {savingProfile ? 'Salvando...' : 'Salvar Alterações'}
-                  </Button>
-                </div>
-              </form>
-            </Card>
+                  <div className="pt-2 flex justify-end">
+                    <Button type="submit" disabled={savingProfile} icon={<Save className="w-4 h-4" />} className="w-full sm:w-auto min-h-[44px]">
+                      {savingProfile ? 'Salvando...' : 'Salvar Alterações'}
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            </div>
 
             {/* Alteração de Senha Form */}
-            <Card className="p-6 space-y-5">
-              <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-3">
-                <KeyRound className="w-4 h-4 text-[var(--color-primary)]" />
-                <h2 className="text-sm font-bold text-[var(--text-primary)]">Alterar Senha de Acesso</h2>
-              </div>
-
-              <form onSubmit={handleChangePassword} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Nova Senha"
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    required
-                  />
-
-                  <Input
-                    label="Confirmar Nova Senha"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repita a nova senha"
-                    required
-                  />
+            <div className={activeTab === 'dados' ? 'hidden lg:block' : 'block'}>
+              <Card className="p-6 space-y-5">
+                <div className="flex items-center gap-2 border-b border-[var(--border-default)] pb-3">
+                  <KeyRound className="w-4 h-4 text-[var(--color-primary)]" />
+                  <h2 className="text-sm font-bold text-[var(--text-primary)]">Alterar Senha de Acesso</h2>
                 </div>
 
-                <div className="pt-2 flex justify-end">
-                  <Button type="submit" variant="secondary" disabled={savingPassword} icon={<KeyRound className="w-4 h-4" />} className="w-full sm:w-auto min-h-[44px]">
-                    {savingPassword ? 'Atualizando...' : 'Atualizar Senha'}
-                  </Button>
-                </div>
-              </form>
-            </Card>
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="Nova Senha"
+                      type="password"
+                      icon={<Lock className="w-4 h-4" />}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      required
+                    />
+
+                    <Input
+                      label="Confirmar Nova Senha"
+                      type="password"
+                      icon={<Lock className="w-4 h-4" />}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repita a nova senha"
+                      required
+                    />
+                  </div>
+
+                  {/* Indicador Visual de Conformidade de Senha */}
+                  {newPassword.length > 0 && (
+                    <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] space-y-1.5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-white text-[9px] ${newPassword.length >= 6 ? 'bg-emerald-500' : 'bg-amber-500'}`}>
+                          {newPassword.length >= 6 ? '✓' : '•'}
+                        </div>
+                        <span className={newPassword.length >= 6 ? 'text-[var(--color-success)] font-medium' : 'text-[var(--text-muted)]'}>
+                          Mínimo de 6 caracteres ({newPassword.length}/6)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-white text-[9px] ${confirmPassword.length > 0 && newPassword === confirmPassword ? 'bg-emerald-500' : 'bg-zinc-400'}`}>
+                          {confirmPassword.length > 0 && newPassword === confirmPassword ? '✓' : '•'}
+                        </div>
+                        <span className={confirmPassword.length > 0 && newPassword === confirmPassword ? 'text-[var(--color-success)] font-medium' : 'text-[var(--text-muted)]'}>
+                          Senhas coincidem
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex justify-end">
+                    <Button type="submit" variant="secondary" disabled={savingPassword} icon={<KeyRound className="w-4 h-4" />} className="w-full sm:w-auto min-h-[44px]">
+                      {savingPassword ? 'Atualizando...' : 'Atualizar Senha'}
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            </div>
           </div>
 
           {/* Coluna 3: Personalização de Temas Dinâmicos */}
-          <div className="space-y-6">
+          <div className={`space-y-6 ${activeTab !== 'tema' ? 'hidden lg:block' : 'block'}`}>
             <Card className="p-6 space-y-5">
               <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
                 <div className="flex items-center gap-2">
