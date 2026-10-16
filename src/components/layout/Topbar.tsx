@@ -113,6 +113,21 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
       }
     }
     loadProfile();
+
+    const handleProfileUpdated = (e: any) => {
+      if (e.detail) {
+        setUserProfile((prev) => ({
+          ...prev,
+          name: e.detail.name || prev?.name || 'Voluntário Ádapo',
+          email: e.detail.email || prev?.email || '',
+          role: e.detail.role || prev?.role || 'voluntario_operacional',
+          avatarUrl: e.detail.avatarUrl !== undefined ? e.detail.avatarUrl : prev?.avatarUrl || null,
+        }));
+      }
+    };
+
+    window.addEventListener('elo-profile-updated', handleProfileUpdated);
+    return () => window.removeEventListener('elo-profile-updated', handleProfileUpdated);
   }, []);
 
   // Fechar menu de perfil ao clicar fora

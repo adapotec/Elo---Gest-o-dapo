@@ -48,6 +48,7 @@ export interface Voluntario {
   data_inicio: string;
   data_fim: string | null;
   status: 'ativo' | 'inativo';
+  data_nascimento?: string | null;
   avatar_url: string | null;
   cep: string | null;
   rua: string | null;
