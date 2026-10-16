@@ -1,39 +1,30 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import Link from 'next/link';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { DetailPanel } from '@/components/ui/DetailPanel';
 import { Select } from '@/components/ui/Select';
+import { Input } from '@/components/ui/Input';
 import {
   Users,
   Search,
-  Plus,
   Phone,
   Mail,
   Calendar,
-  Edit,
-  Trash2,
-  Shield,
-  HeartHandshake,
-  MessageCircle,
-  MapPin,
-  FileText,
-  Award,
   Sparkles,
   UserCheck,
-  UserX,
-  Heart,
-  CheckCircle2,
-  ExternalLink,
+  MessageCircle,
+  MapPin,
+  Award,
   Clock,
   TrendingUp,
   BarChart2,
   ChevronDown,
   ChevronUp,
+  X,
 } from 'lucide-react';
 
 export interface Voluntario {
@@ -82,11 +73,10 @@ export function VoluntariosEquipe({
   voluntarios,
   loading,
   onRefresh,
-  onSelectParaDocumento,
 }: VoluntariosEquipeProps) {
   const [search, setSearch] = useState('');
   const [tipoFilter, setTipoFilter] = useState('todos');
-  const [statusFilter, setStatusFilter] = useState('todos');
+  const [statusFilter, setStatusFilter] = useState('ativo'); // Catálogo foca em voluntários ativos por padrão
   const [habilidadeFilter, setHabilidadeFilter] = useState('todas');
   const [selectedVoluntario, setSelectedVoluntario] = useState<Voluntario | null>(null);
   const [showGraficosHoras, setShowGraficosHoras] = useState(true);
@@ -143,7 +133,7 @@ export function VoluntariosEquipe({
     return Array.from(set).sort();
   }, [voluntarios]);
 
-  // Filtro
+  // Filtro inteligente
   const filteredVoluntarios = useMemo(() => {
     return voluntarios.filter((v) => {
       const matchSearch =
@@ -163,6 +153,15 @@ export function VoluntariosEquipe({
     });
   }, [voluntarios, search, tipoFilter, statusFilter, habilidadeFilter]);
 
+  const isFiltered = search !== '' || tipoFilter !== 'todos' || statusFilter !== 'todos' || habilidadeFilter !== 'todas';
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setTipoFilter('todos');
+    setStatusFilter('todos');
+    setHabilidadeFilter('todas');
+  };
+
   // Formatação de telefone para link de WhatsApp
   const getWhatsAppUrl = (tel?: string | null, nome?: string) => {
     if (!tel) return null;
@@ -170,7 +169,7 @@ export function VoluntariosEquipe({
     if (cleanTel.length < 10) return null;
     const fullNumber = cleanTel.startsWith('55') ? cleanTel : `55${cleanTel}`;
     const msg = encodeURIComponent(
-      `Olá ${nome ? nome.split(' ')[0] : 'Voluntário(a)'}! Mensagem da coordenação do Instituto Ádapo.`
+      `Olá ${nome ? nome.split(' ')[0] : 'Voluntário(a)'}! Mensagem pelo sistema Elo do Instituto Ádapo.`
     );
     return `https://wa.me/${fullNumber}?text=${msg}`;
   };
@@ -210,7 +209,7 @@ export function VoluntariosEquipe({
             item.tipo === 'brincante'
               ? 'warning'
               : item.tipo === 'operacional'
-              ? 'purple'
+              ? 'primary'
               : 'neutral'
           }
         >
@@ -273,10 +272,10 @@ export function VoluntariosEquipe({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 font-bold text-[10px] flex items-center gap-1 transition-colors shrink-0"
-                  title="Abrir WhatsApp"
+                  className="px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 font-bold text-[11px] flex items-center gap-1 transition-colors shrink-0 touch-manipulation"
+                  title="Abrir WhatsApp direto"
                 >
-                  <MessageCircle className="w-3 h-3" />
+                  <MessageCircle className="w-3.5 h-3.5" />
                   WhatsApp
                 </a>
               )}
@@ -304,9 +303,41 @@ export function VoluntariosEquipe({
     },
   ];
 
+  // ── SKELETON SHIMMER (BENTO LOADING) ──
+  if (loading) {
+    return (
+      <div className="space-y-5 animate-pulse select-none">
+        {/* Skeleton KPIs */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[var(--border-default)]/60" />
+              <div className="space-y-1.5 flex-1">
+                <div className="h-3 w-20 bg-[var(--border-default)]/40 rounded" />
+                <div className="h-5 w-12 bg-[var(--border-default)]/60 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Skeleton Filtros */}
+        <div className="p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-3">
+          <div className="h-11 w-full bg-[var(--border-default)]/40 rounded-xl" />
+        </div>
+
+        {/* Skeleton Tabela / Cards */}
+        <div className="p-6 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-14 w-full bg-[var(--border-default)]/30 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
-      {/* ── 1. CARDS DE KPIS EXECUTIVOS ── */}
+      {/* ── 1. CARDS DE KPIS EXECUTIVOS (CONSULTA GERAL) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
@@ -328,19 +359,19 @@ export function VoluntariosEquipe({
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
-              Ativos / Campo
+              Ativos em Campo
             </p>
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-lg sm:text-xl font-display font-extrabold text-[var(--text-primary)]">
                 {stats.ativos}
               </span>
-              <span className="text-[10px] text-[var(--text-muted)]">({stats.inativos} inat.)</span>
+              <span className="text-[10px] text-[var(--text-muted)]">({stats.inativos} histórico)</span>
             </div>
           </div>
         </div>
 
         <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#3B82F6]/10 text-[#3B82F6] flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
             <Clock className="w-4 h-4" />
           </div>
           <div className="min-w-0">
@@ -348,7 +379,7 @@ export function VoluntariosEquipe({
               Horas Acumuladas
             </p>
             <div className="flex items-baseline gap-1.5 flex-wrap">
-              <span className="text-lg sm:text-xl font-display font-extrabold text-[#3B82F6]">
+              <span className="text-lg sm:text-xl font-display font-extrabold text-[var(--color-primary)]">
                 {stats.totalHoras}h
               </span>
               <span className="text-[10px] text-[var(--text-muted)]">(méd. {stats.mediaHoras}h)</span>
@@ -391,7 +422,7 @@ export function VoluntariosEquipe({
           <button
             type="button"
             onClick={() => setShowGraficosHoras(!showGraficosHoras)}
-            className="p-1.5 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer text-xs flex items-center gap-1 font-semibold"
+            className="p-1.5 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer text-xs flex items-center gap-1 font-semibold min-h-[44px]"
           >
             {showGraficosHoras ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             <span>{showGraficosHoras ? 'Recolher' : 'Expandir'}</span>
@@ -430,7 +461,7 @@ export function VoluntariosEquipe({
                         </div>
                         <div className="w-full h-2 rounded-full bg-[var(--bg-secondary)] overflow-hidden border border-[var(--border-default)]/50">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[#93368F] transition-all duration-500"
+                            className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-hover)] transition-all duration-500"
                             style={{ width: `${Math.max(pct, 8)}%` }}
                           />
                         </div>
@@ -445,7 +476,7 @@ export function VoluntariosEquipe({
             <div className="p-4 rounded-2xl bg-[var(--bg-secondary)]/50 border border-[var(--border-default)] space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-xs text-[var(--text-primary)] flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-[#1C9C82]" />
+                  <TrendingUp className="w-4 h-4 text-[var(--color-success)]" />
                   Distribuição de Horas por Área
                 </span>
                 <span className="text-[10px] text-[var(--text-muted)] font-mono-data">{stats.totalHoras}h no total</span>
@@ -472,7 +503,7 @@ export function VoluntariosEquipe({
                       </div>
                       <div className="w-full h-2 rounded-full bg-[var(--bg-secondary)] overflow-hidden border border-[var(--border-default)]/50">
                         <div
-                          className="h-full rounded-full bg-[#1C9C82] transition-all duration-500"
+                          className="h-full rounded-full bg-[var(--color-success)] transition-all duration-500"
                           style={{ width: `${Math.max(item.barWidth, 6)}%` }}
                         />
                       </div>
@@ -485,17 +516,17 @@ export function VoluntariosEquipe({
         )}
       </Card>
 
-      {/* ── 3. PAINEL DE BUSCA & FILTROS ── */}
+      {/* ── 3. PAINEL DE BUSCA & FILTROS (100% DESIGN SYSTEM INPUT) ── */}
       <div className="p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-[var(--shadow-card)] space-y-3">
         <div className="flex flex-col md:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-            <input
+          <div className="flex-1 w-full">
+            <Input
+              icon={<Search className="w-4 h-4" />}
               type="text"
               placeholder="Buscar por nome, CPF, e-mail, função ou habilidade..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-default)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition-all"
+              className="bg-[var(--bg-secondary)]"
             />
           </div>
 
@@ -517,8 +548,8 @@ export function VoluntariosEquipe({
               <Select
                 options={[
                   { value: 'todos', label: 'Todos os Status' },
-                  { value: 'ativo', label: 'Ativo' },
-                  { value: 'inativo', label: 'Inativo' },
+                  { value: 'ativo', label: 'Ativos' },
+                  { value: 'inativo', label: 'Inativos (Histórico)' },
                 ]}
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -527,7 +558,7 @@ export function VoluntariosEquipe({
           </div>
         </div>
 
-        {/* Pílulas de Competências / Habilidades (se houver) */}
+        {/* Pílulas de Competências / Habilidades Táteis */}
         {todasHabilidades.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--border-default)]">
             <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mr-1">
@@ -536,7 +567,7 @@ export function VoluntariosEquipe({
             <button
               type="button"
               onClick={() => setHabilidadeFilter('todas')}
-              className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer min-h-[36px] touch-manipulation ${
                 habilidadeFilter === 'todas'
                   ? 'bg-[var(--color-primary)] text-white shadow-xs'
                   : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]/80'
@@ -549,7 +580,7 @@ export function VoluntariosEquipe({
                 key={hab}
                 type="button"
                 onClick={() => setHabilidadeFilter(hab)}
-                className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer min-h-[36px] touch-manipulation ${
                   habilidadeFilter === hab
                     ? 'bg-[var(--color-primary)] text-white shadow-xs'
                     : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]/80'
@@ -562,23 +593,147 @@ export function VoluntariosEquipe({
         )}
       </div>
 
-      {/* ── 4. TABELA DE VOLUNTÁRIOS ── */}
-      {loading ? (
-        <div className="p-12 text-center text-sm text-[var(--text-muted)]">
-          Carregando equipe de voluntários...
+      {/* ── 4. LISTA DE VOLUNTÁRIOS: CARDS MOBILE + TABELA DESKTOP ── */}
+      {filteredVoluntarios.length === 0 ? (
+        /* Empty State Amigável com Reset de Busca */
+        <div className="p-8 sm:p-12 text-center rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center mx-auto">
+            <Users className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-bold text-sm sm:text-base text-[var(--text-primary)]">
+              Nenhum voluntário encontrado
+            </h4>
+            <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
+              Não encontramos nenhum membro da equipe correspondente aos filtros de busca aplicados.
+            </p>
+          </div>
+          {isFiltered && (
+            <div className="pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleClearFilters}
+                className="min-h-[44px]"
+              >
+                Limpar Busca e Filtros
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
-        <DataTable
-          columns={columns}
-          data={filteredVoluntarios}
-          keyExtractor={(v) => v.id}
-          onRowClick={(v) => setSelectedVoluntario(v)}
-          selectedRowId={selectedVoluntario?.id}
-          emptyMessage="Nenhum voluntário encontrado para os filtros selecionados."
-        />
+        <>
+          {/* ── VISUALIZAÇÃO EM CARTÕES MÓVEIS (SM:HIDDEN - ZERO SCROLL HORIZONTAL) ── */}
+          <div className="sm:hidden space-y-3">
+            {filteredVoluntarios.map((item) => {
+              const waUrl = getWhatsAppUrl(item.telefone, item.nome_completo);
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedVoluntario(item)}
+                  className="p-4 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] shadow-xs space-y-3 cursor-pointer active:scale-[0.99] transition-transform"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] font-bold flex items-center justify-center text-sm overflow-hidden shrink-0 border border-[var(--border-default)] shadow-xs">
+                        {item.avatar_url ? (
+                          <img src={item.avatar_url} alt={item.nome_completo} className="w-full h-full object-cover" />
+                        ) : (
+                          item.nome_completo.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm text-[var(--text-primary)] truncate">
+                          {item.nome_completo}
+                        </p>
+                        <p className="text-[11px] font-mono-data text-[var(--text-muted)]">
+                          CPF: {item.cpf}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Badge variant={item.status === 'ativo' ? 'success' : 'danger'}>
+                      {item.status === 'ativo' ? 'ATIVO' : 'INATIVO'}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-2 border-t border-[var(--border-default)] text-[var(--text-secondary)]">
+                    <div>
+                      <span className="font-semibold text-[var(--text-primary)] block">
+                        {item.area_atuacao || 'Geral'}
+                      </span>
+                      <span className="text-[11px] text-[var(--color-primary)] font-medium">
+                        {item.funcao || 'Voluntário'}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-display font-extrabold text-xs text-[var(--text-primary)] block">
+                        {item.horas_acumuladas || 0}h
+                      </span>
+                      <span className="text-[10px] text-[var(--text-muted)]">dedicadas</span>
+                    </div>
+                  </div>
+
+                  {/* Badges de Enquadramento e Elo */}
+                  <div className="flex items-center justify-between pt-1">
+                    <Badge
+                      variant={
+                        item.tipo === 'brincante'
+                          ? 'warning'
+                          : item.tipo === 'operacional'
+                          ? 'primary'
+                          : 'neutral'
+                      }
+                      size="sm"
+                    >
+                      {item.tipo === 'brincante'
+                        ? 'Voluntário Brincante'
+                        : item.tipo === 'operacional'
+                        ? 'Equipe Operacional'
+                        : 'Monitor Externo'}
+                    </Badge>
+
+                    {item.auth_user_id && (
+                      <span className="text-[10px] font-bold text-[var(--color-primary)] font-mono-data">
+                        USUÁRIO ELO
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Botão de WhatsApp Tátil (44px) */}
+                  {waUrl && (
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full min-h-[44px] rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold text-xs flex items-center justify-center gap-2 transition-colors touch-manipulation shadow-2xs mt-1"
+                    >
+                      <MessageCircle className="w-4 h-4 shrink-0" />
+                      Chamar no WhatsApp ({item.telefone})
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── VISUALIZAÇÃO EM TABELA PARA DESKTOP (HIDDEN SM:BLOCK) ── */}
+          <div className="hidden sm:block">
+            <DataTable
+              columns={columns}
+              data={filteredVoluntarios}
+              keyExtractor={(v) => v.id}
+              onRowClick={(v) => setSelectedVoluntario(v)}
+              selectedRowId={selectedVoluntario?.id}
+              emptyMessage="Nenhum voluntário encontrado para os filtros selecionados."
+            />
+          </div>
+        </>
       )}
 
-      {/* ── 5. PAINEL LATERAL DE DETALHES DO VOLUNTÁRIO (DETAILPANEL) ── */}
+      {/* ── 5. PAINEL LATERAL DE DETALHES DO VOLUNTÁRIO (DETAILPANEL - CONSULTA) ── */}
       {selectedVoluntario && (
         <DetailPanel
           isOpen={!!selectedVoluntario}
@@ -645,7 +800,7 @@ export function VoluntariosEquipe({
                       href={getWhatsAppUrl(selectedVoluntario.telefone, selectedVoluntario.nome_completo)!}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 text-xs font-bold flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 text-xs font-bold flex items-center gap-1 min-h-[36px] touch-manipulation"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       Conversar
@@ -659,6 +814,27 @@ export function VoluntariosEquipe({
                 </div>
               </div>
             </div>
+
+            {/* Data de Aniversário */}
+            {selectedVoluntario.data_nascimento && (
+              <div className="space-y-2">
+                <h5 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                  Comemoração
+                </h5>
+                <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] flex items-center gap-2.5 text-xs">
+                  <Calendar className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
+                  <div>
+                    <span className="text-[10px] text-[var(--text-muted)] block uppercase font-bold tracking-wider">
+                      Data de Aniversário
+                    </span>
+                    <span className="font-mono-data font-semibold text-[var(--text-primary)]">
+                      {new Date(selectedVoluntario.data_nascimento + 'T12:00:00').toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Habilidades & Competências */}
             {selectedVoluntario.habilidades && selectedVoluntario.habilidades.length > 0 && (
@@ -684,7 +860,7 @@ export function VoluntariosEquipe({
             {(selectedVoluntario.rua || selectedVoluntario.bairro || selectedVoluntario.cidade) && (
               <div className="space-y-2">
                 <h5 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-purple-500" />
+                  <MapPin className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                   Endereço Residencial
                 </h5>
                 <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] text-xs text-[var(--text-secondary)] space-y-1">
