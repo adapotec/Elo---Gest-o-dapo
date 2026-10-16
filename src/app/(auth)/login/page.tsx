@@ -63,6 +63,7 @@ function getInitials(name: string): string {
 }
 
 const STORAGE_KEY_ACCOUNTS = 'elo_registered_accounts';
+const STORAGE_KEY_LAST_VOLUNTEER = 'elo_last_volunteer_id';
 
 function getStoredRegisteredEmails(): Set<string> {
   if (typeof window === 'undefined') return new Set();
@@ -86,6 +87,22 @@ function storeRegisteredEmail(email: string) {
   } catch {}
 }
 
+function getStoredLastVolunteerId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(STORAGE_KEY_LAST_VOLUNTEER);
+  } catch {
+    return null;
+  }
+}
+
+function storeLastVolunteerId(id: string) {
+  if (typeof window === 'undefined' || !id) return;
+  try {
+    localStorage.setItem(STORAGE_KEY_LAST_VOLUNTEER, id);
+  } catch {}
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -97,6 +114,7 @@ export default function LoginPage() {
   const [voluntarios, setVoluntarios] = useState<VoluntarioItem[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [loadingVoluntarios, setLoadingVoluntarios] = useState<boolean>(true);
+  const [lastVolunteerId, setLastVolunteerId] = useState<string | null>(null);
 
   // Modo manual vs ciranda
   const [useManualEmail, setUseManualEmail] = useState<boolean>(false);
@@ -214,18 +232,38 @@ export default function LoginPage() {
           });
 
           setVoluntarios(list);
-          // Sorteia um voluntário aleatório a cada atualização da página
-          const randomIndex = Math.floor(Math.random() * list.length);
-          setSelectedIndex(randomIndex);
-          if (list[randomIndex]) {
-            setEmail(list[randomIndex].email);
+          // Verifica se há voluntário salvo de login anterior
+          const savedId = getStoredLastVolunteerId();
+          setLastVolunteerId(savedId);
+
+          let initialIndex = -1;
+          if (savedId) {
+            initialIndex = list.findIndex((v) => v.id === savedId);
+          }
+          if (initialIndex === -1) {
+            initialIndex = Math.floor(Math.random() * list.length);
+          }
+
+          setSelectedIndex(initialIndex >= 0 ? initialIndex : 0);
+          if (list[initialIndex >= 0 ? initialIndex : 0]) {
+            setEmail(list[initialIndex >= 0 ? initialIndex : 0].email);
           }
         } else {
           setVoluntarios(FALLBACK_VOLUNTARIOS);
-          const randomIndex = Math.floor(Math.random() * FALLBACK_VOLUNTARIOS.length);
-          setSelectedIndex(randomIndex);
-          if (FALLBACK_VOLUNTARIOS[randomIndex]) {
-            setEmail(FALLBACK_VOLUNTARIOS[randomIndex].email);
+          const savedId = getStoredLastVolunteerId();
+          setLastVolunteerId(savedId);
+
+          let initialIndex = -1;
+          if (savedId) {
+            initialIndex = FALLBACK_VOLUNTARIOS.findIndex((v) => v.id === savedId);
+          }
+          if (initialIndex === -1) {
+            initialIndex = Math.floor(Math.random() * FALLBACK_VOLUNTARIOS.length);
+          }
+
+          setSelectedIndex(initialIndex >= 0 ? initialIndex : 0);
+          if (FALLBACK_VOLUNTARIOS[initialIndex >= 0 ? initialIndex : 0]) {
+            setEmail(FALLBACK_VOLUNTARIOS[initialIndex >= 0 ? initialIndex : 0].email);
           }
         }
       } catch (err) {
@@ -248,6 +286,10 @@ export default function LoginPage() {
   const handleSelectVoluntario = (vol: VoluntarioItem, index: number) => {
     setSelectedIndex(index);
     setEmail(vol.email);
+    if (vol?.id) {
+      storeLastVolunteerId(vol.id);
+      setLastVolunteerId(vol.id);
+    }
     setPassword('');
     setConfirmPassword('');
     setError(null);
@@ -280,8 +322,11 @@ export default function LoginPage() {
         return;
       }
 
-      // Persiste no cache de contas registradas
+      // Persiste no cache de contas registradas e último voluntário
       storeRegisteredEmail(cleanEmail);
+      if (selectedVoluntario?.id) {
+        storeLastVolunteerId(selectedVoluntario.id);
+      }
 
       setSuccessMsg('Autenticado com sucesso! Entrando no ELO...');
       setTimeout(() => {
@@ -395,13 +440,13 @@ export default function LoginPage() {
       <div />
 
       {/* ── CONTEÚDO CENTRAL: FLUXO EM ETAPAS (CIRANDA -> LOGIN) ── */}
-      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-lg sm:max-w-[540px] mx-auto py-4">
+      <div className="flex-1 flex items-center justify-center my-auto w-full max-w-lg sm:max-w-[540px] mx-auto py-2 sm:py-4">
         
         {/* ========================================================================= */}
         {/* ETAPA 1: VISUALIZAÇÃO E SELEÇÃO NA CIRANDA ADAPETE */}
         {/* ========================================================================= */}
         {step === 'ciranda' && (
-          <div className="w-full flex flex-col items-center bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-3xl border border-[var(--border-default)] shadow-[var(--shadow-card)] animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-full flex flex-col items-center bg-[var(--bg-elevated)] p-5 sm:p-8 rounded-3xl border border-[var(--border-default)] shadow-[var(--shadow-card)] animate-in fade-in zoom-in-95 duration-200 max-h-[94dvh] sm:max-h-none overflow-y-auto">
             {loadingVoluntarios ? (
               <div className="py-24 flex flex-col items-center justify-center gap-3 text-xs text-[var(--text-muted)]">
                 <RefreshCw className="w-6 h-6 animate-spin text-[var(--color-primary)]" />
@@ -414,6 +459,7 @@ export default function LoginPage() {
                   voluntarios={voluntarios}
                   selectedIndex={selectedIndex}
                   onSelectVoluntario={handleSelectVoluntario}
+                  isLastLogged={Boolean(lastVolunteerId && selectedVoluntario?.id === lastVolunteerId)}
                 />
 
                 {/* Botão de Prosseguir para Autenticação / Primeiro Acesso */}
@@ -421,7 +467,7 @@ export default function LoginPage() {
                   <Button
                     type="button"
                     size="lg"
-                    className="w-full shadow-md hover:shadow-lg font-bold text-sm sm:text-base py-3 flex items-center justify-center gap-2 rounded-xl transition-all"
+                    className="w-full shadow-md hover:shadow-lg font-bold text-sm sm:text-base py-3 flex items-center justify-center gap-2 rounded-xl transition-all touch-manipulation min-h-[48px]"
                     onClick={() => {
                       setStep('login');
                       setPassword('');
@@ -447,7 +493,7 @@ export default function LoginPage() {
                       setSuccessMsg(null);
                       setAuthModeOverride('login');
                     }}
-                    className="text-xs text-[var(--text-muted)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5 pt-0.5"
+                    className="text-xs text-[var(--text-muted)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5 min-h-[44px] py-2 px-3 touch-manipulation"
                   >
                     <Mail className="w-3.5 h-3.5" />
                     <span>Não está na ciranda? Entrar com outro e-mail</span>
@@ -462,7 +508,7 @@ export default function LoginPage() {
         {/* ETAPA 2: MODAL DE AUTENTICAÇÃO / PRIMEIRO ACESSO */}
         {/* ========================================================================= */}
         {step === 'login' && (
-          <div className="w-full flex flex-col bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-3xl border border-[var(--border-default)] shadow-[var(--shadow-card)] animate-in fade-in zoom-in-95 duration-200 space-y-5">
+          <div className="w-full flex flex-col bg-[var(--bg-elevated)] p-6 sm:p-8 rounded-3xl border border-[var(--border-default)] shadow-[var(--shadow-card)] animate-in fade-in zoom-in-95 duration-200 space-y-5 max-h-[94dvh] sm:max-h-none overflow-y-auto">
             
             {/* Botão Voltar para a Ciranda */}
             <button
@@ -473,7 +519,7 @@ export default function LoginPage() {
                 setSuccessMsg(null);
                 setAuthModeOverride(null);
               }}
-              className="self-start inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] font-semibold transition-colors cursor-pointer"
+              className="self-start inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] font-semibold transition-colors cursor-pointer min-h-[44px] py-2 px-2 -ml-2 touch-manipulation"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Voltar para a Ciranda</span>
@@ -506,12 +552,12 @@ export default function LoginPage() {
 
                 <div className="shrink-0 text-right">
                   {hasAccount ? (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[var(--color-success-soft)] text-[var(--color-success)] border border-[var(--color-success)]/30 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3" />
                       Conta Ativa
                     </span>
                   ) : (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/20">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/30">
                       1º Acesso
                     </span>
                   )}
@@ -568,7 +614,7 @@ export default function LoginPage() {
                     type="email"
                     value={email}
                     disabled
-                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-muted)] cursor-not-allowed font-mono-data"
+                    className="w-full px-3.5 py-2.5 rounded-xl text-base sm:text-sm bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-muted)] cursor-not-allowed font-mono-data"
                   />
                 </div>
 
@@ -592,7 +638,8 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full mt-2"
+                  size="lg"
+                  className="w-full mt-2 min-h-[48px] touch-manipulation"
                   disabled={loading}
                   icon={<KeyRound className="w-4 h-4" />}
                 >
@@ -607,7 +654,7 @@ export default function LoginPage() {
                       setAuthModeOverride('login');
                       setError(null);
                     }}
-                    className="text-xs text-[var(--color-primary)] hover:underline font-semibold cursor-pointer"
+                    className="text-xs text-[var(--color-primary)] hover:underline font-semibold cursor-pointer min-h-[44px] py-2 px-3 inline-flex items-center justify-center touch-manipulation"
                   >
                     Já criou sua senha antes? Fazer login com senha
                   </button>
@@ -635,7 +682,7 @@ export default function LoginPage() {
                       type="email"
                       value={email}
                       disabled
-                      className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-muted)] cursor-not-allowed font-mono-data"
+                      className="w-full px-3.5 py-2.5 rounded-xl text-base sm:text-sm bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-muted)] cursor-not-allowed font-mono-data"
                     />
                   </div>
                 )}
@@ -649,7 +696,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowForgotModal(true)}
-                      className="text-[11px] text-[var(--color-primary)] hover:underline font-semibold cursor-pointer"
+                      className="text-xs text-[var(--color-primary)] hover:underline font-semibold cursor-pointer min-h-[44px] py-1 px-2 inline-flex items-center touch-manipulation"
                     >
                       Esqueceu a senha?
                     </button>
@@ -666,7 +713,8 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full mt-2"
+                  size="lg"
+                  className="w-full mt-2 min-h-[48px] touch-manipulation"
                   disabled={loading}
                   icon={<KeyRound className="w-4 h-4" />}
                 >
@@ -682,7 +730,7 @@ export default function LoginPage() {
                         setAuthModeOverride('first_access');
                         setError(null);
                       }}
-                      className="text-xs text-[var(--text-muted)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer"
+                      className="text-xs text-[var(--text-muted)] hover:text-[var(--color-primary)] font-medium transition-colors cursor-pointer min-h-[44px] py-2 px-3 inline-flex items-center justify-center touch-manipulation"
                     >
                       Primeiro acesso no ELO? Crie sua senha aqui
                     </button>

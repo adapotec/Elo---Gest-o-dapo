@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { ShieldCheck, UserCheck } from 'lucide-react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { ShieldCheck, UserCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { EloLogo } from '@/components/ui/EloLogo';
 
 export interface VoluntarioItem {
@@ -20,17 +20,18 @@ interface VolunteerCarouselProps {
   voluntarios: VoluntarioItem[];
   selectedIndex: number;
   onSelectVoluntario: (voluntario: VoluntarioItem, index: number) => void;
+  isLastLogged?: boolean;
 }
 
 const CORES_PALETA = [
   '#F2632D', // Laranja Ádapo Principal
-  '#93368F', // Roxo Ádapo
   '#1C9C82', // Verde Ádapo
-  '#F9C859', // Amarelo Ádapo
-  '#3B82F6', // Azul
-  '#EF4444', // Vermelho
-  '#6D28D9', // Violeta
-  '#E85D04', // Âmbar
+  '#0D9488', // Teal Ádapo
+  '#D97706', // Âmbar Ádapo
+  '#2563EB', // Azul Institucional
+  '#E85D04', // Laranja Escuro Ádapo
+  '#059669', // Esmeralda Ádapo
+  '#B45309', // Ouro Queimado
 ];
 
 function getInitials(name: string): string {
@@ -49,20 +50,22 @@ export function VolunteerCarousel({
   voluntarios,
   selectedIndex,
   onSelectVoluntario,
+  isLastLogged = false,
 }: VolunteerCarouselProps) {
   const N = voluntarios.length;
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const touchStartX = useRef<number | null>(null);
 
   // ── Dimensões ampliadas e coordenadas matemáticas da Ciranda ──
   const CONTAINER_SIZE = 340;
   const CENTER = CONTAINER_SIZE / 2; // 170px
   const ORBIT_RADIUS = 125; // Raio da órbita expandido
-  const NODE_SIZE = 42; // Tamanho ampliado de cada bolinha na órbita (42x42px)
+  const NODE_SIZE = 42; // Tamanho de cada bolinha na órbita (42x42px)
   const NODE_HALF = NODE_SIZE / 2; // 21px
 
-  // Pré-carregamento imediato em background de todas as fotos
+  // Pré-carregamento suave em background das fotos
   useEffect(() => {
-    voluntarios.forEach((vol) => {
+    voluntarios.slice(0, 20).forEach((vol) => {
       if (vol.avatar_url) {
         const img = new Image();
         img.src = vol.avatar_url;
@@ -86,10 +89,32 @@ export function VolunteerCarousel({
     [N, voluntarios, onSelectVoluntario]
   );
 
+  // Suporte a gestos touch swipe para girar a ciranda com o polegar
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diffX = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(diffX) > 40) {
+      if (diffX > 0) {
+        handleSelect(selectedIndex - 1);
+      } else {
+        handleSelect(selectedIndex + 1);
+      }
+    }
+    touchStartX.current = null;
+  };
+
   if (N === 0) return null;
 
   return (
-    <div className="relative w-full flex flex-col items-center justify-center select-none pt-1 pb-1">
+    <div
+      className="relative w-full flex flex-col items-center justify-center select-none pt-1 pb-1"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* ── LOGO DO ELO + BRANDING INSTITUCIONAL (TOPO ELEGANTE E EQUILIBRADO) ── */}
       <div className="flex flex-col items-center justify-center text-center gap-1.5 mb-2 w-full">
         {/* Logo do Elo Ampliada */}
@@ -113,6 +138,30 @@ export function VolunteerCarousel({
         className="relative flex items-center justify-center shrink-0 my-2 scale-[0.85] xs:scale-[0.92] sm:scale-100 origin-center transition-transform"
         style={{ width: CONTAINER_SIZE, height: CONTAINER_SIZE }}
       >
+        {/* Controles de Navegação por Toque (Thumb Navigation 44x44px) */}
+        {N > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => handleSelect(selectedIndex - 1)}
+              className="absolute left-0 z-30 w-11 h-11 rounded-full bg-[var(--bg-elevated)]/90 backdrop-blur-xs border border-[var(--border-default)] shadow-md flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 transition-all cursor-pointer touch-manipulation active:scale-90"
+              title="Voluntário anterior"
+              aria-label="Voluntário anterior"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSelect(selectedIndex + 1)}
+              className="absolute right-0 z-30 w-11 h-11 rounded-full bg-[var(--bg-elevated)]/90 backdrop-blur-xs border border-[var(--border-default)] shadow-md flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 transition-all cursor-pointer touch-manipulation active:scale-90"
+              title="Próximo voluntário"
+              aria-label="Próximo voluntário"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+
         {/* Linha da Órbita Circular em SVG perfeitamente concêntrica */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
@@ -191,7 +240,7 @@ export function VolunteerCarousel({
               type="button"
               onClick={() => handleSelect(idx)}
               title={`${vol.nome_completo} (${vol.funcao || 'Voluntário'})`}
-              className={`absolute rounded-full transition-all duration-200 cursor-pointer flex items-center justify-center ${
+              className={`absolute rounded-full transition-all duration-200 cursor-pointer flex items-center justify-center touch-manipulation ${
                 isActive
                   ? 'z-30 ring-3 ring-[var(--color-primary)] ring-offset-2 ring-offset-[var(--bg-elevated)] scale-115 shadow-md'
                   : 'z-10 opacity-80 hover:opacity-100 hover:scale-110 hover:z-20 border border-[var(--border-strong)] bg-[var(--bg-secondary)] shadow-xs'
@@ -229,9 +278,15 @@ export function VolunteerCarousel({
 
       {/* ── DESTAQUE PRINCIPAL: NOME E FUNÇÃO DO PERFIL SELECIONADO ── */}
       <div className="text-center space-y-1.5 mt-2 max-w-[380px]">
-        <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)] leading-none">
-          Selecione o seu perfil na ciranda
-        </p>
+        {isLastLogged ? (
+          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-primary)]/30 animate-in fade-in">
+            <span>Último acesso neste aparelho</span>
+          </div>
+        ) : (
+          <p className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)] leading-none">
+            Selecione o seu perfil na ciranda
+          </p>
+        )}
 
         <h2 className="font-display font-extrabold text-xl sm:text-2xl text-[var(--text-primary)] leading-tight tracking-tight px-2">
           {activeVoluntario?.nome_completo || 'Voluntário'}
@@ -247,7 +302,7 @@ export function VolunteerCarousel({
               : activeVoluntario?.funcao || activeVoluntario?.area_atuacao || 'Equipe Ádapo'}
           </span>
           {activeVoluntario?.tipo === 'brincante' && (
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--color-warning-soft)] text-[var(--color-warning)] border border-[var(--color-warning)]/30">
               Período de Experiência
             </span>
           )}
