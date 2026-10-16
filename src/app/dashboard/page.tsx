@@ -197,6 +197,9 @@ export default function DashboardPage() {
   const [historicoSearchTerm, setHistoricoSearchTerm] = useState('');
   const [historicoFilterArea, setHistoricoFilterArea] = useState<string>('todas');
 
+  // Aba ativa na visualização Mobile (Elimina scroll infinito de 12 telas)
+  const [mobileTab, setMobileTab] = useState<'geral' | 'feed' | 'comunicacao'>('geral');
+
   // Copiar URL do Link
   const handleCopyLink = (url: string, id: string) => {
     navigator.clipboard.writeText(url);
@@ -297,6 +300,7 @@ export default function DashboardPage() {
           { count: countFichasMes },
           { count: countProjPlanejamento },
           { data: allBeneficiariosNasc },
+          { data: allVoluntariosNasc },
           { data: recentConteudos },
           { data: recentGaleria },
           { data: recentReunioes },
@@ -324,6 +328,7 @@ export default function DashboardPage() {
           supabase.from('acompanhamento_socioemocional').select('*', { count: 'exact', head: true }).eq('mes_referencia', mesAtualStr),
           supabase.from('projetos_sociais').select('*', { count: 'exact', head: true }).eq('status', 'planejamento'),
           supabase.from('beneficiarios').select('id, nome_completo, data_nascimento').not('data_nascimento', 'is', null).limit(200),
+          supabase.from('voluntarios').select('id, nome_completo, data_nascimento').not('data_nascimento', 'is', null).eq('status', 'ativo').limit(100),
           // 1. Conteúdos de Comunicação (peças, postagens e roteiros)
           supabase
             .from('conteudos_comunicacao')
@@ -405,20 +410,37 @@ export default function DashboardPage() {
 
         setProximasAtividades(acoesData || []);
 
-        // E. Processar Aniversariantes do Mês
+        // E. Processar Aniversariantes do Mês (Beneficiários + Voluntários)
         const anivList: AniversarianteItem[] = [];
 
         if (allBeneficiariosNasc) {
           allBeneficiariosNasc.forEach((b: any) => {
             if (b.data_nascimento) {
-              const [, mes, dia] = b.data_nascimento.split('-');
-              if (parseInt(mes, 10) === mesAtualInt) {
+              const parts = b.data_nascimento.split('-');
+              if (parts.length >= 3 && parseInt(parts[1], 10) === mesAtualInt) {
                 anivList.push({
                   id: 'b_' + b.id,
                   nome: b.nome_completo,
                   tipo: 'beneficiario',
-                  diaMes: `${dia}/${mes}`,
+                  diaMes: `${parts[2]}/${parts[1]}`,
                   dataNasc: b.data_nascimento,
+                });
+              }
+            }
+          });
+        }
+
+        if (allVoluntariosNasc) {
+          allVoluntariosNasc.forEach((v: any) => {
+            if (v.data_nascimento) {
+              const parts = v.data_nascimento.split('-');
+              if (parts.length >= 3 && parseInt(parts[1], 10) === mesAtualInt) {
+                anivList.push({
+                  id: 'v_' + v.id,
+                  nome: v.nome_completo,
+                  tipo: 'voluntario',
+                  diaMes: `${parts[2]}/${parts[1]}`,
+                  dataNasc: v.data_nascimento,
                 });
               }
             }
@@ -432,7 +454,7 @@ export default function DashboardPage() {
           return diaA - diaB;
         });
 
-        setAniversariantes(anivList.slice(0, 8));
+        setAniversariantes(anivList.slice(0, 10));
 
         // F. Processar Links Recentes de Comunicação & Drive
         const linksList: LinkComunicacaoItem[] = [];
@@ -730,6 +752,50 @@ export default function DashboardPage() {
     voluntario_externo: 'Voluntário(a) Externo',
   };
 
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col min-w-0 bg-[var(--bg-primary)]">
+        <Topbar
+          title="Painel Inicial"
+          subtitle="Carregando informações do Instituto Ádapo..."
+        />
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full animate-pulse">
+          {/* Banner Skeleton */}
+          <div className="h-32 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)]" />
+
+          {/* Alertas Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-16 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)]" />
+            ))}
+          </div>
+
+          {/* KPIs Skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-28 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)]" />
+            ))}
+          </div>
+
+          {/* Atalhos Skeleton */}
+          <div className="h-14 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)]" />
+
+          {/* Grid Principal Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="h-64 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)]" />
+              <div className="h-64 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)]" />
+            </div>
+            <div className="space-y-6">
+              <div className="h-64 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)]" />
+              <div className="h-64 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)]" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-[var(--bg-primary)]">
       {/* ── TOPBAR FIXA ── */}
@@ -797,13 +863,13 @@ export default function DashboardPage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* 2. TRILHO DE ALERTAS PRIORITÁRIOS (SOFT BENTO HORIZONTAL) */}
+        {/* 2. TRILHO DE ALERTAS PRIORITÁRIOS (HORIZONTAL CAROUSEL NO MOBILE / GRID NO DESKTOP) */}
         {/* ========================================================================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 overflow-x-auto pb-2 sm:pb-0 snap-x snap-mandatory scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
           {/* Alerta 1: Estoque Baixo */}
           <Link
             href="/dashboard/estoque"
-            className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+            className={`min-w-[260px] sm:min-w-0 sm:w-auto shrink-0 snap-center p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 min-h-[56px] touch-manipulation ${
               alertas.estoqueBaixoCount > 0
                 ? 'bg-amber-500/10 border-amber-500/30 text-amber-950 dark:text-amber-200 hover:bg-amber-500/15'
                 : 'bg-[var(--bg-elevated)] border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
@@ -826,10 +892,10 @@ export default function DashboardPage() {
           {/* Alerta 2: Projetos em Planejamento */}
           <Link
             href="/dashboard/projetos"
-            className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-all flex items-center justify-between gap-3"
+            className="min-w-[260px] sm:min-w-0 sm:w-auto shrink-0 snap-center p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-all flex items-center justify-between gap-3 min-h-[56px] touch-manipulation"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="p-2 rounded-xl bg-[#F7955F]/15 text-[#F2632D] shrink-0">
+              <div className="p-2 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] shrink-0">
                 <FolderKanban className="w-4 h-4" />
               </div>
               <div className="min-w-0">
@@ -845,10 +911,10 @@ export default function DashboardPage() {
           {/* Alerta 3: Acompanhamento Socioemocional */}
           <Link
             href="/dashboard/pedagogia"
-            className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-all flex items-center justify-between gap-3"
+            className="min-w-[260px] sm:min-w-0 sm:w-auto shrink-0 snap-center p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-all flex items-center justify-between gap-3 min-h-[56px] touch-manipulation"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="p-2 rounded-xl bg-[#93368F]/15 text-[#93368F] shrink-0">
+              <div className="p-2 rounded-xl bg-[var(--color-secondary-soft)] text-[var(--color-secondary)] shrink-0">
                 <Heart className="w-4 h-4" />
               </div>
               <div className="min-w-0">
@@ -862,7 +928,7 @@ export default function DashboardPage() {
           </Link>
 
           {/* Alerta 4: Status do Sistema */}
-          <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] flex items-center justify-between gap-3">
+          <div className="min-w-[260px] sm:min-w-0 sm:w-auto shrink-0 snap-center p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] flex items-center justify-between gap-3 min-h-[56px]">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
                 <CheckCircle2 className="w-4 h-4" />
@@ -885,11 +951,11 @@ export default function DashboardPage() {
           {/* KPI 1: Beneficiários Ativos */}
           <Link
             href="/dashboard/beneficiarios"
-            className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)] transition-all group space-y-2"
+            className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)] transition-all group space-y-2 min-h-[88px] touch-manipulation"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Beneficiários</span>
-              <div className="p-2 rounded-xl bg-[#93368F]/10 text-[#93368F] group-hover:scale-110 transition-transform">
+              <div className="p-2 rounded-xl bg-[var(--color-secondary-soft)] text-[var(--color-secondary)] group-hover:scale-110 transition-transform">
                 <Users className="w-5 h-5" />
               </div>
             </div>
@@ -907,11 +973,11 @@ export default function DashboardPage() {
           {/* KPI 2: Encontros Deste Mês */}
           <Link
             href="/dashboard/calendario"
-            className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)] transition-all group space-y-2"
+            className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)] transition-all group space-y-2 min-h-[88px] touch-manipulation"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Encontros no Mês</span>
-              <div className="p-2 rounded-xl bg-[#F2632D]/10 text-[#F2632D] group-hover:scale-110 transition-transform">
+              <div className="p-2 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] group-hover:scale-110 transition-transform">
                 <Calendar className="w-5 h-5" />
               </div>
             </div>
@@ -928,11 +994,11 @@ export default function DashboardPage() {
           {/* KPI 3: Projetos Sociais */}
           <Link
             href="/dashboard/projetos"
-            className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)] transition-all group space-y-2"
+            className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)] transition-all group space-y-2 min-h-[88px] touch-manipulation"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Projetos Ativos</span>
-              <div className="p-2 rounded-xl bg-[#F7955F]/15 text-[#F2632D] group-hover:scale-110 transition-transform">
+              <div className="p-2 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)] group-hover:scale-110 transition-transform">
                 <FolderKanban className="w-5 h-5" />
               </div>
             </div>
@@ -949,11 +1015,11 @@ export default function DashboardPage() {
           {/* KPI 4: Voluntários & Equipe */}
           <Link
             href="/dashboard/voluntarios"
-            className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)] transition-all group space-y-2"
+            className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)] transition-all group space-y-2 min-h-[88px] touch-manipulation"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Voluntários</span>
-              <div className="p-2 rounded-xl bg-[#1C9C82]/10 text-[#1C9C82] group-hover:scale-110 transition-transform">
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                 <HeartHandshake className="w-5 h-5" />
               </div>
             </div>
@@ -961,7 +1027,7 @@ export default function DashboardPage() {
               <p className="text-2xl sm:text-3xl font-bold font-mono-data text-[var(--text-primary)]">
                 {stats.voluntarios}
               </p>
-              <div className="flex items-center gap-1 text-[11px] text-[#1C9C82] font-medium">
+              <div className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                 <span>Equipe engajada</span>
               </div>
             </div>
@@ -971,45 +1037,45 @@ export default function DashboardPage() {
         {/* ========================================================================= */}
         {/* 4. ATALHOS RÁPIDOS DE 1 CLIQUE (FAST ACTIONS BAR) */}
         {/* ========================================================================= */}
-        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)]">
-          <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 sm:pb-0">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] shrink-0 px-2">
+        <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] overflow-hidden">
+          <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1 sm:pb-0 scrollbar-none -mx-2 px-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] shrink-0 px-2 hidden sm:inline-block">
               Atalhos Rápidos:
             </span>
 
             <div className="flex items-center gap-2 shrink-0">
               <Link href="/dashboard/beneficiarios/novo">
-                <Button size="sm" variant="secondary" icon={<Plus className="w-3.5 h-3.5 text-[#93368F]" />}>
+                <Button size="sm" variant="secondary" icon={<Plus className="w-3.5 h-3.5 text-[var(--color-secondary)]" />} className="min-h-[40px] touch-manipulation">
                   Nova Inscrição
                 </Button>
               </Link>
 
               <Link href="/dashboard/projetos">
-                <Button size="sm" variant="secondary" icon={<FolderKanban className="w-3.5 h-3.5 text-[#F2632D]" />}>
+                <Button size="sm" variant="secondary" icon={<FolderKanban className="w-3.5 h-3.5 text-[var(--color-primary)]" />} className="min-h-[40px] touch-manipulation">
                   Cadastrar Ação
                 </Button>
               </Link>
 
               <Link href="/dashboard/pedagogia">
-                <Button size="sm" variant="secondary" icon={<GraduationCap className="w-3.5 h-3.5 text-[#93368F]" />}>
+                <Button size="sm" variant="secondary" icon={<GraduationCap className="w-3.5 h-3.5 text-[var(--color-secondary)]" />} className="min-h-[40px] touch-manipulation">
                   Plano de Aula
                 </Button>
               </Link>
 
               <Link href="/dashboard/doacoes/nova">
-                <Button size="sm" variant="secondary" icon={<Gift className="w-3.5 h-3.5 text-[#1C9C82]" />}>
+                <Button size="sm" variant="secondary" icon={<Gift className="w-3.5 h-3.5 text-emerald-600" />} className="min-h-[40px] touch-manipulation">
                   Registrar Doação
                 </Button>
               </Link>
 
               <Link href="/dashboard/estoque/movimentacao/nova">
-                <Button size="sm" variant="secondary" icon={<Package className="w-3.5 h-3.5 text-[#8B4A2E]" />}>
+                <Button size="sm" variant="secondary" icon={<Package className="w-3.5 h-3.5 text-amber-600" />} className="min-h-[40px] touch-manipulation">
                   Movimentar Estoque
                 </Button>
               </Link>
 
               <Link href="/dashboard/calendario">
-                <Button size="sm" variant="secondary" icon={<Calendar className="w-3.5 h-3.5 text-[#E85D04]" />}>
+                <Button size="sm" variant="secondary" icon={<Calendar className="w-3.5 h-3.5 text-[var(--color-primary)]" />} className="min-h-[40px] touch-manipulation">
                   Calendário
                 </Button>
               </Link>
@@ -1018,13 +1084,62 @@ export default function DashboardPage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* 5. GRID PRINCIPAL: CRONOGRAMA & FEED (ESQUERDA) VS ANIVERSARIANTES & DRIVE (DIREITA) */}
+        {/* 5. SELETOR DE ABAS MOBILE (ELIMINA O SCROLL INFINITO NO SMARTPHONE) */}
+        {/* ========================================================================= */}
+        <div className="lg:hidden">
+          <div className="flex items-center p-1 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-default)] shadow-xs">
+            <button
+              type="button"
+              onClick={() => setMobileTab('geral')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all min-h-[44px] touch-manipulation cursor-pointer ${
+                mobileTab === 'geral'
+                  ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-xs border border-[var(--border-default)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <Calendar className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
+              <span>Geral</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMobileTab('feed')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all min-h-[44px] touch-manipulation cursor-pointer ${
+                mobileTab === 'feed'
+                  ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-xs border border-[var(--border-default)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <Activity className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>Feed</span>
+              {historicoRecente.length > 0 && (
+                <span className="w-2 h-2 rounded-full bg-[var(--color-primary)] shrink-0" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMobileTab('comunicacao')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all min-h-[44px] touch-manipulation cursor-pointer ${
+                mobileTab === 'comunicacao'
+                  ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-xs border border-[var(--border-default)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <FolderOpen className="w-4 h-4 text-blue-500 shrink-0" />
+              <span>Acervo</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 6. GRID PRINCIPAL: CRONOGRAMA & FEED (ESQUERDA) VS ANIVERSARIANTES & DRIVE (DIREITA) */}
         {/* ========================================================================= */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* ── COLUNA ESQUERDA (2/3): PRÓXIMAS AÇÕES & FEED DE AUDITORIA ── */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className={`lg:col-span-2 space-y-6 ${mobileTab === 'comunicacao' ? 'hidden lg:block' : ''}`}>
             {/* Bloco 1: Próximas Ações do Cronograma (Próximos 7 dias) */}
-            <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+            <div className={`p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4 ${mobileTab !== 'geral' ? 'hidden lg:block' : ''}`}>
               <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-xl bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
@@ -1128,10 +1243,10 @@ export default function DashboardPage() {
             </div>
 
             {/* Bloco 2: Logs de Últimas Movimentações no Sistema (Feed em Tempo Real) */}
-            <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+            <div className={`p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4 ${mobileTab !== 'feed' ? 'hidden lg:block' : ''}`}>
               <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="p-2 rounded-xl bg-[#1C9C82]/10 text-[#1C9C82] shrink-0">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
                     <Activity className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
@@ -1145,7 +1260,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowHistoricoModal(true)}
-                  className="text-xs font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-1 shrink-0 cursor-pointer"
+                  className="text-xs font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-1 shrink-0 cursor-pointer min-h-[44px] touch-manipulation"
                   title="Abrir histórico completo de auditoria"
                 >
                   <span>Histórico Completo</span>
@@ -1165,7 +1280,7 @@ export default function DashboardPage() {
                       <Link
                         key={item.id || idx}
                         href={item.href || '#'}
-                        className="p-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 hover:bg-[var(--bg-secondary)] hover:border-[var(--border-hover)] transition-all flex items-center justify-between gap-3 group"
+                        className="p-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 hover:bg-[var(--bg-secondary)] hover:border-[var(--border-hover)] transition-all flex items-center justify-between gap-3 group min-h-[52px] touch-manipulation"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div
@@ -1209,9 +1324,9 @@ export default function DashboardPage() {
           </div>
 
           {/* ── COLUNA DIREITA (1/3): ANIVERSARIANTES & PASTAS GOOGLE DRIVE ── */}
-          <div className="space-y-6">
+          <div className={`space-y-6 ${mobileTab === 'feed' ? 'hidden lg:block' : ''}`}>
             {/* Card 1: Aniversariantes do Mês (Acolhimento Comunitário) */}
-            <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+            <div className={`p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4 ${mobileTab !== 'geral' ? 'hidden lg:block' : ''}`}>
               <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400">
@@ -1221,7 +1336,7 @@ export default function DashboardPage() {
                     <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
                       Aniversariantes do Mês
                     </h3>
-                    <p className="text-[11px] text-[var(--text-muted)]">Crianças celebrando a vida</p>
+                    <p className="text-[11px] text-[var(--text-muted)]">Beneficiários e voluntários celebrando a vida</p>
                   </div>
                 </div>
               </div>
@@ -1248,7 +1363,7 @@ export default function DashboardPage() {
                           <p className="text-xs font-bold text-[var(--text-primary)] truncate">
                             {aniv.nome}
                           </p>
-                          <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-semibold ${aniv.tipo === 'voluntario' ? 'bg-[#F2632D]/10 text-[#F2632D]' : 'bg-[#93368F]/10 text-[#93368F]'}`}>
+                          <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold ${aniv.tipo === 'voluntario' ? 'bg-[var(--color-primary-soft)] text-[var(--color-primary)]' : 'bg-[var(--color-secondary-soft)] text-[var(--color-secondary)]'}`}>
                             {aniv.tipo === 'voluntario' ? 'Voluntário' : 'Beneficiário'}
                           </span>
                         </div>
@@ -1266,7 +1381,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Card 2: Galeria & Pastas no Google Drive do Ádapo (Links de /comunicação) */}
-            <div className="p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4">
+            <div className={`p-6 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-4 ${mobileTab !== 'comunicacao' ? 'hidden lg:block' : ''}`}>
               <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
@@ -1453,11 +1568,11 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 6. MODAL FLUTUANTE: ACERVO DIGITAL & LINKS DA COMUNICAÇÃO */}
+      {/* 7. MODAL FLUTUANTE: ACERVO DIGITAL & LINKS DA COMUNICAÇÃO */}
       {/* ========================================================================= */}
       {showLinksModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-3xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full sm:max-w-2xl bg-[var(--bg-elevated)] border-t sm:border border-[var(--border-default)] rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 sm:p-6 space-y-4 animate-in slide-in-from-bottom sm:zoom-in-95 duration-150 max-h-[90vh] sm:max-h-[85vh] flex flex-col">
             {/* Cabeçalho */}
             <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4 shrink-0">
               <div className="flex items-center gap-3 min-w-0">
@@ -1477,7 +1592,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setShowLinksModal(false)}
-                className="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer shrink-0"
+                className="p-2.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1492,7 +1607,7 @@ export default function DashboardPage() {
                   placeholder="Pesquisar por título, projeto ou tipo..."
                   value={linksSearchTerm}
                   onChange={(e) => setLinksSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl text-base sm:text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
                 />
               </div>
 
@@ -1509,7 +1624,7 @@ export default function DashboardPage() {
                     key={tab.id}
                     type="button"
                     onClick={() => setLinksFilterTab(tab.id)}
-                    className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap min-h-[36px] touch-manipulation ${
                       linksFilterTab === tab.id
                         ? 'bg-[var(--color-primary)] text-white shadow-xs'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)]'
@@ -1577,7 +1692,7 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => handleCopyLink(item.url, item.id)}
-                        className="px-2.5 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-xs font-bold flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-xs font-bold flex items-center gap-1 cursor-pointer min-h-[40px] touch-manipulation"
                         title="Copiar URL do link"
                       >
                         {copiedLinkId === item.id ? (
@@ -1597,7 +1712,7 @@ export default function DashboardPage() {
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors text-xs font-bold flex items-center gap-1 cursor-pointer shadow-xs"
+                        className="px-3 py-1.5 rounded-xl bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors text-xs font-bold flex items-center gap-1 cursor-pointer shadow-xs min-h-[40px] touch-manipulation"
                       >
                         <span>Abrir</span>
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -1613,7 +1728,7 @@ export default function DashboardPage() {
               <Link
                 href="/dashboard/comunicacao/gestao?tab=galeria"
                 onClick={() => setShowLinksModal(false)}
-                className="text-xs font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-[var(--color-primary)] hover:underline flex items-center gap-1 min-h-[44px] flex items-center touch-manipulation"
               >
                 <span>Ir para Galeria & Drive em Comunicação</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -1623,6 +1738,7 @@ export default function DashboardPage() {
                 variant="secondary"
                 size="sm"
                 onClick={() => setShowLinksModal(false)}
+                className="min-h-[44px] touch-manipulation"
               >
                 Fechar
               </Button>
@@ -1632,15 +1748,15 @@ export default function DashboardPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 7. MODAL FLUTUANTE: HISTÓRICO COMPLETO DE MOVIMENTAÇÕES NO SISTEMA */}
+      {/* 8. MODAL FLUTUANTE: HISTÓRICO COMPLETO DE MOVIMENTAÇÕES NO SISTEMA */}
       {/* ========================================================================= */}
       {showHistoricoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-2xl bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-3xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full sm:max-w-2xl bg-[var(--bg-elevated)] border-t sm:border border-[var(--border-default)] rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 sm:p-6 space-y-4 animate-in slide-in-from-bottom sm:zoom-in-95 duration-150 max-h-[90vh] sm:max-h-[85vh] flex flex-col">
             {/* Cabeçalho */}
             <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4 shrink-0">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-2xl bg-[#1C9C82]/10 text-[#1C9C82] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <Activity className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
@@ -1656,7 +1772,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setShowHistoricoModal(false)}
-                className="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer shrink-0"
+                className="p-2.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1671,7 +1787,7 @@ export default function DashboardPage() {
                   placeholder="Buscar ação, pessoa, projeto ou descrição..."
                   value={historicoSearchTerm}
                   onChange={(e) => setHistoricoSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-xl text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl text-base sm:text-xs bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--color-primary)]"
                 />
               </div>
 
@@ -1690,7 +1806,7 @@ export default function DashboardPage() {
                     key={area.id}
                     type="button"
                     onClick={() => setHistoricoFilterArea(area.id)}
-                    className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer whitespace-nowrap min-h-[36px] touch-manipulation ${
                       historicoFilterArea === area.id
                         ? 'bg-[var(--color-primary)] text-white shadow-xs'
                         : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)]'
@@ -1719,7 +1835,7 @@ export default function DashboardPage() {
                       key={item.id}
                       href={item.href}
                       onClick={() => setShowHistoricoModal(false)}
-                      className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 hover:bg-[var(--bg-secondary)] transition-all flex items-center justify-between gap-3 group"
+                      className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-secondary)]/30 hover:bg-[var(--bg-secondary)] transition-all flex items-center justify-between gap-3 group min-h-[52px] touch-manipulation"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
@@ -1770,6 +1886,7 @@ export default function DashboardPage() {
                 variant="secondary"
                 size="sm"
                 onClick={() => setShowHistoricoModal(false)}
+                className="min-h-[44px] touch-manipulation"
               >
                 Fechar
               </Button>
