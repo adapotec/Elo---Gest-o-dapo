@@ -30,6 +30,8 @@ import {
   Filter,
   Plus,
   Save,
+  List,
+  LayoutGrid,
 } from 'lucide-react';
 import { Voluntario } from './VoluntariosEquipe';
 
@@ -119,6 +121,10 @@ export function VoluntariosRecesso({
   const [activeSubTab, setActiveSubTab] = useState<'calendario' | 'solicitar' | 'aprovacoes'>(getInitialTab);
   const [selectedDayModal, setSelectedDayModal] = useState<number | null>(null);
   const [showRegrasInfo, setShowRegrasInfo] = useState(false);
+
+  // Alternador Móvel de Calendário (Opção A)
+  const [mobileCalView, setMobileCalView] = useState<'agenda' | 'grade'>('agenda');
+  const [agendaFiltro, setAgendaFiltro] = useState<'todos' | 'com_folgas' | 'fins_de_semana'>('todos');
 
   // Formulário de Solicitação
   const [tipoSol, setTipoSol] = useState<'folga_individual' | 'recesso_15_dias'>('folga_individual');
@@ -236,15 +242,34 @@ export function VoluntariosRecesso({
     return map;
   }, [recessos, currentMonth, currentYear]);
 
+  // Total de dias do mês atual
+  const daysInMonth = useMemo(() => new Date(currentYear, currentMonth + 1, 0).getDate(), [currentYear, currentMonth]);
+
   // Lista de dias para o grid do calendário
   const calendarDays = useMemo(() => {
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const days: (number | null)[] = [];
     for (let i = 0; i < firstDayOfMonth; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) days.push(i);
     return days;
-  }, [currentYear, currentMonth]);
+  }, [currentYear, currentMonth, daysInMonth]);
+
+  // Lista de dias para a Agenda Móvel de Folgas (Opção A)
+  const agendaDays = useMemo(() => {
+    const list: number[] = [];
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dayOfWeek = new Date(currentYear, currentMonth, i).getDay();
+      const hasFolgas = (recessosAprovadosByDay[i] || []).length > 0;
+      const isPrimeiroDom = diaFamiliaAtivo && i === primeiroDomingo;
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+      if (agendaFiltro === 'com_folgas' && !hasFolgas && !isPrimeiroDom) continue;
+      if (agendaFiltro === 'fins_de_semana' && !isWeekend) continue;
+
+      list.push(i);
+    }
+    return list;
+  }, [currentYear, currentMonth, daysInMonth, agendaFiltro, recessosAprovadosByDay, diaFamiliaAtivo, primeiroDomingo]);
 
   // Estatísticas
   const totalVoluntariosAtivos = voluntarios.length;
@@ -707,107 +732,304 @@ export function VoluntariosRecesso({
       {/* SUB-ABA 1: CALENDÁRIO MENSAL (APENAS APROVADAS SÃO EXIBIDAS) */}
       {/* ========================================================================= */}
       {activeSubTab === 'calendario' && (
-        <Card className="p-4 sm:p-5 overflow-x-auto space-y-3">
-          {/* Legenda Compacta */}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pb-2 border-b border-[var(--border-default)]">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-[var(--color-primary)]" />
-                <span className="text-[var(--text-primary)] font-medium">1º Dom: Dia da Família</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-sky-500" />
-                <span className="text-[var(--text-primary)] font-medium">Último FDS: Ações Externas</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-emerald-500" />
-                <span className="text-[var(--text-primary)] font-medium">Folgas / Recessos Aprovados</span>
-              </div>
+        <div className="space-y-4">
+          {/* Alternador Mobile (sm:hidden) */}
+          <div className="flex sm:hidden items-center justify-between p-1.5 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-xl">
+            <span className="text-xs font-bold text-[var(--text-muted)] pl-2">Visualização Móvel:</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setMobileCalView('agenda')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold min-h-[38px] transition-all cursor-pointer ${
+                  mobileCalView === 'agenda'
+                    ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
+                    : 'text-[var(--text-muted)]'
+                }`}
+              >
+                <List className="w-4 h-4" />
+                <span>Agenda</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileCalView('grade')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold min-h-[38px] transition-all cursor-pointer ${
+                  mobileCalView === 'grade'
+                    ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs'
+                    : 'text-[var(--text-muted)]'
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span>Grade</span>
+              </button>
             </div>
-            <span className="text-[10px] text-[var(--text-muted)] italic">
-              Clique em qualquer dia para ver a escala detalhada
-            </span>
           </div>
 
-          <div className="min-w-[650px]">
-            {/* Cabeçalho dos Dias da Semana */}
-            <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[11px] font-bold text-[var(--text-muted)] uppercase">
-              {DIAS_SEMANA.map((d, i) => (
-                <div key={d} className={i === 0 ? 'text-rose-500' : ''}>
-                  {d}
-                </div>
-              ))}
-            </div>
+          {/* Modo Agenda Móvel (sm:hidden quando 'agenda') */}
+          {mobileCalView === 'agenda' && (
+            <div className="block sm:hidden space-y-3">
+              {/* Filtros da Agenda Mobile */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => setAgendaFiltro('todos')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 min-h-[38px] cursor-pointer transition-colors ${
+                    agendaFiltro === 'todos'
+                      ? 'bg-[var(--color-primary)] text-white'
+                      : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)]'
+                  }`}
+                >
+                  Todos os Dias ({daysInMonth})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAgendaFiltro('com_folgas')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 min-h-[38px] cursor-pointer transition-colors ${
+                    agendaFiltro === 'com_folgas'
+                      ? 'bg-[var(--color-primary)] text-white'
+                      : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)]'
+                  }`}
+                >
+                  Com Folgas / Recessos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAgendaFiltro('fins_de_semana')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 min-h-[38px] cursor-pointer transition-colors ${
+                    agendaFiltro === 'fins_de_semana'
+                      ? 'bg-[var(--color-primary)] text-white'
+                      : 'bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)]'
+                  }`}
+                >
+                  Fins de Semana
+                </button>
+              </div>
 
-            {/* Grid de Dias */}
-            <div className="grid grid-cols-7 gap-2">
-              {calendarDays.map((day, idx) => {
-                if (day === null) {
-                  return <div key={`empty-${idx}`} className="h-24 rounded-xl bg-[var(--bg-secondary)]/20" />;
-                }
+              {/* Lista de Cartões Diários da Agenda */}
+              <div className="space-y-2.5">
+                {agendaDays.map((day) => {
+                  const dateObj = new Date(currentYear, currentMonth, day);
+                  const dayOfWeek = dateObj.getDay();
+                  const isPrimeiroDom = diaFamiliaAtivo && day === primeiroDomingo;
+                  const isUltimoFds = ultimoFdsDates.includes(day);
+                  const recessosDoDia = recessosAprovadosByDay[day] || [];
 
-                const isPrimeiroDom = diaFamiliaAtivo && day === primeiroDomingo;
-                const isUltimoFds = ultimoFdsDates.includes(day);
-                const recessosDoDia = recessosAprovadosByDay[day] || [];
+                  return (
+                    <div
+                      key={`agenda-day-${day}`}
+                      className={`p-3.5 rounded-2xl border transition-all ${
+                        isPrimeiroDom
+                          ? 'border-[var(--color-primary)]/40 bg-[var(--color-primary-soft)]/20'
+                          : recessosDoDia.length > 0
+                          ? 'border-emerald-500/30 bg-emerald-500/5'
+                          : isUltimoFds
+                          ? 'border-sky-500/30 bg-sky-500/5'
+                          : 'border-[var(--border-default)] bg-[var(--bg-elevated)]'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
+                          {/* Bloco de Data */}
+                          <div
+                            className={`w-12 h-12 rounded-xl border flex flex-col items-center justify-center shrink-0 ${
+                              dayOfWeek === 0
+                                ? 'border-rose-400/40 bg-rose-500/10 text-rose-600'
+                                : 'border-[var(--border-default)] bg-[var(--bg-secondary)] text-[var(--text-primary)]'
+                            }`}
+                          >
+                            <span className="text-[10px] font-bold uppercase leading-none">
+                              {DIAS_SEMANA[dayOfWeek]}
+                            </span>
+                            <span className="text-lg font-display font-extrabold leading-none mt-0.5">
+                              {day}
+                            </span>
+                          </div>
 
-                return (
-                  <div
-                    key={`day-${day}`}
-                    onClick={() => setSelectedDayModal(day)}
-                    className={`h-24 p-2 rounded-xl border flex flex-col justify-between transition-all cursor-pointer hover:shadow-xs ${
-                      isPrimeiroDom
-                        ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/25'
-                        : isUltimoFds
-                        ? 'border-sky-500/30 bg-sky-500/5'
-                        : 'border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={`text-xs font-bold ${isPrimeiroDom ? 'text-[var(--color-primary)]' : isUltimoFds ? 'text-sky-600 dark:text-sky-400' : 'text-[var(--text-primary)]'}`}>
-                        {day}
-                      </span>
-                      {isPrimeiroDom && (
-                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--color-primary)] text-white shadow-2xs">
-                          Família
-                        </span>
-                      )}
-                      {isUltimoFds && !isPrimeiroDom && (
-                        <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20">
-                          Externo
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="space-y-1 overflow-hidden">
-                      {recessosDoDia.slice(0, 2).map((r) => (
-                        <div
-                          key={r.id}
-                          className={`text-[9px] truncate px-1.5 py-0.5 rounded font-medium flex items-center gap-1 ${
-                            r.tipo === 'recesso_15_dias'
-                              ? 'bg-amber-500/15 text-amber-900 dark:text-amber-200 border border-amber-500/20'
-                              : 'bg-emerald-500/15 text-emerald-900 dark:text-emerald-200 border border-emerald-500/20'
-                          }`}
-                        >
-                          {r.tipo === 'recesso_15_dias' ? (
-                            <Umbrella className="w-2.5 h-2.5 shrink-0 text-amber-600" />
-                          ) : (
-                            <Coffee className="w-2.5 h-2.5 shrink-0 text-emerald-600" />
-                          )}
-                          <span className="truncate">{r.voluntarios?.nome_completo?.split(' ')[0] || 'Voluntário'}</span>
+                          {/* Detalhes do Dia */}
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {isPrimeiroDom && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--color-primary)] text-white shadow-2xs">
+                                  1º Dom: Família
+                                </span>
+                              )}
+                              {isUltimoFds && !isPrimeiroDom && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20">
+                                  Último FDS: Externo
+                                </span>
+                              )}
+                              <span className="text-xs font-semibold text-[var(--text-primary)]">
+                                {recessosDoDia.length === 0
+                                  ? isPrimeiroDom
+                                    ? 'Folga Geral da Equipe'
+                                    : 'Sem folgas programadas'
+                                  : `${recessosDoDia.length} voluntário(s) de folga`}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      ))}
-                      {recessosDoDia.length > 2 && (
-                        <span className="text-[8px] text-[var(--text-muted)] font-bold block pl-1">
-                          +{recessosDoDia.length - 2} escalas
-                        </span>
+
+                        {/* Botão Tátil 44px para Detalhes */}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setSelectedDayModal(day)}
+                          className="min-h-[44px] px-3.5 text-xs font-bold shrink-0 cursor-pointer"
+                        >
+                          Ver Detalhes
+                        </Button>
+                      </div>
+
+                      {/* Lista de Voluntários de Folga no Dia */}
+                      {recessosDoDia.length > 0 && (
+                        <div className="mt-3 pt-2.5 border-t border-[var(--border-default)]/60 space-y-1.5">
+                          {recessosDoDia.map((r) => (
+                            <div
+                              key={r.id}
+                              className="p-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] flex items-center justify-between text-xs"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                {r.tipo === 'recesso_15_dias' ? (
+                                  <Umbrella className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                ) : (
+                                  <Coffee className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                )}
+                                <span className="font-semibold text-[var(--text-primary)] truncate">
+                                  {r.voluntarios?.nome_completo || 'Voluntário'}
+                                </span>
+                              </div>
+                              <span
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${
+                                  r.tipo === 'recesso_15_dias'
+                                    ? 'bg-amber-500/15 text-amber-800 dark:text-amber-200'
+                                    : 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200'
+                                }`}
+                              >
+                                {r.tipo === 'recesso_15_dias' ? 'Recesso 15 Dias' : '2ª Folga'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
+          )}
+
+          {/* Grade Mensal de Dias (Desktop e Opção Mobile 'grade') */}
+          <div className={mobileCalView === 'grade' ? 'block' : 'hidden sm:block'}>
+            <Card className="p-4 sm:p-5 overflow-x-auto space-y-3">
+              {/* Legenda Compacta */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] pb-2 border-b border-[var(--border-default)]">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded bg-[var(--color-primary)]" />
+                    <span className="text-[var(--text-primary)] font-medium">1º Dom: Dia da Família</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded bg-sky-500" />
+                    <span className="text-[var(--text-primary)] font-medium">Último FDS: Ações Externas</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded bg-emerald-500" />
+                    <span className="text-[var(--text-primary)] font-medium">Folgas / Recessos Aprovados</span>
+                  </div>
+                </div>
+                <span className="text-[10px] text-[var(--text-muted)] italic">
+                  Clique em qualquer dia para ver a escala detalhada
+                </span>
+              </div>
+
+              <div className="min-w-[650px]">
+                {/* Cabeçalho dos Dias da Semana */}
+                <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[11px] font-bold text-[var(--text-muted)] uppercase">
+                  {DIAS_SEMANA.map((d, i) => (
+                    <div key={d} className={i === 0 ? 'text-rose-500 font-bold' : ''}>
+                      {d}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Grid de Dias */}
+                <div className="grid grid-cols-7 gap-2">
+                  {calendarDays.map((day, idx) => {
+                    if (day === null) {
+                      return <div key={`empty-${idx}`} className="h-24 rounded-xl bg-[var(--bg-secondary)]/20" />;
+                    }
+
+                    const isPrimeiroDom = diaFamiliaAtivo && day === primeiroDomingo;
+                    const isUltimoFds = ultimoFdsDates.includes(day);
+                    const recessosDoDia = recessosAprovadosByDay[day] || [];
+
+                    return (
+                      <div
+                        key={`day-${day}`}
+                        onClick={() => setSelectedDayModal(day)}
+                        className={`h-24 p-2 rounded-xl border flex flex-col justify-between transition-all cursor-pointer hover:shadow-xs ${
+                          isPrimeiroDom
+                            ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/25'
+                            : isUltimoFds
+                            ? 'border-sky-500/30 bg-sky-500/5'
+                            : 'border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`text-xs font-bold ${
+                              isPrimeiroDom
+                                ? 'text-[var(--color-primary)]'
+                                : isUltimoFds
+                                ? 'text-sky-600 dark:text-sky-400'
+                                : 'text-[var(--text-primary)]'
+                            }`}
+                          >
+                            {day}
+                          </span>
+                          {isPrimeiroDom && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[var(--color-primary)] text-white shadow-2xs">
+                              Família
+                            </span>
+                          )}
+                          {isUltimoFds && !isPrimeiroDom && (
+                            <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20">
+                              Externo
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="space-y-1 overflow-hidden">
+                          {recessosDoDia.slice(0, 2).map((r) => (
+                            <div
+                              key={r.id}
+                              className={`text-[9px] truncate px-1.5 py-0.5 rounded font-medium flex items-center gap-1 ${
+                                r.tipo === 'recesso_15_dias'
+                                  ? 'bg-amber-500/15 text-amber-900 dark:text-amber-200 border border-amber-500/20'
+                                  : 'bg-emerald-500/15 text-emerald-900 dark:text-emerald-200 border border-emerald-500/20'
+                              }`}
+                            >
+                              {r.tipo === 'recesso_15_dias' ? (
+                                <Umbrella className="w-2.5 h-2.5 shrink-0 text-amber-600" />
+                              ) : (
+                                <Coffee className="w-2.5 h-2.5 shrink-0 text-emerald-600" />
+                              )}
+                              <span className="truncate">{r.voluntarios?.nome_completo?.split(' ')[0] || 'Voluntário'}</span>
+                            </div>
+                          ))}
+                          {recessosDoDia.length > 2 && (
+                            <span className="text-[8px] text-[var(--text-muted)] font-bold block pl-1">
+                              +{recessosDoDia.length - 2} escalas
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </Card>
           </div>
-        </Card>
+        </div>
       )}
 
       {/* ========================================================================= */}

@@ -61,7 +61,7 @@ const navigationItems: MenuItem[] = [
     children: [
       { name: 'Lista de Voluntários', href: '/dashboard/voluntarios', icon: Users, color: '#F2632D' },
       { name: 'Saúde & Emergência', href: '/dashboard/voluntarios/saude', icon: Heart, color: '#EF4444' },
-      { name: 'Escalas & Recessos', href: '/dashboard/voluntarios/escalas', icon: Calendar, color: '#93368F' },
+      { name: 'Escalas & Recessos', href: '/dashboard/voluntarios/escalas', icon: Calendar, color: '#1C9C82' },
       { name: 'Gestão de Pessoas', href: '/dashboard/voluntarios/gestao', icon: ShieldCheck, color: '#1C9C82' },
     ],
   },
