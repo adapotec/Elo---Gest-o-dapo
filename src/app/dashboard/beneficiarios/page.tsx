@@ -454,7 +454,7 @@ export default function BeneficiariosPage() {
               <p className="font-semibold text-xs text-[var(--text-primary)] truncate">{item.nome_completo}</p>
               {genero && (
                 <p className="text-[10px] text-[var(--text-muted)] font-medium">
-                  {genero === 'Masculino' || genero === 'M' ? '👦 Menino' : '👧 Menina'}
+                  {genero === 'Masculino' || genero === 'M' ? 'Menino' : 'Menina'}
                 </p>
               )}
             </div>
