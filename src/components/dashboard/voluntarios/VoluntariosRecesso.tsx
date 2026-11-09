@@ -146,6 +146,15 @@ export function VoluntariosRecesso({
   const [editMotivo, setEditMotivo] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Toast Notification Acessível
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   useEffect(() => {
     loadData();
   }, [currentMonth, currentYear]);
@@ -257,7 +266,7 @@ export function VoluntariosRecesso({
       const newValue = !diaFamiliaAtivo;
 
       if (!newValue && !adminMotivo.trim()) {
-        alert('Por favor, informe o motivo formal da desativação do Dia da Família.');
+        showToast('Por favor, informe o motivo formal da desativação do Dia da Família.', 'error');
         setAdminSaving(false);
         return;
       }
@@ -282,8 +291,10 @@ export function VoluntariosRecesso({
 
       await loadData();
       setAdminMotivo('');
-    } catch (err) {
+      showToast(newValue ? 'Dia da Família reativado com sucesso!' : 'Dia da Família desativado temporariamente.');
+    } catch (err: any) {
       console.error('Erro ao alterar Dia da Família:', err);
+      showToast('Erro ao atualizar configuração: ' + err.message, 'error');
     } finally {
       setAdminSaving(false);
     }
@@ -333,17 +344,20 @@ export function VoluntariosRecesso({
 
       if (insertErr) throw insertErr;
 
-      setSolSuccess(
+      const successMsg =
         tipoSol === 'recesso_15_dias'
           ? 'Solicitação de Recesso de 15 dias enviada com sucesso! Aguardando aprovação da Diretoria.'
-          : 'Solicitação de 2ª Folga Mensal enviada com sucesso! Aguardando aprovação da Diretoria.'
-      );
+          : 'Solicitação de 2ª Folga Mensal enviada com sucesso! Aguardando aprovação da Diretoria.';
+
+      setSolSuccess(successMsg);
+      showToast(successMsg, 'success');
       setSolVoluntarioId('');
       setSolDataInicio('');
       setSolMotivo('');
       await loadData();
     } catch (err: any) {
       setSolError(err.message || 'Erro ao registrar solicitação.');
+      showToast(err.message || 'Erro ao registrar solicitação.', 'error');
     } finally {
       setSolSubmitting(false);
     }
@@ -362,9 +376,10 @@ export function VoluntariosRecesso({
         .eq('id', id);
 
       if (error) throw error;
+      showToast('Solicitação aprovada com sucesso!', 'success');
       await loadData();
     } catch (err: any) {
-      alert('Erro ao aprovar solicitação: ' + err.message);
+      showToast('Erro ao aprovar solicitação: ' + err.message, 'error');
     } finally {
       setProcessingId(null);
     }
@@ -384,11 +399,12 @@ export function VoluntariosRecesso({
         .eq('id', recusaModalId);
 
       if (error) throw error;
+      showToast('Solicitação recusada com sucesso.');
       setRecusaModalId(null);
       setMotivoRecusaTexto('');
       await loadData();
     } catch (err: any) {
-      alert('Erro ao recusar solicitação: ' + err.message);
+      showToast('Erro ao recusar solicitação: ' + err.message, 'error');
     } finally {
       setProcessingId(null);
     }
@@ -440,24 +456,28 @@ export function VoluntariosRecesso({
       if (error) throw error;
 
       setEditingRecord(null);
+      showToast('Alterações salvas com sucesso!', 'success');
       await loadData();
     } catch (err: any) {
-      alert('Erro ao salvar alteração: ' + err.message);
+      showToast('Erro ao salvar alteração: ' + err.message, 'error');
     } finally {
       setSavingEdit(false);
     }
   };
 
-  // Excluir Registro (Diretoria)
-  const handleDeleteRecord = async (id: string) => {
-    if (!window.confirm('Tem certeza de que deseja remover este registro de folga/recesso?')) return;
+  // Excluir Registro (Diretoria via Modal in-app)
+  const handleConfirmarExclusao = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
     setProcessingId(id);
     try {
       const { error } = await supabase.from('recessos_voluntarios').delete().eq('id', id);
       if (error) throw error;
+      setDeleteConfirmId(null);
+      showToast('Registro de folga/recesso excluído com sucesso.');
       await loadData();
     } catch (err: any) {
-      alert('Erro ao excluir: ' + err.message);
+      showToast('Erro ao excluir: ' + err.message, 'error');
     } finally {
       setProcessingId(null);
     }
@@ -471,6 +491,26 @@ export function VoluntariosRecesso({
 
   return (
     <div className="space-y-5">
+      {/* Toast Notification Acessível */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-5 right-5 z-50 animate-in slide-in-from-bottom-3 duration-200"
+        >
+          <div
+            className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold border ${
+              toast.type === 'success'
+                ? 'bg-[var(--bg-elevated)] border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                : 'bg-[var(--bg-elevated)] border-rose-500 text-rose-600 dark:text-rose-400'
+            }`}
+          >
+            {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
+            <span>{toast.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* ── 1. MICRO-KPIS COMPACTOS DE RECESSOS & FOLGAS ── */}
       <div className={`grid grid-cols-2 ${showAprovacoes ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} gap-3`}>
         <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
@@ -502,14 +542,14 @@ export function VoluntariosRecesso({
         </div>
 
         <div className="p-3.5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#93368F]/10 text-[#93368F] flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-600 flex items-center justify-center shrink-0">
             <Coffee className="w-4 h-4" />
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] truncate">
               2ª Folga Aprovada
             </p>
-            <p className="text-lg sm:text-xl font-display font-extrabold text-[#93368F]">
+            <p className="text-lg sm:text-xl font-display font-extrabold text-teal-600">
               {folgasIndividuaisAprovadas}
             </p>
           </div>
@@ -558,20 +598,20 @@ export function VoluntariosRecesso({
         <div className="flex items-center gap-2">
           <button
             onClick={handlePrevMonth}
-            className="p-1.5 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors cursor-pointer"
+            className="w-11 h-11 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors flex items-center justify-center cursor-pointer touch-manipulation"
             aria-label="Mês anterior"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
-          <h3 className="font-display font-bold text-sm sm:text-base text-[var(--text-primary)] min-w-[170px] text-center">
+          <h3 className="font-display font-bold text-base sm:text-lg text-[var(--text-primary)] min-w-[170px] text-center">
             {MESES_NOMES[currentMonth]} {currentYear}
           </h3>
           <button
             onClick={handleNextMonth}
-            className="p-1.5 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors cursor-pointer"
+            className="w-11 h-11 rounded-xl hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors flex items-center justify-center cursor-pointer touch-manipulation"
             aria-label="Próximo mês"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-5 h-5" />
           </button>
 
           {/* Botão informativo (?) com Popover de Regras */}
@@ -619,11 +659,11 @@ export function VoluntariosRecesso({
           </div>
         </div>
 
-        {/* Sub-navegação em Pílulas */}
+        {/* Sub-navegação em Pílulas com Touch Targets de 44px */}
         <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
           <button
             onClick={() => setActiveSubTab('calendario')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer min-h-[44px] ${
               activeSubTab === 'calendario'
                 ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs font-bold'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -634,7 +674,7 @@ export function VoluntariosRecesso({
           {showSolicitar && (
             <button
               onClick={() => setActiveSubTab('solicitar')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer min-h-[44px] ${
                 activeSubTab === 'solicitar'
                   ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs font-bold'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -646,7 +686,7 @@ export function VoluntariosRecesso({
           {showAprovacoes && (
             <button
               onClick={() => setActiveSubTab('aprovacoes')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer relative ${
+              className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer relative min-h-[44px] ${
                 activeSubTab === 'aprovacoes'
                   ? 'bg-[var(--bg-elevated)] text-[var(--color-primary)] shadow-xs font-bold'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -676,7 +716,7 @@ export function VoluntariosRecesso({
                 <span className="text-[var(--text-primary)] font-medium">1º Dom: Dia da Família</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-purple-500" />
+                <span className="w-2.5 h-2.5 rounded bg-sky-500" />
                 <span className="text-[var(--text-primary)] font-medium">Último FDS: Ações Externas</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -718,12 +758,12 @@ export function VoluntariosRecesso({
                       isPrimeiroDom
                         ? 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]/25'
                         : isUltimoFds
-                        ? 'border-purple-300 bg-purple-500/5'
+                        ? 'border-sky-500/30 bg-sky-500/5'
                         : 'border-[var(--border-default)] bg-[var(--bg-elevated)] hover:border-[var(--color-primary)]/40'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs font-bold ${isPrimeiroDom ? 'text-[var(--color-primary)]' : isUltimoFds ? 'text-purple-600' : 'text-[var(--text-primary)]'}`}>
+                      <span className={`text-xs font-bold ${isPrimeiroDom ? 'text-[var(--color-primary)]' : isUltimoFds ? 'text-sky-600 dark:text-sky-400' : 'text-[var(--text-primary)]'}`}>
                         {day}
                       </span>
                       {isPrimeiroDom && (
@@ -732,7 +772,7 @@ export function VoluntariosRecesso({
                         </span>
                       )}
                       {isUltimoFds && !isPrimeiroDom && (
-                        <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
+                        <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20">
                           Externo
                         </span>
                       )}
@@ -804,7 +844,7 @@ export function VoluntariosRecesso({
               }`}
             >
               <div className="flex items-center gap-2">
-                <Coffee className="w-4 h-4 text-[#93368F]" />
+                <Coffee className="w-4 h-4 text-teal-600" />
                 <span className="font-bold text-xs text-[var(--text-primary)]">
                   2ª Folga Mensal (1 Dia)
                 </span>
@@ -983,7 +1023,7 @@ export function VoluntariosRecesso({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-default)] pb-3">
               <div>
                 <h3 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
-                  <FileCheck className="w-5 h-5 text-[#93368F]" />
+                  <FileCheck className="w-5 h-5 text-teal-600" />
                   Gerenciamento de Todas as Escalas &amp; Folgas
                 </h3>
                 <p className="text-xs text-[var(--text-muted)]">
@@ -1046,7 +1086,7 @@ export function VoluntariosRecesso({
                           <span className="font-bold text-sm text-[var(--text-primary)]">
                             {item.voluntarios?.nome_completo || 'Voluntário'}
                           </span>
-                          <Badge variant={item.tipo === 'recesso_15_dias' ? 'warning' : 'purple'}>
+                          <Badge variant={item.tipo === 'recesso_15_dias' ? 'warning' : 'primary'}>
                             {item.tipo === 'recesso_15_dias' ? 'Recesso 15 Dias' : '2ª Folga Mensal'}
                           </Badge>
                           <Badge
@@ -1126,8 +1166,8 @@ export function VoluntariosRecesso({
 
                         <button
                           type="button"
-                          onClick={() => handleDeleteRecord(item.id)}
-                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          onClick={() => setDeleteConfirmId(item.id)}
+                          className="w-9 h-9 rounded-lg text-[var(--text-muted)] hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer flex items-center justify-center touch-manipulation"
                           title="Excluir escala"
                           aria-label="Excluir escala"
                         >
@@ -1334,8 +1374,8 @@ export function VoluntariosRecesso({
               )}
 
               {ultimoFdsDates.includes(selectedDayModal) && (
-                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-400/20 text-purple-700 dark:text-purple-300 font-semibold flex items-center gap-2">
-                  <Users className="w-4 h-4" />
+                <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300 font-semibold flex items-center gap-2">
+                  <Users className="w-4 h-4 text-sky-600 shrink-0" />
                   <span>Último FDS: Encontros com público externo (Presença prioritária).</span>
                 </div>
               )}
@@ -1362,6 +1402,43 @@ export function VoluntariosRecesso({
             <div className="pt-2 flex justify-end">
               <Button size="sm" onClick={() => setSelectedDayModal(null)}>
                 Fechar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (SUBSTITUINDO WINDOW.CONFIRM) ── */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-sm bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-[var(--text-primary)]">Remover Registro</h3>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Tem certeza de que deseja excluir este registro de folga ou recesso?
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[var(--border-default)]">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDeleteConfirmId(null)}
+                className="min-h-[44px]"
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                className="bg-rose-600 hover:bg-rose-700 text-white min-h-[44px]"
+                disabled={processingId === deleteConfirmId}
+                onClick={handleConfirmarExclusao}
+              >
+                {processingId === deleteConfirmId ? 'Excluindo...' : 'Confirmar Exclusão'}
               </Button>
             </div>
           </div>

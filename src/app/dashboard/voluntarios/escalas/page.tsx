@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
+import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Topbar } from '@/components/layout/Topbar';
 import { VoluntariosEscalaDisponibilidade } from '@/components/dashboard/voluntarios/VoluntariosEscalaDisponibilidade';
 import { VoluntariosRecesso } from '@/components/dashboard/voluntarios/VoluntariosRecesso';
-import { Calendar, Coffee, Sparkles } from 'lucide-react';
+import { Calendar, Coffee, ChevronRight } from 'lucide-react';
 
 type TabKey = 'escala' | 'folgas';
 
@@ -18,7 +19,7 @@ interface TabItem {
 
 const TABS: TabItem[] = [
   { key: 'escala', label: 'Escala Mensal & Disponibilidade', icon: Calendar, color: '#F2632D' },
-  { key: 'folgas', label: 'Folgas & Recessos', icon: Coffee, color: '#93368F' },
+  { key: 'folgas', label: 'Folgas & Recessos', icon: Coffee, color: '#1C9C82' },
 ];
 
 function EscalasContent() {
@@ -47,6 +48,21 @@ function EscalasContent() {
 
       {/* ── 2. CONTAINER CENTRALIZADO (MAX-W-7XL) ── */}
       <div className="p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto space-y-6 flex-1 overflow-y-auto transition-all duration-300">
+        {/* Breadcrumbs de Navegação */}
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] font-medium">
+          <Link href="/dashboard" className="hover:text-[var(--text-primary)] transition-colors">
+            Dashboard
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <Link href="/dashboard/voluntarios" className="hover:text-[var(--text-primary)] transition-colors">
+            Voluntários
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span className="text-[var(--text-primary)] font-semibold" aria-current="page">
+            Escalas &amp; Recessos
+          </span>
+        </nav>
+
         {/* Seletor de Abas Superiores */}
         <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-2xl shadow-[var(--shadow-card)] overflow-x-auto custom-scrollbar">
           {TABS.map((tab) => {
@@ -58,7 +74,7 @@ function EscalasContent() {
                 key={tab.key}
                 type="button"
                 onClick={() => handleTabChange(tab.key)}
-                className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer min-h-[44px] ${
                   isActive
                     ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-xs border border-[var(--border-default)]'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]/50'
