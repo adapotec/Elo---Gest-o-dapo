@@ -287,65 +287,7 @@ export default function BeneficiariosPage() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  // Métricas Sociais Solicitadas pelo Usuário
-  const stats = useMemo(() => {
-    let meninos = 0;
-    let meninas = 0;
-    const responsaveisMap = new Map<string, { nome: string; parentesco?: string }>();
-    const comunidadesSet = new Set<string>();
-
-    beneficiarios.forEach((b) => {
-      // 1. Crianças por gênero
-      const gen = getGeneroInfo(b);
-      if (gen === 'Feminino' || gen === 'F') {
-        meninas++;
-      } else {
-        meninos++;
-      }
-
-      // 2. Territórios
-      if (b.comunidade) comunidadesSet.add(b.comunidade.trim());
-      else if (b.bairro) comunidadesSet.add(b.bairro.trim());
-
-      // 3. Responsáveis únicos
-      const resp = getResponsavelInfo(b);
-      if (resp.nome && resp.nome !== 'Não informado') {
-        const key = resp.nome.trim().toLowerCase();
-        if (!responsaveisMap.has(key)) {
-          responsaveisMap.set(key, { nome: resp.nome, parentesco: b.parentesco_responsavel || undefined });
-        }
-      }
-    });
-
-    let responsaveisMulheres = 0;
-    let responsaveisHomens = 0;
-
-    responsaveisMap.forEach(({ nome, parentesco }) => {
-      const g = inferirGeneroResponsavel(nome, parentesco);
-      if (g === 'F') {
-        responsaveisMulheres++;
-      } else {
-        responsaveisHomens++;
-      }
-    });
-
-    const totalCriancas = beneficiarios.length;
-    const totalResponsaveis = responsaveisMap.size;
-    const totalBeneficiarios = totalCriancas + totalResponsaveis;
-
-    return {
-      totalBeneficiarios,
-      totalCriancas,
-      meninos,
-      meninas,
-      totalResponsaveis,
-      responsaveisMulheres,
-      responsaveisHomens,
-      totalTerritorios: comunidadesSet.size || 1,
-    };
-  }, [beneficiarios]);
-
-  // Comunidades únicas disponíveis com contagem
+  // Comunidades únicas disponíveis com contagem geral
   const comunidadesStats = useMemo(() => {
     const counts: Record<string, number> = {};
     beneficiarios.forEach((b) => {
@@ -389,6 +331,58 @@ export default function BeneficiariosPage() {
       return matchQuery && matchStatus && matchComunidadeFilter && matchGenero && matchFaixa;
     });
   }, [beneficiarios, search, statusFilter, comunidadeFilter, generoFilter, faixaEtariaFilter]);
+
+  // Métricas Sociais Reativas (atualizam dinamicamente conforme os filtros aplicados)
+  const stats = useMemo(() => {
+    let meninos = 0;
+    let meninas = 0;
+    const responsaveisMap = new Map<string, { nome: string; parentesco?: string }>();
+
+    filteredBeneficiarios.forEach((b) => {
+      // 1. Crianças por gênero
+      const gen = getGeneroInfo(b);
+      if (gen === 'Feminino' || gen === 'F') {
+        meninas++;
+      } else {
+        meninos++;
+      }
+
+      // 2. Responsáveis únicos da seleção filtrada
+      const resp = getResponsavelInfo(b);
+      if (resp.nome && resp.nome !== 'Não informado') {
+        const key = resp.nome.trim().toLowerCase();
+        if (!responsaveisMap.has(key)) {
+          responsaveisMap.set(key, { nome: resp.nome, parentesco: b.parentesco_responsavel || undefined });
+        }
+      }
+    });
+
+    let responsaveisMulheres = 0;
+    let responsaveisHomens = 0;
+
+    responsaveisMap.forEach(({ nome, parentesco }) => {
+      const g = inferirGeneroResponsavel(nome, parentesco);
+      if (g === 'F') {
+        responsaveisMulheres++;
+      } else {
+        responsaveisHomens++;
+      }
+    });
+
+    const totalCriancas = filteredBeneficiarios.length;
+    const totalResponsaveis = responsaveisMap.size;
+    const totalBeneficiarios = totalCriancas + totalResponsaveis;
+
+    return {
+      totalBeneficiarios,
+      totalCriancas,
+      meninos,
+      meninas,
+      totalResponsaveis,
+      responsaveisMulheres,
+      responsaveisHomens,
+    };
+  }, [filteredBeneficiarios]);
 
   // Resetar página quando os filtros mudam
   useEffect(() => {
@@ -618,13 +612,13 @@ export default function BeneficiariosPage() {
           </div>
         )}
 
-        {/* ── 1. CARDS BENTO DE INDICADORES (SOLICITADOS PELO USUÁRIO) ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* ── 1. CARDS BENTO DE INDICADORES REATIVOS (ATUALIZAM COM OS FILTROS) ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Card 1: TOTAL DE BENEFICIÁRIOS (EM DESTAQUE) */}
-          <div className="p-5 rounded-2xl border-2 border-[var(--color-primary)] bg-gradient-to-br from-[var(--color-primary-soft)]/40 to-[var(--bg-elevated)] shadow-[var(--shadow-card)] relative overflow-hidden group">
+          <div className="p-5 rounded-2xl border-2 border-[var(--color-primary)] bg-gradient-to-br from-[var(--color-primary-soft)]/40 to-[var(--bg-elevated)] shadow-[var(--shadow-card)] relative overflow-hidden group sm:col-span-2 lg:col-span-1">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-primary)]">
-                Impacto Social Total
+                {hasActiveFilters ? 'Impacto Filtrado' : 'Impacto Social Total'}
               </span>
               <div className="w-9 h-9 rounded-xl bg-[var(--color-primary)] text-white flex items-center justify-center shadow-sm">
                 <HeartHandshake className="w-5 h-5" />
@@ -698,27 +692,6 @@ export default function BeneficiariosPage() {
                   {stats.responsaveisHomens} Homens
                 </span>
               </div>
-            </div>
-          </div>
-
-          {/* Card 4: POLOS & TERRITÓRIOS */}
-          <div className="p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-[var(--shadow-card)] space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[var(--text-secondary)]">Territórios & Comunidades</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-                <MapPin className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-baseline gap-2">
-                <span className="font-display text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
-                  {loading ? '—' : stats.totalTerritorios}
-                </span>
-                <span className="text-xs text-[var(--text-muted)] font-medium">polos ativos</span>
-              </div>
-              <p className="text-[11px] text-[var(--text-muted)] truncate">
-                Novo Angelim, Vila Sapo, Angelim Velho...
-              </p>
             </div>
           </div>
         </div>
